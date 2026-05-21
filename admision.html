@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admisión — Sistema UPG</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    .adm-wrap    { display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h)); overflow:hidden; }
+    .adm-tabs    { display:flex; padding:0 24px; background:var(--surface); border-bottom:2px solid var(--border); flex-shrink:0; }
+    .adm-tab     { padding:12px 18px; font-size:.86rem; font-weight:500; color:var(--txt-secondary); border-bottom:2px solid transparent; margin-bottom:-2px; transition:all var(--transition); white-space:nowrap; display:flex; align-items:center; gap:7px; }
+    .adm-tab:hover  { color:var(--verde); }
+    .adm-tab.active { color:var(--verde); border-bottom-color:var(--verde); font-weight:600; }
+    .adm-tab .tc    { background:var(--naranja); color:#fff; font-size:.62rem; font-weight:700; padding:1px 6px; border-radius:999px; }
+
+    .adm-content { flex:1; overflow-y:auto; padding:20px 24px; }
+
+    /* Toolbar */
+    .toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+    .search-wrap { position:relative; }
+    .search-wrap svg { position:absolute; left:9px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--txt-muted); pointer-events:none; }
+    .search-wrap input { padding-left:32px; width:240px; }
+
+    /* Drawer */
+    .drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:150; opacity:0; pointer-events:none; transition:opacity var(--transition); }
+    .drawer-overlay.open { opacity:1; pointer-events:all; }
+    .drawer { position:fixed; top:0; right:0; width:520px; height:100vh; background:var(--surface); z-index:160; box-shadow:-8px 0 30px rgba(0,0,0,.15); display:flex; flex-direction:column; transform:translateX(100%); transition:transform .25s ease; }
+    .drawer-overlay.open .drawer { transform:translateX(0); }
+    .drawer-header { padding:18px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-shrink:0; }
+    .drawer-title  { font-size:1rem; font-weight:700; flex:1; }
+    .drawer-body   { flex:1; overflow-y:auto; padding:18px 20px; display:flex; flex-direction:column; gap:14px; }
+    .drawer-footer { padding:14px 20px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; flex-shrink:0; }
+
+    /* Doc item */
+    .doc-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-light); font-size:.83rem; }
+    .doc-item:last-child { border-bottom:none; }
+    .doc-icon { width:30px; height:30px; border-radius:var(--radius-sm); background:var(--verde-light); color:var(--verde); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .doc-icon svg { width:15px; height:15px; }
+    .doc-nombre { flex:1; color:var(--txt-secondary); }
+    .doc-link   { font-size:.75rem; color:var(--verde); text-decoration:underline; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <aside id="sidebar" class="sidebar"></aside>
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">Admisión <span id="fechaHoy"></span></div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary btn-sm" id="btnNuevaSolicitud">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva solicitud
+        </button>
+      </div>
+    </header>
+
+    <div class="adm-wrap">
+      <div class="adm-tabs">
+        <button class="adm-tab active" data-tab="solicitudes">Solicitudes <span class="tc" id="tcPend">0</span></button>
+        <button class="adm-tab" data-tab="documentos">Documentos</button>
+        <button class="adm-tab" data-tab="alumnos">Alumnos inscriptos</button>
+      </div>
+
+      <div class="adm-content">
+
+        <!-- ── SOLICITUDES ─────────────────────────────────── -->
+        <div id="tab-solicitudes">
+          <div class="toolbar">
+            <div class="search-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" class="form-control" id="searchSol" placeholder="Buscar por nombre, CI...">
+            </div>
+            <select class="form-control" id="filtroEstSol" style="width:auto">
+              <option value="">Todos los estados</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="En revisión">En revisión</option>
+              <option value="Aprobada">Aprobada</option>
+              <option value="Rechazada">Rechazada</option>
+            </select>
+            <select class="form-control" id="filtroCarreraSol" style="width:auto">
+              <option value="">Todas las carreras</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" id="btnRefSol">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Actualizar
+            </button>
+            <span id="solTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>#</th><th>Prospecto</th><th>CI</th><th>Carrera</th><th>Cohorte</th><th>Fecha</th><th>Estado</th><th>Revisado por</th><th></th></tr></thead>
+              <tbody id="tbodySol"><tr><td colspan="9" class="text-center" style="padding:40px;color:var(--txt-muted)">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── DOCUMENTOS ──────────────────────────────────── -->
+        <div id="tab-documentos" style="display:none">
+          <div class="toolbar">
+            <div class="search-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" class="form-control" id="searchDoc" placeholder="Buscar solicitud...">
+            </div>
+            <select class="form-control" id="filtroEstDoc" style="width:auto">
+              <option value="">Todos</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Verificado">Verificado</option>
+              <option value="Rechazado">Rechazado</option>
+            </select>
+            <span id="docTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>#</th><th>Prospecto</th><th>Tipo documento</th><th>Archivo</th><th>Estado</th><th>Fecha subida</th><th>Físico</th><th></th></tr></thead>
+              <tbody id="tbodyDoc"><tr><td colspan="8" class="text-center" style="padding:40px;color:var(--txt-muted)">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── ALUMNOS INSCRIPTOS ───────────────────────────── -->
+        <div id="tab-alumnos" style="display:none">
+          <div class="toolbar">
+            <div class="search-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" class="form-control" id="searchAlumnos" placeholder="Buscar alumno...">
+            </div>
+            <select class="form-control" id="filtroCarreraAlumnos" style="width:auto">
+              <option value="">Todas las carreras</option>
+            </select>
+            <select class="form-control" id="filtroEstAlumnos" style="width:auto">
+              <option value="">Todos los estados</option>
+              <option value="Activo">Activo</option>
+              <option value="Egresado">Egresado</option>
+              <option value="Suspendido">Suspendido</option>
+              <option value="Baja">Baja</option>
+            </select>
+            <span id="alumnosTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>#</th><th>Alumno</th><th>CI</th><th>Teléfono</th><th>Email</th><th>País</th><th>Estado</th><th>Inscripto desde</th><th></th></tr></thead>
+              <tbody id="tbodyAlumnos"><tr><td colspan="9" class="text-center" style="padding:40px;color:var(--txt-muted)">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Drawer solicitud -->
+<div class="drawer-overlay" id="drawerOverlay">
+  <div class="drawer">
+    <div class="drawer-header">
+      <div><div class="drawer-title" id="drawerTitle">Solicitud</div><div style="font-size:.75rem;color:var(--txt-muted)" id="drawerSub"></div></div>
+      <span class="badge" id="drawerBadge">—</span>
+      <button class="modal-close" onclick="cerrarDrawer()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-footer" id="drawerFooter"></div>
+  </div>
+</div>
+
+<!-- Modal nueva solicitud -->
+<div class="modal-overlay" id="modalNuevoOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nueva solicitud de admisión</span>
+      <button class="modal-close" onclick="cerrarModal()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Prospecto <span class="required">*</span></label>
+        <select class="form-control" id="fProspecto"><option value="">Seleccionar prospecto aprobado...</option></select></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Carrera <span class="required">*</span></label>
+          <select class="form-control" id="fCarreraAdm"><option value="">Seleccionar...</option></select></div>
+        <div class="form-group"><label class="form-label">Cohorte</label>
+          <select class="form-control" id="fCohorte"><option value="">Seleccionar cohorte...</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Observaciones</label>
+        <textarea class="form-control" id="fObsAdm" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarAdm">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { supabase, formatFechaHora, toast } from './assets/supabase.js';
+import { requireAuth } from './assets/auth.js';
+import { initSidebar } from './assets/sidebar.js';
+
+const sesion = requireAuth('admision');
+if (!sesion) throw new Error('Sin sesión');
+initSidebar('admision');
+
+document.getElementById('fechaHoy').textContent =
+  new Date().toLocaleDateString('es-PY',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+
+let solicitudes = [], documentos = [], alumnos = [], carreras = [], cohortes = [], prospectos = [];
+
+// ── Init ──────────────────────────────────────────────────────
+await Promise.all([cargarSolicitudes(), cargarDocumentos(), cargarAlumnos(), cargarCarreras()]);
+
+// ── Tabs ──────────────────────────────────────────────────────
+document.querySelectorAll('.adm-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.adm-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    ['solicitudes','documentos','alumnos'].forEach(t => {
+      document.getElementById('tab-'+t).style.display = t===btn.dataset.tab?'block':'none';
+    });
+  });
+});
+
+// ── Solicitudes ───────────────────────────────────────────────
+async function cargarSolicitudes() {
+  const { data } = await supabase
+    .from('solicitudes_admision')
+    .select('*, prospectos(nombres,apellidos,ci,telefono_whatsapp), carreras(nombre), cohortes(nro_cohorte,anho_inicio), usuarios_sistema:revisado_por(nombre)')
+    .order('fecha_solicitud',{ascending:false});
+  solicitudes = data || [];
+  document.getElementById('tcPend').textContent = solicitudes.filter(s=>['Pendiente','En revisión'].includes(s.estado)).length;
+  renderSolicitudes();
+}
+
+function renderSolicitudes() {
+  const q   = document.getElementById('searchSol').value.toLowerCase();
+  const est = document.getElementById('filtroEstSol').value;
+  const car = document.getElementById('filtroCarreraSol').value;
+  let items = solicitudes;
+  if (q)   items = items.filter(s=>`${s.prospectos?.nombres} ${s.prospectos?.apellidos} ${s.prospectos?.ci||''}`.toLowerCase().includes(q));
+  if (est) items = items.filter(s=>s.estado===est);
+  if (car) items = items.filter(s=>String(s.carrera_id)===car);
+  document.getElementById('solTotal').textContent = `${items.length} registros`;
+
+  const EST = {Pendiente:'badge-warning','En revisión':'badge-info',Aprobada:'badge-success',Rechazada:'badge-danger',Desistida:'badge-muted'};
+  document.getElementById('tbodySol').innerHTML = items.map((s,i)=>`<tr style="cursor:pointer" onclick="abrirSolicitud(${s.id})">
+    <td class="td-mono">${i+1}</td>
+    <td class="td-bold">${s.prospectos?.nombres||''} ${s.prospectos?.apellidos||''}</td>
+    <td class="td-mono">${s.prospectos?.ci||'—'}</td>
+    <td>${s.carreras?.nombre||'—'}</td>
+    <td>${s.cohortes?`${s.cohortes.nro_cohorte}ª Cohorte ${s.cohortes.anho_inicio}`:'—'}</td>
+    <td class="td-mono" style="font-size:.78rem">${formatFechaHora(s.fecha_solicitud)}</td>
+    <td><span class="badge ${EST[s.estado]||'badge-muted'}">${s.estado}</span></td>
+    <td>${s.usuarios_sistema?.nombre||'—'}</td>
+    <td><button class="btn btn-icon" onclick="event.stopPropagation();abrirSolicitud(${s.id})">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button></td>
+  </tr>`).join('') || `<tr><td colspan="9" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin solicitudes</td></tr>`;
+}
+
+['searchSol','filtroEstSol','filtroCarreraSol'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('input',renderSolicitudes);
+  document.getElementById(id)?.addEventListener('change',renderSolicitudes);
+});
+document.getElementById('btnRefSol').addEventListener('click',cargarSolicitudes);
+
+// ── Documentos ────────────────────────────────────────────────
+async function cargarDocumentos() {
+  const { data } = await supabase
+    .from('documentos_admision')
+    .select('*, solicitudes_admision(prospectos(nombres,apellidos))')
+    .order('fecha_subida',{ascending:false});
+  documentos = data || [];
+  renderDocumentos();
+}
+
+function renderDocumentos() {
+  const q   = document.getElementById('searchDoc').value.toLowerCase();
+  const est = document.getElementById('filtroEstDoc').value;
+  let items = documentos;
+  if (q)   items = items.filter(d=>`${d.solicitudes_admision?.prospectos?.nombres} ${d.solicitudes_admision?.prospectos?.apellidos}`.toLowerCase().includes(q));
+  if (est) items = items.filter(d=>d.estado_verificacion===est);
+  document.getElementById('docTotal').textContent = `${items.length} registros`;
+
+  const EST = {Pendiente:'badge-warning',Verificado:'badge-success',Rechazado:'badge-danger'};
+  const TIPO_LABEL = {cedula:'Cédula',foto_carnet:'Foto carnet',solicitud_inscripcion:'Solicitud',contrato:'Contrato',titulo:'Título',certificado_estudio:'Cert. estudio',certificado_nacimiento:'Cert. nacimiento',acta_nacimiento:'Acta nacimiento',constancia_trabajo:'Const. trabajo',comprobante_pago_inscripcion:'Comprobante pago',otro:'Otro'};
+
+  document.getElementById('tbodyDoc').innerHTML = items.map((d,i)=>{
+    const p = d.solicitudes_admision?.prospectos;
+    return `<tr>
+      <td class="td-mono">${i+1}</td>
+      <td>${p?p.nombres+' '+p.apellidos:'—'}</td>
+      <td><span class="badge badge-muted" style="font-size:.65rem">${TIPO_LABEL[d.tipo_documento]||d.tipo_documento}</span></td>
+      <td>${d.nombre_archivo?`<a href="${d.drive_url}" target="_blank" class="doc-link">${d.nombre_archivo}</a>`:`<a href="${d.drive_url}" target="_blank" class="doc-link">Ver archivo</a>`}</td>
+      <td><span class="badge ${EST[d.estado_verificacion]||'badge-muted'}">${d.estado_verificacion}</span></td>
+      <td class="td-mono" style="font-size:.75rem">${formatFechaHora(d.fecha_subida)}</td>
+      <td>${d.entregado_fisico?'<span class="badge badge-success">Sí</span>':'<span class="badge badge-muted">No</span>'}</td>
+      <td>${d.estado_verificacion==='Pendiente'?`
+        <button class="btn btn-icon" onclick="verificarDoc(${d.id},'Verificado')" title="Verificar" style="color:var(--success)">✓</button>
+        <button class="btn btn-icon" onclick="verificarDoc(${d.id},'Rechazado')" title="Rechazar" style="color:var(--danger)">✕</button>`:''}
+      </td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="8" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin documentos</td></tr>`;
+}
+
+['searchDoc','filtroEstDoc'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('input',renderDocumentos);
+  document.getElementById(id)?.addEventListener('change',renderDocumentos);
+});
+
+window.verificarDoc = async (id, estado) => {
+  await supabase.from('documentos_admision').update({
+    estado_verificacion: estado, verificado_por: sesion.id,
+    fecha_verificacion: new Date().toISOString()
+  }).eq('id',id);
+  toast(estado==='Verificado'?'Documento verificado':'Documento rechazado', estado==='Verificado'?'success':'warning');
+  await cargarDocumentos();
+};
+
+// ── Alumnos ───────────────────────────────────────────────────
+async function cargarAlumnos() {
+  const { data } = await supabase
+    .from('alumnos')
+    .select('*, inscripciones_anuales(cohortes(nro_cohorte,anho_inicio,carreras(nombre)))')
+    .order('apellidos');
+  alumnos = data || [];
+  renderAlumnos();
+}
+
+function renderAlumnos() {
+  const q   = document.getElementById('searchAlumnos').value.toLowerCase();
+  const est = document.getElementById('filtroEstAlumnos').value;
+  let items = alumnos;
+  if (q)   items = items.filter(a=>`${a.nombres} ${a.apellidos} ${a.ci}`.toLowerCase().includes(q));
+  if (est) items = items.filter(a=>a.estado===est);
+  document.getElementById('alumnosTotal').textContent = `${items.length} alumnos`;
+
+  const EST = {Activo:'badge-success',Egresado:'badge-verde',Suspendido:'badge-warning',Baja:'badge-danger'};
+  document.getElementById('tbodyAlumnos').innerHTML = items.map((a,i)=>{
+    const insc = a.inscripciones_anuales?.[0];
+    const carr = insc?.cohortes?.carreras?.nombre || '—';
+    return `<tr>
+      <td class="td-mono">${i+1}</td>
+      <td class="td-bold">${a.nombres} ${a.apellidos}</td>
+      <td class="td-mono">${a.ci}</td>
+      <td>${a.telefono||'—'}</td>
+      <td>${a.email||'—'}</td>
+      <td>${a.pais||'—'}</td>
+      <td><span class="badge ${EST[a.estado]||'badge-muted'}">${a.estado}</span></td>
+      <td class="td-mono" style="font-size:.75rem">${formatFechaHora(a.created_at)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="abrirAlumno(${a.id})">Ver</button></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="9" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin alumnos</td></tr>`;
+}
+
+['searchAlumnos','filtroEstAlumnos','filtroCarreraAlumnos'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('input',renderAlumnos);
+  document.getElementById(id)?.addEventListener('change',renderAlumnos);
+});
+
+// ── Drawer solicitud ──────────────────────────────────────────
+window.abrirSolicitud = async (id) => {
+  const s = solicitudes.find(x=>x.id===id);
+  if (!s) return;
+  const p = s.prospectos;
+  const EST = {Pendiente:'badge-warning','En revisión':'badge-info',Aprobada:'badge-success',Rechazada:'badge-danger',Desistida:'badge-muted'};
+
+  document.getElementById('drawerTitle').textContent = `${p?.nombres||''} ${p?.apellidos||''}`;
+  document.getElementById('drawerSub').textContent   = `Solicitud #${s.id} · ${formatFechaHora(s.fecha_solicitud)}`;
+  const bdg = document.getElementById('drawerBadge');
+  bdg.className = 'badge '+(EST[s.estado]||'badge-muted');
+  bdg.textContent = s.estado;
+
+  // Documentos de esta solicitud
+  const { data: docs } = await supabase
+    .from('documentos_admision')
+    .select('*')
+    .eq('solicitud_id',id);
+
+  const TIPO_LABEL = {cedula:'Cédula',foto_carnet:'Foto carnet',solicitud_inscripcion:'Solicitud inscripción',contrato:'Contrato',titulo:'Título',certificado_estudio:'Cert. de estudio',certificado_nacimiento:'Cert. nacimiento',acta_nacimiento:'Acta nacimiento',constancia_trabajo:'Const. trabajo',comprobante_pago_inscripcion:'Comprobante pago',otro:'Otro'};
+  const EST_DOC = {Pendiente:'badge-warning',Verificado:'badge-success',Rechazado:'badge-danger'};
+
+  document.getElementById('drawerBody').innerHTML = `
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px">
+      <div class="form-row" style="gap:12px">
+        <div><div style="font-size:.68rem;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.05em">Prospecto</div><div style="font-size:.85rem;font-weight:600">${p?.nombres||''} ${p?.apellidos||''}</div></div>
+        <div><div style="font-size:.68rem;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.05em">CI</div><div style="font-size:.85rem;font-weight:600">${p?.ci||'—'}</div></div>
+        <div><div style="font-size:.68rem;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.05em">WhatsApp</div><div style="font-size:.85rem;font-weight:600">${p?.telefono_whatsapp||'—'}</div></div>
+      </div>
+      <div style="margin-top:8px;font-size:.78rem;color:var(--txt-muted)">
+        Carrera: <strong>${s.carreras?.nombre||'—'}</strong>
+        ${s.cohortes?` · Cohorte: <strong>${s.cohortes.nro_cohorte}ª ${s.cohortes.anho_inicio}</strong>`:''}
+      </div>
+    </div>
+    ${s.observaciones?`<div><div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Observaciones</div><div style="font-size:.83rem;color:var(--txt-secondary);background:var(--surface-2);border-radius:var(--radius);padding:10px 12px">${s.observaciones}</div></div>`:''}
+    <div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Documentos (${docs?.length||0})</div>
+      ${docs?.length ? docs.map(d=>`
+        <div class="doc-item">
+          <div class="doc-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="doc-nombre">${TIPO_LABEL[d.tipo_documento]||d.tipo_documento}</span>
+          <span class="badge ${EST_DOC[d.estado_verificacion]||'badge-muted'}" style="font-size:.65rem">${d.estado_verificacion}</span>
+          <a href="${d.drive_url}" target="_blank" class="doc-link">Ver</a>
+        </div>`).join('') : '<div style="color:var(--txt-muted);font-size:.8rem;text-align:center;padding:12px">Sin documentos cargados</div>'}
+    </div>
+    ${['Pendiente','En revisión'].includes(s.estado)?`
+    <div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Observación de resolución</div>
+      <textarea class="form-control" id="obsResolucion" rows="2" placeholder="Motivo de aprobación o rechazo..."></textarea>
+    </div>`:''}`;
+
+  document.getElementById('drawerFooter').innerHTML = `
+    <button class="btn btn-ghost btn-sm" onclick="cerrarDrawer()">Cerrar</button>
+    ${['Pendiente','En revisión'].includes(s.estado)?`
+    <button class="btn btn-ghost btn-sm" onclick="resolverSolicitud(${s.id},'En revisión')">En revisión</button>
+    <button class="btn btn-danger btn-sm" onclick="resolverSolicitud(${s.id},'Rechazada')">Rechazar</button>
+    <button class="btn btn-primary btn-sm" onclick="resolverSolicitud(${s.id},'Aprobada')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      Aprobar
+    </button>`:''}`;
+
+  document.getElementById('drawerOverlay').classList.add('open');
+};
+
+window.resolverSolicitud = async (id, estado) => {
+  const obs = document.getElementById('obsResolucion')?.value?.trim();
+  await supabase.from('solicitudes_admision').update({
+    estado, revisado_por: sesion.id,
+    fecha_resolucion: ['Aprobada','Rechazada'].includes(estado) ? new Date().toISOString() : null,
+    observaciones: obs || null
+  }).eq('id',id);
+  toast(`Solicitud ${estado.toLowerCase()}`,'success');
+  cerrarDrawer();
+  await cargarSolicitudes();
+};
+
+window.abrirAlumno = async (id) => {
+  const a = alumnos.find(x=>x.id===id);
+  if (!a) return;
+  const EST = {Activo:'badge-success',Egresado:'badge-verde',Suspendido:'badge-warning',Baja:'badge-danger'};
+  document.getElementById('drawerTitle').textContent = `${a.nombres} ${a.apellidos}`;
+  document.getElementById('drawerSub').textContent   = `CI: ${a.ci}`;
+  const bdg = document.getElementById('drawerBadge');
+  bdg.className = 'badge '+(EST[a.estado]||'badge-muted');
+  bdg.textContent = a.estado;
+
+  const inscs = a.inscripciones_anuales || [];
+
+  document.getElementById('drawerBody').innerHTML = `
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px">
+      <div style="font-size:.85rem;font-weight:700;margin-bottom:6px">${a.nombres} ${a.apellidos}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.78rem">
+        <div><span style="color:var(--txt-muted)">CI:</span> <strong>${a.ci}</strong></div>
+        <div><span style="color:var(--txt-muted)">Teléfono:</span> <strong>${a.telefono||'—'}</strong></div>
+        <div><span style="color:var(--txt-muted)">Email:</span> <strong>${a.email||'—'}</strong></div>
+        <div><span style="color:var(--txt-muted)">País:</span> <strong>${a.pais||'—'}</strong></div>
+        <div><span style="color:var(--txt-muted)">Depto:</span> <strong>${a.departamento||'—'}</strong></div>
+        <div><span style="color:var(--txt-muted)">Ciudad:</span> <strong>${a.ciudad||'—'}</strong></div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Inscripciones (${inscs.length})</div>
+      ${inscs.map(i=>{
+        const co = i.cohortes;
+        return `<div style="background:var(--verde-light);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;font-size:.82rem">
+          <strong>${co?.carreras?.nombre||'—'}</strong>
+          <span style="color:var(--txt-muted)"> · ${co?.nro_cohorte||''}ª Cohorte ${co?.anho_inicio||''}</span>
+        </div>`;
+      }).join('') || '<div style="color:var(--txt-muted);font-size:.8rem;text-align:center;padding:8px">Sin inscripciones</div>'}
+    </div>`;
+
+  document.getElementById('drawerFooter').innerHTML = `
+    <button class="btn btn-ghost btn-sm" onclick="cerrarDrawer()">Cerrar</button>
+    <a href="academico.html" class="btn btn-outline btn-sm">Ver académico →</a>`;
+
+  document.getElementById('drawerOverlay').classList.add('open');
+};
+
+// ── Carreras y cohortes ───────────────────────────────────────
+async function cargarCarreras() {
+  const { data } = await supabase.from('carreras').select('id,nombre').eq('estado','Activa').order('nombre');
+  carreras = data || [];
+  const opts = carreras.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+  document.getElementById('filtroCarreraSol').innerHTML     = '<option value="">Todas las carreras</option>'+opts;
+  document.getElementById('filtroCarreraAlumnos').innerHTML = '<option value="">Todas las carreras</option>'+opts;
+  document.getElementById('fCarreraAdm').innerHTML          = '<option value="">Seleccionar...</option>'+opts;
+}
+
+document.getElementById('fCarreraAdm')?.addEventListener('change', async (e) => {
+  const carreraId = e.target.value;
+  if (!carreraId) return;
+  const { data } = await supabase.from('cohortes').select('id,nro_cohorte,anho_inicio').eq('carrera_id',carreraId).eq('estado','Activo').order('nro_cohorte');
+  cohortes = data || [];
+  document.getElementById('fCohorte').innerHTML = '<option value="">Seleccionar cohorte...</option>' +
+    cohortes.map(c=>`<option value="${c.id}">${c.nro_cohorte}ª Cohorte ${c.anho_inicio}</option>`).join('');
+});
+
+// ── Nueva solicitud ───────────────────────────────────────────
+document.getElementById('btnNuevaSolicitud').addEventListener('click', async () => {
+  const { data } = await supabase.from('prospectos').select('id,nombres,apellidos,ci,carrera_interes_id').eq('etapa_crm','Aprobado').order('apellidos');
+  prospectos = data || [];
+  document.getElementById('fProspecto').innerHTML = '<option value="">Seleccionar prospecto aprobado...</option>'+
+    prospectos.map(p=>`<option value="${p.id}">${p.nombres} ${p.apellidos}${p.ci?' — '+p.ci:''}</option>`).join('');
+  document.getElementById('modalNuevoOverlay').classList.add('open');
+});
+
+window.cerrarModal = () => document.getElementById('modalNuevoOverlay').classList.remove('open');
+
+document.getElementById('btnGuardarAdm').addEventListener('click', async () => {
+  const prospectoId = Number(document.getElementById('fProspecto').value);
+  const carreraId   = Number(document.getElementById('fCarreraAdm').value);
+  if (!prospectoId || !carreraId) { toast('Seleccioná prospecto y carrera','warning'); return; }
+
+  const { error } = await supabase.from('solicitudes_admision').insert({
+    prospecto_id: prospectoId, carrera_id: carreraId,
+    cohorte_id: Number(document.getElementById('fCohorte').value) || null,
+    estado: 'Pendiente',
+    observaciones: document.getElementById('fObsAdm').value.trim() || null
+  });
+  if (error) { toast('Error: '+error.message,'error'); return; }
+  toast('Solicitud creada','success');
+  cerrarModal();
+  await cargarSolicitudes();
+});
+
+// ── Helpers ───────────────────────────────────────────────────
+function cerrarDrawer() { document.getElementById('drawerOverlay').classList.remove('open'); }
+window.cerrarDrawer = cerrarDrawer;
+document.getElementById('drawerOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)cerrarDrawer();});
+</script>
+</body>
+</html>

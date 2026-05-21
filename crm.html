@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM — Sistema UPG</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    .crm-wrap { display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h)); overflow:hidden; }
+
+    /* Tabs */
+    .crm-tabs { display:flex; padding:0 24px; background:var(--surface); border-bottom:2px solid var(--border); flex-shrink:0; }
+    .crm-tab  { padding:12px 18px; font-size:.86rem; font-weight:500; color:var(--txt-secondary); border-bottom:2px solid transparent; margin-bottom:-2px; transition:all var(--transition); white-space:nowrap; }
+    .crm-tab:hover  { color:var(--verde); }
+    .crm-tab.active { color:var(--verde); border-bottom-color:var(--verde); font-weight:600; }
+
+    .crm-content { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+    .tab-pane { display:none; flex:1; overflow:hidden; }
+    .tab-pane.active { display:flex; flex-direction:column; }
+
+    /* ── Kanban ──────────────────────────────────────────────── */
+    .kanban-toolbar { padding:14px 24px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; flex-shrink:0; }
+    .kanban-board   { flex:1; overflow-x:auto; padding:16px 24px; display:flex; gap:14px; align-items:flex-start; }
+
+    .kanban-col {
+      flex-shrink:0; width:240px;
+      background:var(--bg); border-radius:var(--radius-lg);
+      border:1px solid var(--border); display:flex; flex-direction:column; max-height:100%;
+    }
+    .kanban-col-header {
+      padding:12px 14px; display:flex; align-items:center; gap:8px;
+      border-bottom:1px solid var(--border); flex-shrink:0;
+    }
+    .kanban-col-dot  { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+    .kanban-col-name { font-size:.82rem; font-weight:700; flex:1; }
+    .kanban-col-cnt  { font-size:.72rem; font-weight:700; background:var(--border); color:var(--txt-secondary); padding:1px 7px; border-radius:999px; }
+    .kanban-col-body { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:7px; }
+
+    .kanban-card {
+      background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius);
+      padding:11px 12px; cursor:pointer; transition:all var(--transition);
+    }
+    .kanban-card:hover { border-color:var(--verde); box-shadow:var(--shadow-sm); transform:translateY(-1px); }
+    .kanban-card-name  { font-size:.83rem; font-weight:600; color:var(--txt-primary); margin-bottom:3px; }
+    .kanban-card-ci    { font-size:.72rem; color:var(--txt-muted); }
+    .kanban-card-footer{ display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
+    .kanban-card-canal { font-size:.68rem; color:var(--txt-muted); }
+    .kanban-card-time  { font-size:.68rem; color:var(--txt-muted); }
+
+    /* ── Lista prospectos ─────────────────────────────────────── */
+    .lista-toolbar { padding:14px 24px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; flex-shrink:0; flex-wrap:wrap; }
+    .lista-content { flex:1; overflow-y:auto; padding:16px 24px; }
+    .search-wrap { position:relative; }
+    .search-wrap svg { position:absolute; left:9px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--txt-muted); pointer-events:none; }
+    .search-wrap input { padding-left:32px; width:240px; }
+
+    /* ── Drawer prospecto ─────────────────────────────────────── */
+    .drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:150; opacity:0; pointer-events:none; transition:opacity var(--transition); }
+    .drawer-overlay.open { opacity:1; pointer-events:all; }
+    .drawer { position:fixed; top:0; right:0; width:500px; height:100vh; background:var(--surface); z-index:160; box-shadow:-8px 0 30px rgba(0,0,0,.15); display:flex; flex-direction:column; transform:translateX(100%); transition:transform .25s ease; }
+    .drawer-overlay.open .drawer { transform:translateX(0); }
+    .drawer-header { padding:18px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-shrink:0; }
+    .drawer-title  { font-size:1rem; font-weight:700; flex:1; }
+    .drawer-body   { flex:1; overflow-y:auto; padding:18px 20px; display:flex; flex-direction:column; gap:14px; }
+    .drawer-footer { padding:14px 20px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; flex-shrink:0; }
+
+    /* Timeline interacciones */
+    .int-item { display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--border-light); }
+    .int-item:last-child { border-bottom:none; }
+    .int-canal-dot { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.65rem; font-weight:700; flex-shrink:0; margin-top:2px; }
+    .int-body  { flex:1; }
+    .int-tipo  { font-size:.78rem; font-weight:600; color:var(--txt-primary); }
+    .int-msg   { font-size:.78rem; color:var(--txt-secondary); margin-top:2px; }
+    .int-fecha { font-size:.68rem; color:var(--txt-muted); margin-top:2px; }
+
+    /* Selector de etapa */
+    .etapa-selector { display:flex; gap:6px; flex-wrap:wrap; }
+    .etapa-opt { padding:5px 12px; border-radius:999px; font-size:.75rem; font-weight:600; border:1.5px solid var(--border); color:var(--txt-secondary); cursor:pointer; transition:all var(--transition); }
+    .etapa-opt:hover { border-color:var(--verde); color:var(--verde); }
+    .etapa-opt.active { background:var(--verde); border-color:var(--verde); color:#fff; }
+
+    /* KPIs kanban */
+    .kanban-kpis { display:flex; gap:12px; padding:12px 24px 0; flex-shrink:0; }
+    .kanban-kpi  { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px 16px; flex:1; }
+    .kanban-kpi-label { font-size:.68rem; font-weight:600; color:var(--txt-muted); text-transform:uppercase; letter-spacing:.06em; }
+    .kanban-kpi-val   { font-family:var(--font-mono); font-size:1.1rem; font-weight:600; color:var(--verde); margin-top:2px; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <aside id="sidebar" class="sidebar"></aside>
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">CRM <span id="fechaHoy"></span></div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary btn-sm" id="btnNuevoProspecto">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nuevo prospecto
+        </button>
+      </div>
+    </header>
+
+    <div class="crm-wrap">
+      <div class="crm-tabs">
+        <button class="crm-tab active" data-tab="kanban">Pipeline</button>
+        <button class="crm-tab" data-tab="lista">Lista</button>
+        <button class="crm-tab" data-tab="convertidos">Convertidos</button>
+      </div>
+
+      <div class="crm-content">
+
+        <!-- ── PIPELINE KANBAN ──────────────────────────────── -->
+        <div class="tab-pane active" id="tab-kanban">
+          <div class="kanban-kpis">
+            <div class="kanban-kpi"><div class="kanban-kpi-label">Total activos</div><div class="kanban-kpi-val" id="kpiActivos">—</div></div>
+            <div class="kanban-kpi"><div class="kanban-kpi-label">Nuevos hoy</div><div class="kanban-kpi-val" id="kpiNuevosHoy">—</div></div>
+            <div class="kanban-kpi"><div class="kanban-kpi-label">Aprobados</div><div class="kanban-kpi-val" id="kpiAprobados">—</div></div>
+            <div class="kanban-kpi"><div class="kanban-kpi-label">Convertidos este mes</div><div class="kanban-kpi-val" id="kpiConvertidos">—</div></div>
+          </div>
+          <div class="kanban-toolbar">
+            <div class="search-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" class="form-control" id="searchKanban" placeholder="Buscar prospecto...">
+            </div>
+            <select class="form-control" id="filtroCarreraKanban" style="width:auto">
+              <option value="">Todas las carreras</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" id="btnRefrescarKanban">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Actualizar
+            </button>
+          </div>
+          <div class="kanban-board" id="kanbanBoard"></div>
+        </div>
+
+        <!-- ── LISTA ────────────────────────────────────────── -->
+        <div class="tab-pane" id="tab-lista">
+          <div class="lista-toolbar">
+            <div class="search-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" class="form-control" id="searchLista" placeholder="Buscar por nombre, CI, teléfono...">
+            </div>
+            <select class="form-control" id="filtroEtapaLista" style="width:auto">
+              <option value="">Todas las etapas</option>
+              <option value="Nuevo">Nuevo</option>
+              <option value="Contactado">Contactado</option>
+              <option value="Formulario enviado">Formulario enviado</option>
+              <option value="Documentos recibidos">Documentos recibidos</option>
+              <option value="Documentos verificados">Documentos verificados</option>
+              <option value="Aprobado">Aprobado</option>
+            </select>
+            <select class="form-control" id="filtroCarreraLista" style="width:auto">
+              <option value="">Todas las carreras</option>
+            </select>
+            <span id="listaTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
+          </div>
+          <div class="lista-content">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr><th>#</th><th>Nombre</th><th>CI</th><th>WhatsApp</th><th>Carrera interés</th><th>Canal</th><th>Etapa</th><th>Primer contacto</th><th>Último contacto</th><th></th></tr>
+                </thead>
+                <tbody id="tbodyLista">
+                  <tr><td colspan="10" class="text-center" style="padding:40px;color:var(--txt-muted)">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── CONVERTIDOS ──────────────────────────────────── -->
+        <div class="tab-pane" id="tab-convertidos">
+          <div class="lista-toolbar">
+            <div class="search-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" class="form-control" id="searchConv" placeholder="Buscar...">
+            </div>
+            <span id="convTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
+          </div>
+          <div class="lista-content">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr><th>#</th><th>Nombre</th><th>CI</th><th>Carrera</th><th>Canal origen</th><th>Fecha conversión</th><th></th></tr>
+                </thead>
+                <tbody id="tbodyConvertidos">
+                  <tr><td colspan="7" class="text-center" style="padding:40px;color:var(--txt-muted)">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Drawer prospecto ──────────────────────────────────────── -->
+<div class="drawer-overlay" id="drawerOverlay">
+  <div class="drawer">
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-title" id="drawerNombre">—</div>
+        <div style="font-size:.75rem;color:var(--txt-muted)" id="drawerMeta"></div>
+      </div>
+      <span class="badge" id="drawerEtapaBadge">—</span>
+      <button class="modal-close" onclick="cerrarDrawer()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-footer" id="drawerFooter"></div>
+  </div>
+</div>
+
+<!-- ── Modal nuevo prospecto ────────────────────────────────── -->
+<div class="modal-overlay" id="modalNuevoOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalNuevoTitle">Nuevo prospecto</span>
+      <button class="modal-close" onclick="cerrarModalNuevo()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nombres <span class="required">*</span></label><input type="text" class="form-control" id="fNombres"></div>
+        <div class="form-group"><label class="form-label">Apellidos <span class="required">*</span></label><input type="text" class="form-control" id="fApellidos"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">CI</label><input type="text" class="form-control" id="fCI" placeholder="Sin puntos"></div>
+        <div class="form-group"><label class="form-label">WhatsApp <span class="required">*</span></label><input type="text" class="form-control" id="fWA" placeholder="09xxxxxxxx"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Carrera de interés</label>
+          <select class="form-control" id="fCarrera"><option value="">Seleccionar...</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Canal origen</label>
+          <select class="form-control" id="fCanal">
+            <option value="WhatsApp">WhatsApp</option>
+            <option value="Web">Web</option>
+            <option value="Referido">Referido</option>
+            <option value="Presencial">Presencial</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Observaciones</label><textarea class="form-control" id="fObsNuevo" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModalNuevo()">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarProspecto">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { supabase, formatFechaHora, toast } from './assets/supabase.js';
+import { requireAuth } from './assets/auth.js';
+import { initSidebar } from './assets/sidebar.js';
+
+const sesion = requireAuth('crm');
+if (!sesion) throw new Error('Sin sesión');
+initSidebar('crm');
+
+document.getElementById('fechaHoy').textContent =
+  new Date().toLocaleDateString('es-PY',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+
+// ── Constantes ────────────────────────────────────────────────
+const ETAPAS = ['Nuevo','Contactado','Formulario enviado','Documentos recibidos','Documentos verificados','Aprobado'];
+const ETAPA_COLORS = {
+  'Nuevo':                  '#6366f1',
+  'Contactado':             '#0284c7',
+  'Formulario enviado':     '#d97706',
+  'Documentos recibidos':   '#e8651a',
+  'Documentos verificados': '#16a34a',
+  'Aprobado':               '#1a6b3c',
+};
+const CANAL_COLORS = { WhatsApp:'badge-success', Web:'badge-info', Referido:'badge-naranja', Presencial:'badge-muted', Otro:'badge-muted' };
+
+// ── Estado ────────────────────────────────────────────────────
+let prospectos  = [];
+let convertidos = [];
+let carreras    = [];
+let prospectoActivo = null;
+
+// ── Init ──────────────────────────────────────────────────────
+await Promise.all([cargarProspectos(), cargarConvertidos(), cargarCarreras()]);
+
+// ── Tabs ──────────────────────────────────────────────────────
+document.querySelectorAll('.crm-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.crm-tab,.tab-pane').forEach(el => el.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'lista')       renderLista();
+    if (btn.dataset.tab === 'convertidos') renderConvertidos();
+  });
+});
+
+// ── Cargar datos ──────────────────────────────────────────────
+async function cargarProspectos() {
+  const { data } = await supabase
+    .from('prospectos')
+    .select('*, carreras:carrera_interes_id(nombre)')
+    .not('etapa_crm','in','("Convertido","Perdido","Rechazado")')
+    .order('ultimo_contacto', { ascending: false });
+  prospectos = data || [];
+  renderKPIs();
+  renderKanban();
+  renderLista();
+}
+
+async function cargarConvertidos() {
+  const { data } = await supabase
+    .from('prospectos')
+    .select('*, carreras:carrera_interes_id(nombre)')
+    .eq('etapa_crm','Convertido')
+    .order('fecha_conversion', { ascending: false });
+  convertidos = data || [];
+  renderConvertidos();
+}
+
+async function cargarCarreras() {
+  const { data } = await supabase.from('carreras').select('id,nombre').eq('estado','Activa').order('nombre');
+  carreras = data || [];
+  ['filtroCarreraKanban','filtroCarreraLista','fCarrera'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const opt = carreras.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+    el.innerHTML = (id==='fCarrera'?'<option value="">Seleccionar...</option>':'<option value="">Todas las carreras</option>') + opt;
+  });
+}
+
+// ── KPIs ──────────────────────────────────────────────────────
+function renderKPIs() {
+  const hoy = new Date().toISOString().slice(0,10);
+  document.getElementById('kpiActivos').textContent    = prospectos.length;
+  document.getElementById('kpiNuevosHoy').textContent  = prospectos.filter(p=>p.primer_contacto?.slice(0,10)===hoy).length;
+  document.getElementById('kpiAprobados').textContent  = prospectos.filter(p=>p.etapa_crm==='Aprobado').length;
+  const primerMes = new Date(); primerMes.setDate(1);
+  document.getElementById('kpiConvertidos').textContent = convertidos.filter(p=>new Date(p.fecha_conversion)>=primerMes).length;
+}
+
+// ── Kanban ────────────────────────────────────────────────────
+function renderKanban(filtro='', carreraId='') {
+  const board = document.getElementById('kanbanBoard');
+  const items = prospectos.filter(p => {
+    const matchQ  = !filtro || `${p.nombres} ${p.apellidos} ${p.ci||''}`.toLowerCase().includes(filtro.toLowerCase());
+    const matchCr = !carreraId || String(p.carrera_interes_id) === String(carreraId);
+    return matchQ && matchCr;
+  });
+
+  board.innerHTML = ETAPAS.map(etapa => {
+    const col   = items.filter(p => p.etapa_crm === etapa);
+    const color = ETAPA_COLORS[etapa];
+    const cards = col.map(p => `
+      <div class="kanban-card" onclick="abrirDrawer(${p.id})">
+        <div class="kanban-card-name">${p.nombres||''} ${p.apellidos||''}</div>
+        <div class="kanban-card-ci">${p.ci ? 'CI: '+p.ci : p.telefono_whatsapp||'—'}</div>
+        ${p.carreras?.nombre ? `<div style="font-size:.7rem;color:var(--txt-muted);margin-top:3px">${p.carreras.nombre}</div>` : ''}
+        <div class="kanban-card-footer">
+          <span class="kanban-card-canal">${p.canal_origen||''}</span>
+          <span class="kanban-card-time">${tiempoRelativo(p.ultimo_contacto)}</span>
+        </div>
+      </div>`).join('');
+
+    return `<div class="kanban-col">
+      <div class="kanban-col-header">
+        <div class="kanban-col-dot" style="background:${color}"></div>
+        <div class="kanban-col-name">${etapa}</div>
+        <span class="kanban-col-cnt">${col.length}</span>
+      </div>
+      <div class="kanban-col-body">${cards || `<div style="text-align:center;padding:20px;color:var(--txt-muted);font-size:.75rem">Sin prospectos</div>`}</div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('searchKanban').addEventListener('input', e => {
+  renderKanban(e.target.value, document.getElementById('filtroCarreraKanban').value);
+});
+document.getElementById('filtroCarreraKanban').addEventListener('change', e => {
+  renderKanban(document.getElementById('searchKanban').value, e.target.value);
+});
+document.getElementById('btnRefrescarKanban').addEventListener('click', cargarProspectos);
+
+// ── Lista ─────────────────────────────────────────────────────
+function renderLista() {
+  const q      = document.getElementById('searchLista')?.value?.toLowerCase() || '';
+  const etapa  = document.getElementById('filtroEtapaLista')?.value || '';
+  const carrera= document.getElementById('filtroCarreraLista')?.value || '';
+
+  let items = prospectos;
+  if (q)      items = items.filter(p => `${p.nombres} ${p.apellidos} ${p.ci||''} ${p.telefono_whatsapp||''}`.toLowerCase().includes(q));
+  if (etapa)  items = items.filter(p => p.etapa_crm === etapa);
+  if (carrera)items = items.filter(p => String(p.carrera_interes_id) === carrera);
+
+  document.getElementById('listaTotal').textContent = `${items.length} registros`;
+
+  const ETAPA_BADGE = {
+    'Nuevo':'badge-info','Contactado':'badge-muted','Formulario enviado':'badge-warning',
+    'Documentos recibidos':'badge-naranja','Documentos verificados':'badge-naranja',
+    'Aprobado':'badge-verde',
+  };
+
+  const tbody = document.getElementById('tbodyLista');
+  tbody.innerHTML = items.map((p,i) => `<tr style="cursor:pointer" onclick="abrirDrawer(${p.id})">
+    <td class="td-mono">${i+1}</td>
+    <td class="td-bold">${p.nombres||''} ${p.apellidos||''}</td>
+    <td class="td-mono">${p.ci||'—'}</td>
+    <td>${p.telefono_whatsapp||'—'}</td>
+    <td>${p.carreras?.nombre||'—'}</td>
+    <td><span class="badge ${CANAL_COLORS[p.canal_origen]||'badge-muted'}" style="font-size:.65rem">${p.canal_origen||'—'}</span></td>
+    <td><span class="badge ${ETAPA_BADGE[p.etapa_crm]||'badge-muted'}" style="font-size:.65rem">${p.etapa_crm}</span></td>
+    <td class="td-mono" style="font-size:.75rem">${formatFechaHora(p.primer_contacto)}</td>
+    <td class="td-mono" style="font-size:.75rem">${formatFechaHora(p.ultimo_contacto)}</td>
+    <td><button class="btn btn-icon" onclick="event.stopPropagation();abrirDrawer(${p.id})">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button></td>
+  </tr>`).join('') || `<tr><td colspan="10" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin resultados</td></tr>`;
+}
+
+['searchLista','filtroEtapaLista','filtroCarreraLista'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', renderLista);
+  document.getElementById(id)?.addEventListener('change', renderLista);
+});
+
+// ── Convertidos ───────────────────────────────────────────────
+function renderConvertidos() {
+  const q = document.getElementById('searchConv')?.value?.toLowerCase() || '';
+  const items = q ? convertidos.filter(p => `${p.nombres} ${p.apellidos} ${p.ci||''}`.toLowerCase().includes(q)) : convertidos;
+  document.getElementById('convTotal').textContent = `${items.length} registros`;
+  document.getElementById('tbodyConvertidos').innerHTML = items.map((p,i) => `<tr>
+    <td class="td-mono">${i+1}</td>
+    <td class="td-bold">${p.nombres||''} ${p.apellidos||''}</td>
+    <td class="td-mono">${p.ci||'—'}</td>
+    <td>${p.carreras?.nombre||'—'}</td>
+    <td><span class="badge ${CANAL_COLORS[p.canal_origen]||'badge-muted'}" style="font-size:.65rem">${p.canal_origen||'—'}</span></td>
+    <td class="td-mono" style="font-size:.75rem">${formatFechaHora(p.fecha_conversion)}</td>
+    <td><a href="admision.html" class="btn btn-ghost btn-sm">Ver expediente →</a></td>
+  </tr>`).join('') || `<tr><td colspan="7" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin convertidos</td></tr>`;
+}
+document.getElementById('searchConv')?.addEventListener('input', renderConvertidos);
+
+// ── Drawer ────────────────────────────────────────────────────
+window.abrirDrawer = async (id) => {
+  const p = [...prospectos,...convertidos].find(x=>x.id===id);
+  if (!p) return;
+  prospectoActivo = p;
+
+  document.getElementById('drawerNombre').textContent  = `${p.nombres||''} ${p.apellidos||''}`;
+  document.getElementById('drawerMeta').textContent    = `${p.canal_origen||''} • ${formatFechaHora(p.primer_contacto)}`;
+  const bdg = document.getElementById('drawerEtapaBadge');
+  bdg.className   = 'badge badge-verde';
+  bdg.textContent = p.etapa_crm;
+
+  // Interacciones
+  const { data: ints } = await supabase
+    .from('interacciones_crm')
+    .select('*, usuarios_sistema(nombre)')
+    .eq('prospecto_id', id)
+    .order('fecha', { ascending: false })
+    .limit(20);
+
+  const CANAL_DOT = { WhatsApp:'#25d366', Email:'#0284c7', Presencial:'#1a6b3c', Llamada:'#d97706', Sistema:'#6366f1' };
+
+  let html = `
+    <!-- Info básica -->
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px">
+      <div class="form-row" style="gap:10px">
+        <div><div style="font-size:.68rem;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.05em">WhatsApp</div><div style="font-size:.85rem;font-weight:600">${p.telefono_whatsapp||'—'}</div></div>
+        <div><div style="font-size:.68rem;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.05em">CI</div><div style="font-size:.85rem;font-weight:600">${p.ci||'—'}</div></div>
+        <div><div style="font-size:.68rem;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.05em">Email</div><div style="font-size:.85rem;font-weight:600">${p.email||'—'}</div></div>
+      </div>
+      ${p.carreras?.nombre?`<div style="margin-top:8px;font-size:.78rem;color:var(--txt-muted)">Carrera interés: <strong style="color:var(--verde)">${p.carreras.nombre}</strong></div>`:''}
+    </div>
+
+    <!-- Cambiar etapa -->
+    ${p.etapa_crm !== 'Convertido' ? `<div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Mover a etapa</div>
+      <div class="etapa-selector">${ETAPAS.map(e=>`<span class="etapa-opt ${e===p.etapa_crm?'active':''}" onclick="cambiarEtapa(${id},'${e}')">${e}</span>`).join('')}</div>
+    </div>` : ''}
+
+    <!-- Agregar nota -->
+    <div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Agregar nota / interacción</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <select class="form-control" id="intCanal" style="width:auto">
+          <option value="WhatsApp">WhatsApp</option>
+          <option value="Llamada">Llamada</option>
+          <option value="Presencial">Presencial</option>
+          <option value="Email">Email</option>
+          <option value="Sistema">Sistema</option>
+        </select>
+        <select class="form-control" id="intTipo" style="width:auto">
+          <option value="Nota manual">Nota manual</option>
+          <option value="Mensaje entrante">Mensaje entrante</option>
+          <option value="Mensaje saliente">Mensaje saliente</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px">
+        <input type="text" class="form-control" id="intMensaje" placeholder="Resumen de la interacción...">
+        <button class="btn btn-primary btn-sm" onclick="guardarInteraccion(${id})">Guardar</button>
+      </div>
+    </div>
+
+    <!-- Historial -->
+    <div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Historial (${ints?.length||0})</div>
+      <div>`;
+
+  if (ints?.length) {
+    html += ints.map(i => `
+      <div class="int-item">
+        <div class="int-canal-dot" style="background:${CANAL_DOT[i.canal]||'#ccc'}20;color:${CANAL_DOT[i.canal]||'#888'}">${i.canal?.charAt(0)||'?'}</div>
+        <div class="int-body">
+          <div class="int-tipo">${i.tipo} ${i.canal !== 'Sistema' ? '· '+i.canal : ''}</div>
+          ${i.mensaje_resumen?`<div class="int-msg">${i.mensaje_resumen}</div>`:''}
+          ${i.etapa_anterior?`<div class="int-msg" style="color:var(--verde)">Etapa: ${i.etapa_anterior} → ${i.etapa_nueva}</div>`:''}
+          <div class="int-fecha">${formatFechaHora(i.fecha)} ${i.usuarios_sistema?'· '+i.usuarios_sistema.nombre:''}</div>
+        </div>
+      </div>`).join('');
+  } else {
+    html += `<div style="text-align:center;padding:20px;color:var(--txt-muted);font-size:.8rem">Sin interacciones registradas</div>`;
+  }
+
+  html += `</div></div>`;
+
+  document.getElementById('drawerBody').innerHTML = html;
+
+  // Footer
+  let footer = '';
+  if (p.telefono_whatsapp) {
+    footer += `<button class="btn btn-ghost btn-sm" onclick="abrirWA(${id})">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>
+      WhatsApp
+    </button>`;
+  }
+  if (p.etapa_crm === 'Aprobado') {
+    footer += `<button class="btn btn-primary btn-sm" onclick="convertir(${id})">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      Convertir a alumno
+    </button>`;
+  }
+
+  document.getElementById('drawerFooter').innerHTML = footer;
+  document.getElementById('drawerOverlay').classList.add('open');
+};
+
+window.cambiarEtapa = async (id, nuevaEtapa) => {
+  const p = prospectos.find(x=>x.id===id);
+  if (!p) return;
+
+  await supabase.from('prospectos').update({
+    etapa_crm: nuevaEtapa,
+    ultimo_contacto: new Date().toISOString()
+  }).eq('id', id);
+
+  await supabase.from('interacciones_crm').insert({
+    prospecto_id: id, canal: 'Sistema', tipo: 'Cambio de etapa',
+    etapa_anterior: p.etapa_crm, etapa_nueva: nuevaEtapa,
+    usuario_id: sesion.id, automatico: false
+  });
+
+  toast(`Etapa actualizada: ${nuevaEtapa}`, 'success');
+  cerrarDrawer();
+  await cargarProspectos();
+};
+
+window.guardarInteraccion = async (id) => {
+  const canal   = document.getElementById('intCanal').value;
+  const tipo    = document.getElementById('intTipo').value;
+  const mensaje = document.getElementById('intMensaje').value.trim();
+  if (!mensaje) { toast('Escribí un resumen','warning'); return; }
+
+  await supabase.from('interacciones_crm').insert({
+    prospecto_id: id, canal, tipo, mensaje_resumen: mensaje,
+    usuario_id: sesion.id, automatico: false
+  });
+  await supabase.from('prospectos').update({ ultimo_contacto: new Date().toISOString() }).eq('id', id);
+
+  toast('Interacción registrada','success');
+  await abrirDrawer(id); // refrescar
+};
+
+window.abrirWA = (id) => {
+  const p = [...prospectos,...convertidos].find(x=>x.id===id);
+  if (!p?.telefono_whatsapp) return;
+  const num = p.telefono_whatsapp.replace(/\D/g,'');
+  window.open(`https://wa.me/595${num}`, '_blank');
+};
+
+window.convertir = async (id) => {
+  if (!confirm('¿Marcar este prospecto como convertido? Deberás crear su inscripción en el módulo de Admisión.')) return;
+  await supabase.from('prospectos').update({
+    etapa_crm: 'Convertido',
+    fecha_conversion: new Date().toISOString()
+  }).eq('id', id);
+  toast('Prospecto marcado como convertido. Ir a Admisión para completar la inscripción.','success');
+  cerrarDrawer();
+  await Promise.all([cargarProspectos(), cargarConvertidos()]);
+};
+
+// ── Nuevo prospecto ───────────────────────────────────────────
+document.getElementById('btnNuevoProspecto').addEventListener('click', () => {
+  document.getElementById('modalNuevoOverlay').classList.add('open');
+});
+window.cerrarModalNuevo = () => document.getElementById('modalNuevoOverlay').classList.remove('open');
+
+document.getElementById('btnGuardarProspecto').addEventListener('click', async () => {
+  const nombres   = document.getElementById('fNombres').value.trim();
+  const apellidos = document.getElementById('fApellidos').value.trim();
+  const wa        = document.getElementById('fWA').value.trim();
+  if (!nombres || !apellidos || !wa) { toast('Completá nombre, apellido y WhatsApp','warning'); return; }
+
+  const { error } = await supabase.from('prospectos').insert({
+    nombres, apellidos,
+    ci:                  document.getElementById('fCI').value.trim() || null,
+    telefono_whatsapp:   wa,
+    carrera_interes_id:  Number(document.getElementById('fCarrera').value) || null,
+    canal_origen:        document.getElementById('fCanal').value,
+    observaciones:       document.getElementById('fObsNuevo').value.trim() || null,
+    etapa_crm:           'Nuevo',
+  });
+
+  if (error) { toast('Error: '+error.message,'error'); return; }
+  toast('Prospecto creado','success');
+  cerrarModalNuevo();
+  await cargarProspectos();
+});
+
+// ── Helpers ───────────────────────────────────────────────────
+function cerrarDrawer() { document.getElementById('drawerOverlay').classList.remove('open'); }
+window.cerrarDrawer = cerrarDrawer;
+document.getElementById('drawerOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) cerrarDrawer(); });
+
+function tiempoRelativo(iso) {
+  if (!iso) return '—';
+  const diff = Date.now() - new Date(iso).getTime();
+  const min  = Math.floor(diff/60000);
+  if (min < 1)  return 'ahora';
+  if (min < 60) return `hace ${min}m`;
+  const h = Math.floor(min/60);
+  if (h < 24)   return `hace ${h}h`;
+  const d = Math.floor(h/24);
+  return `hace ${d}d`;
+}
+</script>
+</body>
+</html>

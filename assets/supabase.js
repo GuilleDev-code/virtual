@@ -4,11 +4,9 @@
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-// ⚠ Reemplazar con los valores reales del proyecto Supabase
-const SUPABASE_URL  = 'https://TU_PROYECTO.supabase.co';
-const SUPABASE_ANON = 'TU_ANON_KEY';
+import { ENV } from '../config.js'; // Importamos las llaves desde la raíz
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+export const supabase = createClient(ENV.SUPABASE_URL, ENV.SUPABASE_ANON);
 
 // ------------------------------------------------------------
 // Helpers de consulta genéricos
