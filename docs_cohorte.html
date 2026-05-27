@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentos Cohorte — UPG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+    :root {
+      --verde:        #1a6b3c;
+      --verde-light:  #e8f5ef;
+      --naranja:      #e8651a;
+      --surface:      #ffffff;
+      --surface-2:    #f7f8f9;
+      --border:       #e2e5e9;
+      --txt:          #111827;
+      --txt-secondary:#4b5563;
+      --txt-muted:    #9ca3af;
+      --success:      #16a34a;
+      --warning:      #d97706;
+      --danger:       #dc2626;
+      --radius:       8px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--surface-2);
+      color: var(--txt);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .page-header {
+      background: var(--verde);
+      color: #fff;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+    .page-header .logo {
+      font-size: .8rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      opacity: .85;
+      white-space: nowrap;
+    }
+    .page-header .sep { width: 1px; height: 20px; background: rgba(255,255,255,.3); }
+    .page-header .titulo { font-size: .95rem; font-weight: 600; }
+    .page-header .badge-pub {
+      margin-left: auto;
+      background: rgba(255,255,255,.2);
+      border: 1px solid rgba(255,255,255,.35);
+      color: #fff;
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+
+    /* Main */
+    .main { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+
+    /* Info banner */
+    .info-banner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .info-banner .item { font-size: .82rem; }
+    .info-banner .item strong { color: var(--verde); }
+    .info-banner .sep-v { width: 1px; height: 20px; background: var(--border); }
+    .info-banner .resumen { margin-left: auto; display: flex; gap: 12px; }
+    .info-banner .stat { text-align: center; }
+    .info-banner .stat .val { font-size: 1.2rem; font-weight: 700; color: var(--verde); }
+    .info-banner .stat .lbl { font-size: .65rem; color: var(--txt-muted); text-transform: uppercase; letter-spacing:.04em; }
+
+    /* Tabla */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .78rem; background: var(--surface); border-radius: var(--radius); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    thead th {
+      background: var(--verde);
+      color: #fff;
+      font-size: .66rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      padding: 10px 12px;
+      white-space: nowrap;
+      text-align: left;
+    }
+    thead th.centro { text-align: center; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--verde-light); }
+    tbody tr.completo { background: rgba(22,163,74,.04); }
+    td { padding: 9px 12px; vertical-align: middle; }
+    td.centro { text-align: center; }
+
+    /* Celda de documento */
+    .doc-chip {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      min-width: 46px;
+    }
+    .doc-chip .icono {
+      width: 26px; height: 26px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem;
+    }
+    .doc-chip .icono.ok  { background: #dcfce7; color: #16a34a; }
+    .doc-chip .icono.pend { background: #fef3c7; color: #d97706; }
+    .doc-chip .icono.mal  { background: #fee2e2; color: #dc2626; }
+    .doc-chip .icono.nd  { background: #f3f4f6; color: #d1d5db; }
+    .doc-chip .lbl { font-size: .58rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+    .doc-chip .lbl.ok   { color: #16a34a; }
+    .doc-chip .lbl.pend { color: #d97706; }
+    .doc-chip .lbl.mal  { color: #dc2626; }
+    .doc-chip .lbl.nd   { color: #d1d5db; }
+
+    /* Badge estado alumno */
+    .badge {
+      display: inline-block;
+      font-size: .63rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .badge-ok   { background: #dcfce7; color: #16a34a; }
+    .badge-pend { background: #fef3c7; color: #b45309; }
+    .badge-mal  { background: #fee2e2; color: #dc2626; }
+    .badge-hab  { background: var(--verde); color: #fff; }
+
+    /* Leyenda */
+    .leyenda {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: .72rem;
+      color: var(--txt-muted);
+    }
+    .leyenda .item { display: flex; align-items: center; gap: 5px; }
+
+    /* Loading / error */
+    .estado-msg {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--txt-muted);
+    }
+    .estado-msg .icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .estado-msg h2 { font-size: 1rem; font-weight: 600; color: var(--txt-secondary); margin-bottom:6px; }
+    .estado-msg p  { font-size: .83rem; }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: .72rem;
+      color: var(--txt-muted);
+      border-top: 1px solid var(--border);
+      margin-top: 32px;
+    }
+
+    @media (max-width:600px) {
+      .page-header .titulo { font-size: .82rem; }
+      .info-banner .resumen { width: 100%; justify-content: space-around; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="page-header">
+  <div class="logo">UPG · Educación a Distancia</div>
+  <div class="sep"></div>
+  <div class="titulo" id="headerTitulo">Documentos de Cohorte</div>
+  <span class="badge-pub">Vista pública</span>
+</header>
+
+<div class="main">
+
+  <div id="contenido">
+    <div class="estado-msg">
+      <div class="icon">⏳</div>
+      <h2>Cargando información...</h2>
+      <p>Por favor esperá un momento.</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Sistema UPG · Educación a Distancia · Vista de solo lectura generada el <span id="fechaGen"></span>
+</footer>
+
+<script type="module">
+// ── Config Supabase (igual que supabase.js del sistema) ──────
+// IMPORTANTE: usar solo anon key (solo lectura pública es suficiente)
+const SUPABASE_URL = 'https://dhamkbwoaswsxckudlmd.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_N5wBvz9PTzz4sSCemLyCnQ_XiFGmKhk';
+
+async function sb(path, params='') {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}${params}`, {
+    headers: {
+      'apikey': SUPABASE_ANON,
+      'Authorization': `Bearer ${SUPABASE_ANON}`,
+      'Accept': 'application/json'
+    }
+  });
+  if (!r.ok) throw new Error(`Supabase error ${r.status}`);
+  return r.json();
+}
+
+// ── Tipos de doc esperados ────────────────────────────────────
+const TIPOS_DOC = [
+  { key: 'cedula',               label: 'CI' },
+  { key: 'titulo',               label: 'Título' },
+  { key: 'certificado_estudio',  label: 'Cert.' },
+  { key: 'solicitud_inscripcion',label: 'Solicitud' },
+  { key: 'contrato',             label: 'Contrato' },
+  { key: 'foto_carnet',          label: 'Foto' },
+];
+
+// ── Leer params de URL ────────────────────────────────────────
+const params = new URLSearchParams(location.search);
+const carreraId = params.get('carrera_id');
+const cohorteId = params.get('cohorte_id');
+
+document.getElementById('fechaGen').textContent =
+  new Date().toLocaleDateString('es-PY', {day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+async function cargar() {
+  if (!carreraId || !cohorteId) {
+    mostrarError('Parámetros faltantes', 'El link no incluye carrera y cohorte. Generá el link desde el sistema de admisión.');
+    return;
+  }
+
+  try {
+    // Datos de carrera y cohorte
+    const [carreras, cohortes] = await Promise.all([
+      sb('carreras', `?id=eq.${carreraId}&select=nombre`),
+      sb('cohortes', `?id=eq.${cohorteId}&select=nro_cohorte,anho_inicio`)
+    ]);
+
+    const carrera = carreras[0];
+    const cohorte = cohortes[0];
+
+    if (!carrera || !cohorte) { mostrarError('Cohorte no encontrada', 'Verificá el link o pedí uno nuevo.'); return; }
+
+    document.getElementById('headerTitulo').textContent = `${carrera.nombre} · ${cohorte.nro_cohorte}ª Cohorte ${cohorte.anho_inicio}`;
+    document.title = `Documentos — ${carrera.nombre} ${cohorte.nro_cohorte}ª Cohorte ${cohorte.anho_inicio}`;
+
+    // Solicitudes + prospectos + docs de esta cohorte
+    const solicitudes = await sb(
+      'solicitudes_admision',
+      `?cohorte_id=eq.${cohorteId}&select=id,estado,prospectos(nombres,apellidos,ci),documentos_admision(tipo_documento,entregado_fisico)&order=prospectos(apellidos).asc`
+    );
+
+    if (!solicitudes.length) {
+      mostrarError('Sin inscriptos', 'No hay solicitudes registradas para esta cohorte todavía.');
+      return;
+    }
+
+    // Stats
+    const total = solicitudes.length;
+    const completos = solicitudes.filter(s =>
+      TIPOS_DOC.every(td => {
+        const d = (s.documentos_admision||[]).find(x=>x.tipo_documento===td.key);
+        return d && d.estado_verificacion === 'Verificado';
+      })
+    ).length;
+    const habilitados = solicitudes.filter(s => s.estado === 'Aprobada').length;
+    const pendientes  = solicitudes.filter(s => {
+      const docs = s.documentos_admision || [];
+      return docs.some(d => d.estado_verificacion === 'Pendiente');
+    }).length;
+
+    // Generar filas
+    const filas = solicitudes.map((s, i) => {
+      const p = s.prospectos;
+      const docs = s.documentos_admision || [];
+      const habilitado = s.estado === 'Aprobada';
+
+      const celdas = TIPOS_DOC.map(td => {
+        const doc = docs.find(d => d.tipo_documento === td.key);
+        let clase = 'nd', texto = '—';
+        if (doc) {
+          if (doc.estado_verificacion === 'Verificado') { clase='ok'; texto='✓'; }
+          else if (doc.estado_verificacion === 'Rechazado') { clase='mal'; texto='✕'; }
+          else { clase='pend'; texto='●'; }
+        }
+        return `<td class="centro">
+          <div class="doc-chip">
+            <div class="icono ${clase}">${texto}</div>
+            <div class="lbl ${clase}">${td.label}</div>
+          </div>
+        </td>`;
+      }).join('');
+
+      // Calcular estado general del alumno
+      const todosOk = TIPOS_DOC.every(td => {
+        const d = docs.find(x=>x.tipo_documento===td.key);
+        return d && d.estado_verificacion === 'Verificado';
+      });
+      const hayRechazado = docs.some(d => d.estado_verificacion === 'Rechazado');
+      let estadoBadge = '';
+      if (habilitado) estadoBadge = '<span class="badge badge-hab">Habilitado</span>';
+      else if (hayRechazado) estadoBadge = '<span class="badge badge-mal">Con obs.</span>';
+      else if (todosOk) estadoBadge = '<span class="badge badge-ok">Listo</span>';
+      else estadoBadge = '<span class="badge badge-pend">Pendiente</span>';
+
+      return `<tr class="${habilitado?'completo':''}">
+        <td style="font-size:.7rem;color:var(--txt-muted)">${i+1}</td>
+        <td style="font-weight:600;white-space:nowrap">${p?.apellidos||''}, ${p?.nombres||''}</td>
+        <td style="font-size:.76rem">${p?.ci||'—'}</td>
+        ${celdas}
+        <td class="centro">${estadoBadge}</td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('contenido').innerHTML = `
+      <div class="info-banner">
+        <div class="item">Carrera: <strong>${carrera.nombre}</strong></div>
+        <div class="sep-v"></div>
+        <div class="item">Cohorte: <strong>${cohorte.nro_cohorte}ª · ${cohorte.anho_inicio}</strong></div>
+        <div class="resumen">
+          <div class="stat"><div class="val">${total}</div><div class="lbl">Inscriptos</div></div>
+          <div class="stat"><div class="val" style="color:var(--success)">${completos}</div><div class="lbl">Docs OK</div></div>
+          <div class="stat"><div class="val" style="color:var(--warning)">${pendientes}</div><div class="lbl">Pendientes</div></div>
+          <div class="stat"><div class="val">${habilitados}</div><div class="lbl">Habilitados</div></div>
+        </div>
+      </div>
+
+      <div class="leyenda">
+        <div class="item"><div class="icono ok" style="width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;background:#dcfce7;color:#16a34a">✓</div> Verificado</div>
+        <div class="item"><div class="icono pend" style="width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;background:#fef3c7;color:#d97706">●</div> Pendiente</div>
+        <div class="item"><div class="icono mal" style="width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;background:#fee2e2;color:#dc2626">✕</div> Rechazado</div>
+        <div class="item"><div class="icono nd" style="width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;background:#f3f4f6;color:#d1d5db">—</div> Sin documento</div>
+        <span style="margin-left:auto;font-size:.7rem">Actualizado: ${new Date().toLocaleTimeString('es-PY')}</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Apellido, Nombre</th>
+              <th>CI</th>
+              ${TIPOS_DOC.map(td=>`<th class="centro">${td.label}</th>`).join('')}
+              <th class="centro">Estado</th>
+            </tr>
+          </thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+    `;
+
+  } catch(err) {
+    mostrarError('Error al cargar', err.message);
+  }
+}
+
+function mostrarError(titulo, detalle) {
+  document.getElementById('contenido').innerHTML = `
+    <div class="estado-msg">
+      <div class="icon">⚠️</div>
+      <h2>${titulo}</h2>
+      <p>${detalle}</p>
+    </div>`;
+}
+
+cargar();
+</script>
+</body>
+</html>

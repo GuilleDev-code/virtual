@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración — Sistema UPG</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    .cfg-wrap  { display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h)); overflow:hidden; }
+    .cfg-tabs  { display:flex; padding:0 24px; background:var(--surface); border-bottom:2px solid var(--border); flex-shrink:0; overflow-x:auto; }
+    .cfg-tab   { padding:12px 18px; font-size:.86rem; font-weight:500; color:var(--txt-secondary); border-bottom:2px solid transparent; margin-bottom:-2px; transition:all var(--transition); white-space:nowrap; }
+    .cfg-tab:hover  { color:var(--verde); }
+    .cfg-tab.active { color:var(--verde); border-bottom-color:var(--verde); font-weight:600; }
+    .cfg-content { flex:1; overflow-y:auto; padding:20px 24px; }
+    .tab-section { display:none; }
+    .tab-section.active { display:block; }
+    .toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+
+    /* Cards de configuración */
+    .cfg-section-title { font-size:.78rem; font-weight:700; color:var(--txt-muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:12px; margin-top:20px; }
+    .cfg-section-title:first-child { margin-top:0; }
+
+    /* Tabla inline editable */
+    .editable-cell input { border:none; background:transparent; width:100%; font-size:.85rem; font-family:var(--font); padding:0; }
+    .editable-cell input:focus { outline:1.5px solid var(--verde); border-radius:4px; padding:2px 4px; background:var(--surface); }
+
+    /* Precios grid */
+    .precios-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
+    .precio-card  { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; }
+    .precio-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .precio-card-title  { font-weight:700; font-size:.88rem; }
+    .precio-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border-light); font-size:.83rem; }
+    .precio-row:last-child { border-bottom:none; }
+    .precio-label { color:var(--txt-secondary); }
+    .precio-val   { font-family:var(--font-mono); font-weight:600; color:var(--verde); }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <aside id="sidebar" class="sidebar"></aside>
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">Configuración</div>
+    </header>
+
+    <div class="cfg-wrap">
+      <div class="cfg-tabs">
+        <button class="cfg-tab active" data-tab="carreras">Carreras</button>
+        <button class="cfg-tab" data-tab="cohortes">Cohortes</button>
+        <button class="cfg-tab" data-tab="precios">Precios y aranceles</button>
+        <button class="cfg-tab" data-tab="bancos">Cuentas bancarias</button>
+        <button class="cfg-tab" data-tab="usuarios">Usuarios del sistema</button>
+      </div>
+
+      <div class="cfg-content">
+
+        <!-- ── CARRERAS ────────────────────────────────────── -->
+        <div class="tab-section active" id="tab-carreras">
+          <div class="toolbar">
+            <span style="font-weight:600">Carreras</span>
+            <button class="btn btn-primary btn-sm" id="btnNuevaCarrera">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nueva carrera
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Código</th><th>Nombre</th><th>Duración</th><th>Tipo</th><th>Modalidad</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="tbodyCarreras"><tr><td colspan="7" class="text-center" style="padding:32px;color:var(--txt-muted)">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── COHORTES ───────────────────────────────────── -->
+        <div class="tab-section" id="tab-cohortes">
+          <div class="toolbar">
+            <select class="form-control" id="filtroCarreraCohorte" style="width:auto"><option value="">Todas las carreras</option></select>
+            <button class="btn btn-primary btn-sm" id="btnNuevaCohorte">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nueva cohorte
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Carrera</th><th>Nº Cohorte</th><th>Año inicio</th><th>Inicio clases</th><th>Cupo mínimo</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="tbodyCohortes"><tr><td colspan="7" class="text-center" style="padding:32px;color:var(--txt-muted)">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── PRECIOS ────────────────────────────────────── -->
+        <div class="tab-section" id="tab-precios">
+          <div class="toolbar">
+            <select class="form-control" id="filtroCarreraPrecios" style="width:auto"><option value="">Todas las carreras</option></select>
+            <select class="form-control" id="filtroAnhoPrecios" style="width:auto">
+              <option value="">Todos los años</option>
+              <option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option>
+            </select>
+            <button class="btn btn-primary btn-sm" id="btnNuevoPrecio">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nueva configuración
+            </button>
+          </div>
+          <div class="precios-grid" id="preciosGrid">
+            <div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--txt-muted)">Cargando...</div>
+          </div>
+        </div>
+
+        <!-- ── BANCOS ─────────────────────────────────────── -->
+        <div class="tab-section" id="tab-bancos">
+          <div class="toolbar">
+            <span style="font-weight:600">Cuentas bancarias</span>
+            <button class="btn btn-primary btn-sm" id="btnNuevoBanco">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nueva cuenta
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>ID</th><th>Entidad bancaria</th><th>Nº de cuenta / Alias</th><th></th></tr></thead>
+              <tbody id="tbodyBancos"><tr><td colspan="4" class="text-center" style="padding:32px;color:var(--txt-muted)">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── USUARIOS ───────────────────────────────────── -->
+        <div class="tab-section" id="tab-usuarios">
+          <div class="toolbar">
+            <span style="font-weight:600">Usuarios del sistema</span>
+            <button class="btn btn-primary btn-sm" id="btnNuevoUsuario">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nuevo usuario
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>#</th><th>Nombre de usuario</th><th>CI</th><th>Rol</th><th>Estado</th><th>Creado</th><th></th></tr></thead>
+              <tbody id="tbodyUsuarios"><tr><td colspan="7" class="text-center" style="padding:32px;color:var(--txt-muted)">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal genérico -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalGenerico">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">—</span>
+      <button class="modal-close" onclick="cerrarModal()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { supabase, formatGs, formatFechaHora, toast } from './assets/supabase.js';
+import { requireAuth } from './assets/auth.js';
+import { initSidebar } from './assets/sidebar.js';
+
+const sesion = requireAuth('configuracion');
+if (!sesion) throw new Error('Sin sesión');
+initSidebar('configuracion');
+
+let carreras=[], cohortes=[], precios=[], bancos=[], usuarios=[];
+let modalFn = null;
+
+// ── Tabs ──────────────────────────────────────────────────────
+document.querySelectorAll('.cfg-tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.cfg-tab,.tab-section').forEach(el=>el.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── Init ──────────────────────────────────────────────────────
+await Promise.all([cargarCarreras(),cargarBancos(),cargarUsuarios()]);
+
+// ── CARRERAS ──────────────────────────────────────────────────
+async function cargarCarreras(){
+  const { data }=await supabase.from('carreras').select('*').order('nombre');
+  carreras=data||[];
+  renderCarreras();
+  // poblar selects de otras tabs
+  const opts=carreras.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+  ['filtroCarreraCohorte','filtroCarreraPrecios'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.innerHTML='<option value="">Todas las carreras</option>'+opts;
+  });
+}
+
+function renderCarreras(){
+  const EST={Activa:'badge-success',Inactiva:'badge-muted'};
+  document.getElementById('tbodyCarreras').innerHTML=carreras.map(c=>`<tr>
+    <td class="td-mono">${c.codigo}</td>
+    <td class="td-bold">${c.nombre}</td>
+    <td>${c.duracion_anhos} años</td>
+    <td><span class="badge badge-muted">${c.tipo||'—'}</span></td>
+    <td>${c.modalidad}</td>
+    <td><span class="badge ${EST[c.estado]||'badge-muted'}">${c.estado}</span></td>
+    <td style="display:flex;gap:6px">
+      <button class="btn btn-icon" onclick="editarCarrera(${c.id})" title="Editar">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button class="btn btn-icon" onclick="toggleCarrera(${c.id},'${c.estado==='Activa'?'Inactiva':'Activa'}')" title="${c.estado==='Activa'?'Desactivar':'Activar'}">
+        ${c.estado==='Activa'
+          ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`
+          : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>`}
+      </button>
+    </td>
+  </tr>`).join('');
+}
+
+document.getElementById('btnNuevaCarrera').addEventListener('click',()=>abrirFormCarrera());
+
+function abrirFormCarrera(c=null){
+  document.getElementById('modalTitle').textContent=c?'Editar carrera':'Nueva carrera';
+  document.getElementById('modalBody').innerHTML=`
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Código <span class="required">*</span></label><input type="text" class="form-control" id="cCodigo" value="${c?.codigo||''}"></div>
+      <div class="form-group"><label class="form-label">Nombre <span class="required">*</span></label><input type="text" class="form-control" id="cNombre" value="${c?.nombre||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Duración (años)</label><input type="number" class="form-control" id="cDuracion" value="${c?.duracion_anhos||2}" min="1" max="6"></div>
+      <div class="form-group"><label class="form-label">Tipo</label>
+        <select class="form-control" id="cTipo">
+          <option value="Grado" ${c?.tipo==='Grado'?'selected':''}>Grado</option>
+          <option value="Posgrado" ${c?.tipo==='Posgrado'?'selected':''}>Posgrado</option>
+        </select></div>
+    </div>
+    <div class="form-group"><label class="form-label">Modalidad</label>
+      <select class="form-control" id="cModalidad">
+        <option value="Presencial" ${c?.modalidad==='Presencial'?'selected':''}>Presencial</option>
+        <option value="Virtual" ${c?.modalidad==='Virtual'?'selected':''}>Virtual</option>
+        <option value="Semipresencial" ${c?.modalidad==='Semipresencial'?'selected':''}>Semipresencial</option>
+      </select></div>`;
+
+  modalFn=async()=>{
+    const payload={
+      codigo:document.getElementById('cCodigo').value.trim(),
+      nombre:document.getElementById('cNombre').value.trim(),
+      duracion_anhos:Number(document.getElementById('cDuracion').value),
+      tipo:document.getElementById('cTipo').value,
+      modalidad:document.getElementById('cModalidad').value,
+      last_modified_by:sesion.id, last_modified_at:new Date().toISOString()
+    };
+    if(!payload.codigo||!payload.nombre){toast('Completá código y nombre','warning');return;}
+    const op=c
+      ? supabase.from('carreras').update(payload).eq('id',c.id)
+      : supabase.from('carreras').insert({...payload,estado:'Activa',created_by:sesion.id});
+    const {error}=await op;
+    if(error){toast('Error: '+error.message,'error');return;}
+    toast(c?'Carrera actualizada':'Carrera creada','success');
+    cerrarModal(); await cargarCarreras();
+  };
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+window.editarCarrera=(id)=>abrirFormCarrera(carreras.find(c=>c.id===id));
+window.toggleCarrera=async(id,est)=>{
+  await supabase.from('carreras').update({estado:est,last_modified_by:sesion.id}).eq('id',id);
+  toast(`Carrera ${est==='Activa'?'activada':'desactivada'}`,'success');
+  await cargarCarreras();
+};
+
+// ── COHORTES ──────────────────────────────────────────────────
+document.getElementById('filtroCarreraCohorte').addEventListener('change',cargarCohortes);
+
+async function cargarCohortes(){
+  const carreraId=document.getElementById('filtroCarreraCohorte').value;
+  let q=supabase.from('cohortes').select('*,carreras(nombre)').order('anho_inicio',{ascending:false});
+  if(carreraId) q=q.eq('carrera_id',carreraId);
+  const {data}=await q;
+  cohortes=data||[];
+  renderCohortes();
+}
+cargarCohortes();
+
+function renderCohortes(){
+  const EST={Activo:'badge-success',Cerrado:'badge-muted',Suspendido:'badge-warning'};
+  document.getElementById('tbodyCohortes').innerHTML=cohortes.map(c=>`<tr>
+    <td>${c.carreras?.nombre||'—'}</td>
+    <td class="td-mono">${c.nro_cohorte}ª</td>
+    <td class="td-mono">${c.anho_inicio}</td>
+    <td class="td-mono">${c.fecha_inicio_clases||'—'}</td>
+    <td>${c.cupo_minimo||'—'}</td>
+    <td><span class="badge ${EST[c.estado]||'badge-muted'}">${c.estado}</span></td>
+    <td><button class="btn btn-icon" onclick="editarCohorte(${c.id})" title="Editar">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </button></td>
+  </tr>`).join('')||`<tr><td colspan="7" class="text-center" style="padding:32px;color:var(--txt-muted)">Sin cohortes</td></tr>`;
+}
+
+document.getElementById('btnNuevaCohorte').addEventListener('click',()=>abrirFormCohorte());
+window.editarCohorte=(id)=>abrirFormCohorte(cohortes.find(c=>c.id===id));
+
+function abrirFormCohorte(c=null){
+  document.getElementById('modalTitle').textContent=c?'Editar cohorte':'Nueva cohorte';
+  const carreraOpts=carreras.map(cr=>`<option value="${cr.id}" ${c?.carrera_id===cr.id?'selected':''}>${cr.nombre}</option>`).join('');
+  document.getElementById('modalBody').innerHTML=`
+    <div class="form-group"><label class="form-label">Carrera <span class="required">*</span></label>
+      <select class="form-control" id="cohCarrera"><option value="">Seleccionar...</option>${carreraOpts}</select></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Nº Cohorte <span class="required">*</span></label><input type="number" class="form-control" id="cohNro" value="${c?.nro_cohorte||''}" min="1"></div>
+      <div class="form-group"><label class="form-label">Año inicio <span class="required">*</span></label><input type="number" class="form-control" id="cohAnho" value="${c?.anho_inicio||new Date().getFullYear()}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Inicio de clases</label><input type="date" class="form-control" id="cohInicio" value="${c?.fecha_inicio_clases||''}"></div>
+      <div class="form-group"><label class="form-label">Cupo mínimo</label><input type="number" class="form-control" id="cohCupo" value="${c?.cupo_minimo||''}"></div>
+    </div>
+    ${c?`<div class="form-group"><label class="form-label">Estado</label>
+      <select class="form-control" id="cohEst">
+        <option value="Activo" ${c.estado==='Activo'?'selected':''}>Activo</option>
+        <option value="Cerrado" ${c.estado==='Cerrado'?'selected':''}>Cerrado</option>
+        <option value="Suspendido" ${c.estado==='Suspendido'?'selected':''}>Suspendido</option>
+      </select></div>`:''}`;
+
+  modalFn=async()=>{
+    const carreraId=Number(document.getElementById('cohCarrera').value);
+    const nro=Number(document.getElementById('cohNro').value);
+    const anho=Number(document.getElementById('cohAnho').value);
+    if(!carreraId||!nro||!anho){toast('Completá los campos requeridos','warning');return;}
+    const payload={
+      carrera_id:carreraId, nro_cohorte:nro, anho_inicio:anho,
+      fecha_inicio_clases:document.getElementById('cohInicio').value||null,
+      cupo_minimo:Number(document.getElementById('cohCupo').value)||null,
+      last_modified_by:sesion.id, last_modified_at:new Date().toISOString(),
+      estado:c?document.getElementById('cohEst').value:'Activo'
+    };
+    const op=c
+      ? supabase.from('cohortes').update(payload).eq('id',c.id)
+      : supabase.from('cohortes').insert({...payload,created_by:sesion.id});
+    const {error}=await op;
+    if(error){toast('Error: '+error.message,'error');return;}
+    toast(c?'Cohorte actualizada':'Cohorte creada','success');
+    cerrarModal(); await cargarCohortes();
+  };
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+// ── PRECIOS ───────────────────────────────────────────────────
+['filtroCarreraPrecios','filtroAnhoPrecios'].forEach(id=>document.getElementById(id)?.addEventListener('change',cargarPrecios));
+cargarPrecios();
+
+async function cargarPrecios(){
+  const carreraId=document.getElementById('filtroCarreraPrecios').value;
+  const anho=document.getElementById('filtroAnhoPrecios').value;
+  let q=supabase.from('configuracion_precios').select('*,carreras(nombre)').order('anho_lectivo',{ascending:false}).order('anho_cursada');
+  if(carreraId) q=q.eq('carrera_id',carreraId);
+  if(anho)      q=q.eq('anho_lectivo',Number(anho));
+  const {data}=await q;
+  precios=data||[];
+  renderPrecios();
+}
+
+function renderPrecios(){
+  const grid=document.getElementById('preciosGrid');
+  if(!precios.length){grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--txt-muted)">Sin configuraciones de precio</div>`;return;}
+  grid.innerHTML=precios.map(p=>`
+    <div class="precio-card">
+      <div class="precio-card-header">
+        <div class="precio-card-title">${p.carreras?.nombre||'—'}</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="badge badge-muted" style="font-size:.65rem">${p.anho_cursada}º año</span>
+          <span class="badge badge-info" style="font-size:.65rem">${p.anho_lectivo}</span>
+          <button class="btn btn-icon" onclick="editarPrecio(${p.id})" title="Editar">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="precio-row"><span class="precio-label">Cuota base</span><span class="precio-val">${formatGs(p.monto_cuota_base)}</span></div>
+      <div class="precio-row"><span class="precio-label">Cant. cuotas</span><span class="precio-val">${p.cantidad_cuotas||'—'}</span></div>
+      <div class="precio-row"><span class="precio-label">Examen 1ª op.</span><span class="precio-val">${formatGs(p.monto_examen_1ra)}</span></div>
+      <div class="precio-row"><span class="precio-label">Examen 2ª op.</span><span class="precio-val">${formatGs(p.monto_examen_2da)}</span></div>
+      <div class="precio-row"><span class="precio-label">Examen 3ª op.</span><span class="precio-val">${formatGs(p.monto_examen_3ra)}</span></div>
+      <div class="precio-row"><span class="precio-label">Extraordinario</span><span class="precio-val">${formatGs(p.monto_examen_extraordinario)}</span></div>
+    </div>`).join('');
+}
+
+document.getElementById('btnNuevoPrecio').addEventListener('click',()=>abrirFormPrecio());
+window.editarPrecio=(id)=>abrirFormPrecio(precios.find(p=>p.id===id));
+
+function abrirFormPrecio(p=null){
+  document.getElementById('modalTitle').textContent=p?'Editar precios':'Nueva configuración de precios';
+  const carreraOpts=carreras.map(c=>`<option value="${c.id}" ${p?.carrera_id===c.id?'selected':''}>${c.nombre}</option>`).join('');
+  document.getElementById('modalBody').innerHTML=`
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Carrera <span class="required">*</span></label>
+        <select class="form-control" id="pCarrera"><option value="">Seleccionar...</option>${carreraOpts}</select></div>
+      <div class="form-group"><label class="form-label">Año cursada <span class="required">*</span></label>
+        <select class="form-control" id="pAnhoCursada">
+          ${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${p?.anho_cursada===n?'selected':''}>${n}º</option>`).join('')}
+        </select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Año lectivo <span class="required">*</span></label>
+        <input type="number" class="form-control" id="pAnhoLect" value="${p?.anho_lectivo||new Date().getFullYear()}" min="2020"></div>
+      <div class="form-group"><label class="form-label">Cantidad cuotas</label>
+        <input type="number" class="form-control" id="pCantCuotas" value="${p?.cantidad_cuotas||10}" min="1"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Cuota base <span class="required">*</span></label><input type="number" class="form-control" id="pCuotaBase" value="${p?.monto_cuota_base||''}"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Examen 1ª op.</label><input type="number" class="form-control" id="pEx1" value="${p?.monto_examen_1ra||''}"></div>
+      <div class="form-group"><label class="form-label">Examen 2ª op.</label><input type="number" class="form-control" id="pEx2" value="${p?.monto_examen_2da||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Examen 3ª op.</label><input type="number" class="form-control" id="pEx3" value="${p?.monto_examen_3ra||''}"></div>
+      <div class="form-group"><label class="form-label">Extraordinario</label><input type="number" class="form-control" id="pExExt" value="${p?.monto_examen_extraordinario||''}"></div>
+    </div>`;
+
+  modalFn=async()=>{
+    const carreraId=Number(document.getElementById('pCarrera').value);
+    const cuota=Number(document.getElementById('pCuotaBase').value);
+    if(!carreraId||!cuota){toast('Completá carrera y cuota base','warning');return;}
+    const payload={
+      carrera_id:carreraId,
+      anho_cursada:Number(document.getElementById('pAnhoCursada').value),
+      anho_lectivo:Number(document.getElementById('pAnhoLect').value),
+      cantidad_cuotas:Number(document.getElementById('pCantCuotas').value)||null,
+      monto_cuota_base:cuota,
+      monto_examen_1ra:Number(document.getElementById('pEx1').value)||0,
+      monto_examen_2da:Number(document.getElementById('pEx2').value)||0,
+      monto_examen_3ra:Number(document.getElementById('pEx3').value)||0,
+      monto_examen_extraordinario:Number(document.getElementById('pExExt').value)||0,
+      last_modified_by:sesion.id, last_modified_at:new Date().toISOString()
+    };
+    const op=p
+      ? supabase.from('configuracion_precios').update(payload).eq('id',p.id)
+      : supabase.from('configuracion_precios').insert({...payload,created_by:sesion.id});
+    const {error}=await op;
+    if(error){toast('Error: '+error.message,'error');return;}
+    toast(p?'Precios actualizados':'Configuración creada','success');
+    cerrarModal(); await cargarPrecios();
+  };
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+// ── BANCOS ────────────────────────────────────────────────────
+async function cargarBancos(){
+  const {data}=await supabase.from('cuentas_bancarias').select('*').order('entidad');
+  bancos=data||[];
+  renderBancos();
+}
+
+function renderBancos(){
+  document.getElementById('tbodyBancos').innerHTML=bancos.map(b=>`<tr>
+    <td class="td-mono">${b.id}</td>
+    <td class="td-bold">${b.entidad}</td>
+    <td class="td-mono">${b.nombre||'—'}</td>
+    <td style="display:flex;gap:6px">
+      <button class="btn btn-icon" onclick="editarBanco(${b.id})" title="Editar">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+    </td>
+  </tr>`).join('')||`<tr><td colspan="4" class="text-center" style="padding:32px;color:var(--txt-muted)">Sin cuentas</td></tr>`;
+}
+
+document.getElementById('btnNuevoBanco').addEventListener('click',()=>abrirFormBanco());
+window.editarBanco=(id)=>abrirFormBanco(bancos.find(b=>Number(b.id)===id));
+
+function abrirFormBanco(b=null){
+  document.getElementById('modalTitle').textContent=b?'Editar cuenta':'Nueva cuenta bancaria';
+  document.getElementById('modalBody').innerHTML=`
+    <div class="form-group"><label class="form-label">Entidad bancaria <span class="required">*</span></label>
+      <input type="text" class="form-control" id="bEntidad" value="${b?.entidad||''}" placeholder="Ej: Banco Continental"></div>
+    <div class="form-group"><label class="form-label">Nº de cuenta / Alias</label>
+      <input type="text" class="form-control" id="bNombre" value="${b?.nombre||''}" placeholder="Ej: 0000-0000-0000 o alias Tigo"></div>`;
+
+  modalFn=async()=>{
+    const entidad=document.getElementById('bEntidad').value.trim();
+    if(!entidad){toast('Ingresá la entidad','warning');return;}
+    const payload={entidad,nombre:document.getElementById('bNombre').value.trim()||null};
+    const op=b
+      ? supabase.from('cuentas_bancarias').update(payload).eq('id',b.id)
+      : supabase.from('cuentas_bancarias').insert(payload);
+    const {error}=await op;
+    if(error){toast('Error: '+error.message,'error');return;}
+    toast(b?'Cuenta actualizada':'Cuenta creada','success');
+    cerrarModal(); await cargarBancos();
+  };
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+// ── USUARIOS ──────────────────────────────────────────────────
+async function cargarUsuarios(){
+  const {data}=await supabase.from('usuarios_sistema').select('id,nombre,rol,activo,created_at,ci').order('nombre');
+  usuarios=data||[];
+  renderUsuarios();
+}
+
+function renderUsuarios(){
+  const ROLES={Admin:'badge-naranja',Academico:'badge-verde',Cajero:'badge-info',Docente:'badge-muted'};
+  document.getElementById('tbodyUsuarios').innerHTML=usuarios.map((u,i)=>`<tr>
+    <td class="td-mono">${i+1}</td>
+    <td class="td-bold">${u.nombre}</td>
+    <td class="td-mono">${u.ci||'—'}</td>
+    <td><span class="badge ${ROLES[u.rol]||'badge-muted'}">${u.rol}</span></td>
+    <td><span class="badge ${u.activo?'badge-success':'badge-muted'}">${u.activo?'Activo':'Inactivo'}</span></td>
+    <td class="td-mono" style="font-size:.75rem">${formatFechaHora(u.created_at)}</td>
+    <td style="display:flex;gap:6px">
+      <button class="btn btn-icon" onclick="editarUsuario(${u.id})" title="Editar">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      ${u.id!==sesion.id?`<button class="btn btn-icon" onclick="toggleUsuario(${u.id},${!u.activo})" title="${u.activo?'Desactivar':'Activar'}">
+        ${u.activo
+          ?`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`
+          :`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>`}
+      </button>`:''}
+    </td>
+  </tr>`).join('')||`<tr><td colspan="7" class="text-center" style="padding:32px;color:var(--txt-muted)">Sin usuarios</td></tr>`;
+}
+
+document.getElementById('btnNuevoUsuario').addEventListener('click',()=>abrirFormUsuario());
+window.editarUsuario=(id)=>abrirFormUsuario(usuarios.find(u=>u.id===id));
+
+function abrirFormUsuario(u=null){
+  document.getElementById('modalTitle').textContent=u?'Editar usuario':'Nuevo usuario';
+  document.getElementById('modalBody').innerHTML=`
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Nombre de usuario <span class="required">*</span></label>
+        <input type="text" class="form-control" id="uNombre" value="${u?.nombre||''}"></div>
+      <div class="form-group"><label class="form-label">CI</label>
+        <input type="text" class="form-control" id="uCI" value="${u?.ci||''}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Rol <span class="required">*</span></label>
+      <select class="form-control" id="uRol">
+        <option value="Admin" ${u?.rol==='Admin'?'selected':''}>Admin</option>
+        <option value="Academico" ${u?.rol==='Academico'?'selected':''}>Académico</option>
+        <option value="Cajero" ${u?.rol==='Cajero'?'selected':''}>Cajero</option>
+        <option value="Docente" ${u?.rol==='Docente'?'selected':''}>Docente</option>
+      </select></div>
+    ${!u?`<div class="form-group"><label class="form-label">Contraseña <span class="required">*</span></label>
+      <input type="password" class="form-control" id="uPass" placeholder="Mínimo 6 caracteres"></div>`:''}
+    ${u?`<div class="form-group"><label class="form-label">Nueva contraseña <span style="font-weight:400;color:var(--txt-muted)">(dejar vacío para no cambiar)</span></label>
+      <input type="password" class="form-control" id="uPass" placeholder="Nueva contraseña..."></div>`:''}`;
+
+  modalFn=async()=>{
+    const nombre=document.getElementById('uNombre').value.trim();
+    const rol   =document.getElementById('uRol').value;
+    const pass  =document.getElementById('uPass').value;
+    if(!nombre||!rol){toast('Completá nombre y rol','warning');return;}
+    if(!u && !pass){toast('La contraseña es requerida','warning');return;}
+
+    if(!u){
+      // Crear: la contraseña se hashea en Supabase via RPC
+      const {error}=await supabase.rpc('fn_crear_usuario',{
+        p_nombre:nombre, p_rol:rol,
+        p_password:pass, p_ci:document.getElementById('uCI').value||null
+      });
+      if(error){toast('Error: '+error.message,'error');return;}
+    } else {
+      const payload={nombre,rol,ci:document.getElementById('uCI').value||null};
+      const {error}=await supabase.from('usuarios_sistema').update(payload).eq('id',u.id);
+      if(error){toast('Error: '+error.message,'error');return;}
+      // Cambiar contraseña si se ingresó
+      if(pass){
+        const {error:err2}=await supabase.rpc('fn_cambiar_password',{p_usuario_id:u.id,p_nueva:pass});
+        if(err2){toast('Error cambiando contraseña: '+err2.message,'error');return;}
+      }
+    }
+    toast(u?'Usuario actualizado':'Usuario creado','success');
+    cerrarModal(); await cargarUsuarios();
+  };
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+window.toggleUsuario=async(id,activo)=>{
+  await supabase.from('usuarios_sistema').update({activo}).eq('id',id);
+  toast(activo?'Usuario activado':'Usuario desactivado','success');
+  await cargarUsuarios();
+};
+
+// ── Modal helpers ─────────────────────────────────────────────
+document.getElementById('btnGuardar').addEventListener('click',()=>{if(modalFn)modalFn();});
+function cerrarModal(){document.getElementById('modalOverlay').classList.remove('open');modalFn=null;}
+window.cerrarModal=cerrarModal;
+</script>
+</body>
+</html>

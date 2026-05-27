@@ -7,12 +7,11 @@
   <link rel="stylesheet" href="assets/styles.css">
   <style>
     .adm-wrap    { display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h)); overflow:hidden; }
-    .adm-tabs    { display:flex; padding:0 24px; background:var(--surface); border-bottom:2px solid var(--border); flex-shrink:0; }
+    .adm-tabs    { display:flex; padding:0 24px; background:var(--surface); border-bottom:2px solid var(--border); flex-shrink:0; overflow-x:auto; }
     .adm-tab     { padding:12px 18px; font-size:.86rem; font-weight:500; color:var(--txt-secondary); border-bottom:2px solid transparent; margin-bottom:-2px; transition:all var(--transition); white-space:nowrap; display:flex; align-items:center; gap:7px; }
     .adm-tab:hover  { color:var(--verde); }
     .adm-tab.active { color:var(--verde); border-bottom-color:var(--verde); font-weight:600; }
     .adm-tab .tc    { background:var(--naranja); color:#fff; font-size:.62rem; font-weight:700; padding:1px 6px; border-radius:999px; }
-
     .adm-content { flex:1; overflow-y:auto; padding:20px 24px; }
 
     /* Toolbar */
@@ -38,6 +37,65 @@
     .doc-icon svg { width:15px; height:15px; }
     .doc-nombre { flex:1; color:var(--txt-secondary); }
     .doc-link   { font-size:.75rem; color:var(--verde); text-decoration:underline; }
+
+    /* ── COHORTE TAB ── */
+    .cohorte-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+    .cohorte-table-wrap { overflow-x:auto; }
+    .cohorte-table { width:100%; border-collapse:collapse; font-size:.78rem; }
+    .cohorte-table th { background:var(--surface-2); color:var(--txt-muted); font-size:.67rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; padding:8px 10px; white-space:nowrap; border-bottom:2px solid var(--border); position:sticky; top:0; z-index:2; }
+    .cohorte-table td { padding:8px 10px; border-bottom:1px solid var(--border-light); vertical-align:middle; }
+    .cohorte-table tr:hover td { background:var(--surface-2); }
+    .cohorte-table tr.habilitado td { background:rgba(26,107,60,.04); }
+    .doc-cell { display:flex; flex-direction:column; align-items:center; gap:3px; min-width:54px; }
+    .doc-cell a { display:flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:6px; border:1.5px solid var(--border); background:var(--surface); transition:all .15s; color:var(--txt-muted); text-decoration:none; }
+    .doc-cell a:hover { border-color:var(--verde); color:var(--verde); background:var(--verde-light); }
+    .doc-cell a.sin-doc { cursor:default; pointer-events:none; opacity:.3; }
+    .doc-cell .doc-estado { font-size:.6rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+    .doc-cell .doc-estado.ok   { color:#16a34a; }
+    .doc-cell .doc-estado.pend { color:#d97706; }
+    .doc-cell .doc-estado.mal  { color:#dc2626; }
+    .check-btns { display:flex; gap:3px; }
+    .check-btns button { width:22px; height:22px; border-radius:4px; border:none; cursor:pointer; font-size:.75rem; display:flex; align-items:center; justify-content:center; }
+    .btn-check-ok  { background:#dcfce7; color:#16a34a; }
+    .btn-check-ok:hover  { background:#16a34a; color:#fff; }
+    .btn-check-mal { background:#fee2e2; color:#dc2626; }
+    .btn-check-mal:hover { background:#dc2626; color:#fff; }
+    .btn-habilitar { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:var(--radius-sm); border:none; background:var(--verde); color:#fff; font-size:.73rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:all .15s; }
+    .btn-habilitar:hover { background:#145c32; }
+    .btn-habilitar:disabled { background:var(--border); color:var(--txt-muted); cursor:not-allowed; }
+    .btn-habilitar.habilitado { background:#dcfce7; color:#16a34a; cursor:default; pointer-events:none; }
+    .btn-share { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:var(--radius-sm); border:1.5px solid var(--border); background:var(--surface); color:var(--txt-secondary); font-size:.78rem; font-weight:500; cursor:pointer; transition:all .15s; text-decoration:none; }
+    .btn-share:hover { border-color:var(--verde); color:var(--verde); }
+    .docs-progress { display:flex; align-items:center; gap:6px; font-size:.75rem; }
+    .docs-progress .bar-wrap { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+    .docs-progress .bar-fill  { height:100%; background:var(--verde); border-radius:3px; transition:width .3s; }
+
+    /* ── NUEVA INSCRIPCIÓN TAB ── */
+    .inscripcion-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; max-width:600px; }
+    .inscripcion-card h3 { font-size:.95rem; font-weight:700; margin:0 0 18px; }
+    .alumno-encontrado { background:var(--verde-light); border:1.5px solid var(--verde); border-radius:var(--radius); padding:14px 16px; margin:12px 0; font-size:.83rem; }
+    .alumno-encontrado .al-nombre { font-size:.95rem; font-weight:700; color:var(--verde); margin-bottom:4px; }
+    .alumno-encontrado .al-data { display:flex; gap:16px; flex-wrap:wrap; color:var(--txt-secondary); font-size:.78rem; }
+    .alumno-encontrado .inscripciones-actuales { margin-top:10px; }
+    .alumno-encontrado .insc-pill { display:inline-block; background:rgba(26,107,60,.15); color:var(--verde); font-size:.68rem; font-weight:600; padding:2px 8px; border-radius:999px; margin:2px 2px 0 0; }
+    .step-label { font-size:.68rem; font-weight:700; color:var(--txt-muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:6px; }
+
+    /* ── MODAL CUOTAS / CONFIRMACIÓN ── */
+    .modal-cuotas { max-width:480px; }
+    .cuotas-resumen { background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; }
+    .cuotas-resumen .alumno-row { font-size:.92rem; font-weight:700; margin-bottom:8px; color:var(--verde); }
+    .cuotas-resumen .detalle { display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:.78rem; }
+    .cuotas-resumen .detalle span { color:var(--txt-muted); }
+    .cuotas-resumen .detalle strong { color:var(--txt); }
+    .beca-toggle { display:flex; align-items:center; gap:8px; font-size:.82rem; cursor:pointer; margin-bottom:12px; color:var(--txt-secondary); }
+    .beca-toggle input[type=checkbox] { width:15px; height:15px; accent-color:var(--verde); cursor:pointer; }
+    .cuota-final-preview { background:var(--verde-light); border:1.5px solid var(--verde); border-radius:var(--radius-sm); padding:10px 14px; display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
+    .cuota-final-preview .label { font-size:.75rem; color:var(--verde); font-weight:600; }
+    .cuota-final-preview .monto { font-size:1.1rem; font-weight:800; color:var(--verde); }
+
+    /* ── MODAL ALUMNO DIRECTO ── */
+    .modal-alumno-directo { max-width:560px; }
+    .section-divider { font-size:.68rem; font-weight:700; color:var(--txt-muted); text-transform:uppercase; letter-spacing:.08em; margin:14px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--border); }
   </style>
 </head>
 <body>
@@ -47,6 +105,10 @@
     <header class="topbar">
       <div class="topbar-title">Admisión <span id="fechaHoy"></span></div>
       <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" id="btnAlumnoDirecto">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Alumno directo
+        </button>
         <button class="btn btn-primary btn-sm" id="btnNuevaSolicitud">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nueva solicitud
@@ -58,7 +120,9 @@
       <div class="adm-tabs">
         <button class="adm-tab active" data-tab="solicitudes">Solicitudes <span class="tc" id="tcPend">0</span></button>
         <button class="adm-tab" data-tab="documentos">Documentos</button>
+        <button class="adm-tab" data-tab="cohorte">Vista Cohorte</button>
         <button class="adm-tab" data-tab="alumnos">Alumnos inscriptos</button>
+        <button class="adm-tab" data-tab="nueva-inscripcion">Nueva inscripción</button>
       </div>
 
       <div class="adm-content">
@@ -117,6 +181,26 @@
           </div>
         </div>
 
+        <!-- ── VISTA COHORTE ───────────────────────────────── -->
+        <div id="tab-cohorte" style="display:none">
+          <div class="cohorte-toolbar">
+            <select class="form-control" id="cohCarrera" style="width:220px"><option value="">Seleccionar carrera...</option></select>
+            <select class="form-control" id="cohCohorte" style="width:200px" disabled><option value="">Seleccionar cohorte...</option></select>
+            <button class="btn btn-ghost btn-sm" id="btnCargarCohorte" disabled>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Cargar
+            </button>
+            <span id="cohInfo" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
+            <a id="btnShareCohorte" class="btn-share" style="display:none" target="_blank">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              Compartir vista
+            </a>
+          </div>
+          <div id="cohContent">
+            <div style="text-align:center;padding:60px;color:var(--txt-muted);font-size:.85rem">Seleccioná una carrera y cohorte para ver los alumnos</div>
+          </div>
+        </div>
+
         <!-- ── ALUMNOS INSCRIPTOS ───────────────────────────── -->
         <div id="tab-alumnos" style="display:none">
           <div class="toolbar">
@@ -124,9 +208,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <input type="text" class="form-control" id="searchAlumnos" placeholder="Buscar alumno...">
             </div>
-            <select class="form-control" id="filtroCarreraAlumnos" style="width:auto">
-              <option value="">Todas las carreras</option>
-            </select>
+            <select class="form-control" id="filtroCarreraAlumnos" style="width:auto"><option value="">Todas las carreras</option></select>
             <select class="form-control" id="filtroEstAlumnos" style="width:auto">
               <option value="">Todos los estados</option>
               <option value="Activo">Activo</option>
@@ -144,12 +226,62 @@
           </div>
         </div>
 
+        <!-- ── NUEVA INSCRIPCIÓN ───────────────────────────── -->
+        <div id="tab-nueva-inscripcion" style="display:none">
+          <div class="inscripcion-card">
+            <h3>Inscripción directa — alumno existente / nueva carrera</h3>
+            <div class="form-group" style="margin-bottom:0">
+              <div class="step-label">Paso 1 — Buscar alumno por CI</div>
+              <div style="display:flex;gap:8px">
+                <input type="text" class="form-control" id="niCI" placeholder="Número de cédula..." style="max-width:200px">
+                <button class="btn btn-ghost btn-sm" id="btnBuscarAlumno">Buscar</button>
+              </div>
+            </div>
+            <div id="niResultado" style="display:none"></div>
+            <div id="niFormCarrera" style="display:none;margin-top:18px">
+              <div class="step-label">Paso 2 — Carrera y cohorte</div>
+              <div class="form-row" style="gap:10px">
+                <div class="form-group">
+                  <label class="form-label">Carrera <span class="required">*</span></label>
+                  <select class="form-control" id="niCarrera"><option value="">Seleccionar...</option></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Cohorte <span class="required">*</span></label>
+                  <select class="form-control" id="niCohorte" disabled><option value="">Primero seleccioná carrera</option></select>
+                </div>
+              </div>
+              <div class="form-row" style="gap:10px">
+                <div class="form-group">
+                  <label class="form-label">Año lectivo <span class="required">*</span></label>
+                  <input type="number" class="form-control" id="niAnhoLectivo" min="2020" max="2035" style="max-width:120px">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Año de cursada</label>
+                  <select class="form-control" id="niAnhoCursada" style="max-width:120px">
+                    <option value="1">1º año</option><option value="2">2º año</option><option value="3">3º año</option>
+                  </select>
+                </div>
+              </div>
+              <div id="niDuplicadoWarning" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:var(--radius);padding:10px 12px;font-size:.8rem;color:#92400e;margin-bottom:10px">
+                ⚠️ Este alumno ya tiene una inscripción activa en esta carrera y cohorte.
+              </div>
+              <div style="display:flex;gap:8px;margin-top:4px">
+                <button class="btn btn-ghost btn-sm" id="btnNiLimpiar">Cancelar</button>
+                <button class="btn btn-primary btn-sm" id="btnNiGuardar">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Continuar →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
 </div>
 
-<!-- Drawer solicitud -->
+<!-- ═══ DRAWER SOLICITUD ═══════════════════════════════════ -->
 <div class="drawer-overlay" id="drawerOverlay">
   <div class="drawer">
     <div class="drawer-header">
@@ -164,12 +296,12 @@
   </div>
 </div>
 
-<!-- Modal nueva solicitud -->
+<!-- ═══ MODAL NUEVA SOLICITUD ══════════════════════════════ -->
 <div class="modal-overlay" id="modalNuevoOverlay">
   <div class="modal">
     <div class="modal-header">
       <span class="modal-title">Nueva solicitud de admisión</span>
-      <button class="modal-close" onclick="cerrarModal()">
+      <button class="modal-close" onclick="cerrarModal('modalNuevoOverlay')">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -186,8 +318,154 @@
         <textarea class="form-control" id="fObsAdm" rows="2"></textarea></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-ghost" onclick="cerrarModal('modalNuevoOverlay')">Cancelar</button>
       <button class="btn btn-primary" id="btnGuardarAdm">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL CONFIRMACIÓN CUOTAS ══════════════════════════ -->
+<!-- Aparece antes de crear inscripcion_anual + cuotas_pagos -->
+<div class="modal-overlay" id="modalCuotasOverlay">
+  <div class="modal modal-cuotas">
+    <div class="modal-header">
+      <span class="modal-title">Confirmar inscripción y cuotas</span>
+      <button class="modal-close" onclick="cerrarModal('modalCuotasOverlay')">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Resumen del alumno/carrera — se llena dinámicamente -->
+      <div class="cuotas-resumen" id="cuotasResumen"></div>
+
+      <!-- Campos editables -->
+      <div class="form-row" style="gap:10px">
+        <div class="form-group">
+          <label class="form-label">Monto cuota base <span class="required">*</span></label>
+          <input type="number" class="form-control" id="cqMontoBase" min="0" step="1000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cantidad de cuotas <span class="required">*</span></label>
+          <input type="number" class="form-control" id="cqCantCuotas" min="1" max="24" style="max-width:100px">
+        </div>
+      </div>
+
+      <!-- Beca opcional -->
+      <label class="beca-toggle">
+        <input type="checkbox" id="cqBecaCheck">
+        Aplicar beca / descuento
+      </label>
+      <div id="cqBecaWrap" style="display:none;margin-bottom:12px">
+        <div class="form-row" style="gap:10px">
+          <div class="form-group" style="max-width:140px">
+            <label class="form-label">Porcentaje (%)</label>
+            <input type="number" class="form-control" id="cqBecaPct" min="0" max="100" value="0">
+          </div>
+          <div class="form-group" style="max-width:180px">
+            <label class="form-label">Monto final calculado</label>
+            <input type="number" class="form-control" id="cqMontoFinal" readonly style="background:var(--surface-2)">
+          </div>
+        </div>
+      </div>
+
+      <div class="cuota-final-preview" id="cqPreview">
+        <span class="label">Cuota final</span>
+        <span class="monto" id="cqPreviewMonto">—</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalCuotasOverlay')">Cancelar</button>
+      <button class="btn btn-primary" id="btnCqConfirmar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Inscribir y generar cuotas
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL ALUMNO DIRECTO ═══════════════════════════════ -->
+<!-- Crea prospecto + alumno + inscripcion + cuotas en un paso -->
+<div class="modal-overlay" id="modalAlumnoDirectoOverlay">
+  <div class="modal modal-alumno-directo">
+    <div class="modal-header">
+      <span class="modal-title">Alta de alumno directo</span>
+      <button class="modal-close" onclick="cerrarModal('modalAlumnoDirectoOverlay')">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="section-divider">Datos personales</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nombres <span class="required">*</span></label>
+          <input type="text" class="form-control" id="adNombres"></div>
+        <div class="form-group"><label class="form-label">Apellidos <span class="required">*</span></label>
+          <input type="text" class="form-control" id="adApellidos"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">CI <span class="required">*</span></label>
+          <input type="text" class="form-control" id="adCI"></div>
+        <div class="form-group"><label class="form-label">Fecha de nacimiento</label>
+          <input type="date" class="form-control" id="adFechaNac"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Teléfono / WhatsApp</label>
+          <input type="text" class="form-control" id="adTelefono"></div>
+        <div class="form-group"><label class="form-label">Email</label>
+          <input type="email" class="form-control" id="adEmail"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">País</label>
+          <input type="text" class="form-control" id="adPais" value="Paraguay"></div>
+        <div class="form-group"><label class="form-label">Departamento</label>
+          <input type="text" class="form-control" id="adDepto"></div>
+      </div>
+
+      <div class="section-divider">Inscripción</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Carrera <span class="required">*</span></label>
+          <select class="form-control" id="adCarrera"><option value="">Seleccionar...</option></select></div>
+        <div class="form-group"><label class="form-label">Cohorte <span class="required">*</span></label>
+          <select class="form-control" id="adCohorte" disabled><option value="">Primero seleccioná carrera</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Año lectivo <span class="required">*</span></label>
+          <input type="number" class="form-control" id="adAnhoLectivo" min="2020" max="2035" style="max-width:120px"></div>
+        <div class="form-group"><label class="form-label">Año de cursada</label>
+          <select class="form-control" id="adAnhoCursada" style="max-width:120px">
+            <option value="1">1º año</option><option value="2">2º año</option><option value="3">3º año</option>
+          </select></div>
+      </div>
+
+      <div class="section-divider">Cuotas</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Monto cuota base <span class="required">*</span></label>
+          <input type="number" class="form-control" id="adMontoBase" min="0" step="1000"></div>
+        <div class="form-group"><label class="form-label">Cantidad de cuotas <span class="required">*</span></label>
+          <input type="number" class="form-control" id="adCantCuotas" min="1" max="24" style="max-width:100px"></div>
+      </div>
+      <label class="beca-toggle">
+        <input type="checkbox" id="adBecaCheck">
+        Aplicar beca / descuento
+      </label>
+      <div id="adBecaWrap" style="display:none;margin-bottom:8px">
+        <div class="form-row" style="gap:10px">
+          <div class="form-group" style="max-width:140px">
+            <label class="form-label">Porcentaje (%)</label>
+            <input type="number" class="form-control" id="adBecaPct" min="0" max="100" value="0">
+          </div>
+          <div class="form-group" style="max-width:180px">
+            <label class="form-label">Monto final calculado</label>
+            <input type="number" class="form-control" id="adMontoFinal" readonly style="background:var(--surface-2)">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalAlumnoDirectoOverlay')">Cancelar</button>
+      <button class="btn btn-primary" id="btnAdGuardar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Crear alumno e inscribir
+      </button>
     </div>
   </div>
 </div>
@@ -206,20 +484,170 @@ initSidebar('admision');
 document.getElementById('fechaHoy').textContent =
   new Date().toLocaleDateString('es-PY',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
 
-let solicitudes = [], documentos = [], alumnos = [], carreras = [], cohortes = [], prospectos = [];
+const PUBLIC_VIEW_URL = `${location.origin}/docs_cohorte.html`;
+const N8N_WEBHOOK_HABILITAR = 'https://n8n.tudominio.com/webhook/habilitar-alumno';
+
+let solicitudes=[], documentos=[], alumnos=[], carreras=[], prospectos=[];
+let cohorteDatos=[];
+let niAlumnoActual=null;
+
+// Contexto del modal de cuotas — se rellena antes de abrir
+let cqCtx = { alumnoId:null, cohorteId:null, carreraId:null, anhoLectivo:null, anhoCursada:1,
+               nombre:'', origen:null, solicitudId:null, onSuccess:null };
+
+// ── Helpers generales ─────────────────────────────────────────
+window.cerrarModal = (id) => document.getElementById(id).classList.remove('open');
+function cerrarDrawer() { document.getElementById('drawerOverlay').classList.remove('open'); }
+window.cerrarDrawer = cerrarDrawer;
+document.getElementById('drawerOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)cerrarDrawer();});
+
+// ── Tabs ──────────────────────────────────────────────────────
+const ALL_TABS=['solicitudes','documentos','cohorte','alumnos','nueva-inscripcion'];
+document.querySelectorAll('.adm-tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.adm-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    ALL_TABS.forEach(t=>{ document.getElementById('tab-'+t).style.display=t===btn.dataset.tab?'block':'none'; });
+  });
+});
 
 // ── Init ──────────────────────────────────────────────────────
 await Promise.all([cargarSolicitudes(), cargarDocumentos(), cargarAlumnos(), cargarCarreras()]);
 
-// ── Tabs ──────────────────────────────────────────────────────
-document.querySelectorAll('.adm-tab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.adm-tab').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    ['solicitudes','documentos','alumnos'].forEach(t => {
-      document.getElementById('tab-'+t).style.display = t===btn.dataset.tab?'block':'none';
-    });
+// ══════════════════════════════════════════════════════════════
+// FUNCIÓN CENTRAL: crear inscripcion_anual + cuotas_pagos bulk
+// ══════════════════════════════════════════════════════════════
+async function crearInscripcionConCuotas({ alumnoId, cohorteId, anhoLectivo, anhoCursada,
+                                            montoBase, montoCuotaFinal, cantCuotas, porcentajeBeca }) {
+  // 1. INSERT inscripciones_anuales → devuelve id
+  const { data: insc, error: errInsc } = await supabase
+    .from('inscripciones_anuales')
+    .insert({
+      alumno_id:         alumnoId,
+      cohorte_id:        cohorteId,
+      anho_cursada:      anhoCursada,
+      anho_lectivo:      anhoLectivo,
+      fecha_inscripcion: new Date().toISOString().split('T')[0],
+      monto_cuota_base:  montoBase,
+      porcentaje_beca:   porcentajeBeca || null,
+      monto_cuota_final: montoCuotaFinal,
+      estado:            'Activo',
+      created_at:        new Date().toISOString()
+    })
+    .select('id')
+    .single();
+
+  if (errInsc) throw new Error('inscripcion_anual: ' + errInsc.message);
+
+  const inscripcionId = insc.id;
+
+  // 2. Generar cuotas_pagos en bulk
+  // Vencimiento: día 10 del mes siguiente al actual, avanzando 1 mes por cuota
+  const hoy = new Date();
+  const cuotas = Array.from({ length: cantCuotas }, (_, i) => {
+    const venc = new Date(hoy.getFullYear(), hoy.getMonth() + 1 + i, 10);
+    return {
+      inscripcion_id:    inscripcionId,
+      nro_cuota:         i + 1,
+      fecha_vencimiento: venc.toISOString().split('T')[0],
+      monto_original:    montoBase,
+      monto_final:       montoCuotaFinal,
+      estado_pago:       'Pendiente'
+    };
   });
+
+  const { error: errCuotas } = await supabase.from('cuotas_pagos').insert(cuotas);
+  if (errCuotas) throw new Error('cuotas_pagos: ' + errCuotas.message);
+
+  return inscripcionId;
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODAL CUOTAS — lógica
+// ══════════════════════════════════════════════════════════════
+function calcMontoFinal() {
+  const base = Number(document.getElementById('cqMontoBase').value) || 0;
+  const pct  = Number(document.getElementById('cqBecaPct').value)  || 0;
+  const final = Math.round(base * (1 - pct/100));
+  document.getElementById('cqMontoFinal').value = final;
+  document.getElementById('cqPreviewMonto').textContent = final.toLocaleString('es-PY') + ' Gs.';
+  return final;
+}
+
+document.getElementById('cqBecaCheck').addEventListener('change', (e) => {
+  document.getElementById('cqBecaWrap').style.display = e.target.checked ? 'block' : 'none';
+  if (!e.target.checked) { document.getElementById('cqBecaPct').value=0; calcMontoFinal(); }
+});
+document.getElementById('cqMontoBase').addEventListener('input', calcMontoFinal);
+document.getElementById('cqBecaPct').addEventListener('input', calcMontoFinal);
+
+async function abrirModalCuotas(ctx) {
+  cqCtx = ctx;
+
+  // Intentar traer precio de configuracion_precios
+  const { data: precio } = await supabase
+    .from('configuracion_precios')
+    .select('monto_cuota_base, cantidad_cuotas')
+    .eq('carrera_id', ctx.carreraId)
+    .eq('anho_lectivo', ctx.anhoLectivo)
+    .maybeSingle();
+
+  document.getElementById('cqMontoBase').value    = precio?.monto_cuota_base || '';
+  document.getElementById('cqCantCuotas').value   = precio?.cantidad_cuotas  || '';
+  document.getElementById('cqBecaCheck').checked  = false;
+  document.getElementById('cqBecaWrap').style.display = 'none';
+  document.getElementById('cqBecaPct').value = 0;
+
+  // Resumen
+  document.getElementById('cuotasResumen').innerHTML = `
+    <div class="alumno-row">${ctx.nombre}</div>
+    <div class="detalle">
+      <span>Carrera</span><strong>${ctx.carreraNombre||'—'}</strong>
+      <span>Cohorte</span><strong>${ctx.cohorteLabel||'—'}</strong>
+      <span>Año lectivo</span><strong>${ctx.anhoLectivo}</strong>
+      <span>Año cursada</span><strong>${ctx.anhoCursada}º</strong>
+    </div>`;
+
+  calcMontoFinal();
+  document.getElementById('modalCuotasOverlay').classList.add('open');
+}
+
+document.getElementById('btnCqConfirmar').addEventListener('click', async () => {
+  const montoBase     = Number(document.getElementById('cqMontoBase').value);
+  const cantCuotas    = Number(document.getElementById('cqCantCuotas').value);
+  const becaActiva    = document.getElementById('cqBecaCheck').checked;
+  const porcentajeBeca= becaActiva ? Number(document.getElementById('cqBecaPct').value) : 0;
+  const montoCuotaFinal = calcMontoFinal();
+
+  if (!montoBase || !cantCuotas) { toast('Ingresá monto y cantidad de cuotas','warning'); return; }
+
+  const btn = document.getElementById('btnCqConfirmar');
+  btn.disabled = true;
+  btn.textContent = 'Procesando...';
+
+  try {
+    const inscripcionId = await crearInscripcionConCuotas({
+      alumnoId:       cqCtx.alumnoId,
+      cohorteId:      cqCtx.cohorteId,
+      anhoLectivo:    cqCtx.anhoLectivo,
+      anhoCursada:    cqCtx.anhoCursada,
+      montoBase,
+      montoCuotaFinal,
+      cantCuotas,
+      porcentajeBeca
+    });
+
+    cerrarModal('modalCuotasOverlay');
+    toast(`Inscripción y ${cantCuotas} cuotas generadas`, 'success');
+
+    if (cqCtx.onSuccess) await cqCtx.onSuccess(inscripcionId);
+
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Inscribir y generar cuotas`;
+  }
 });
 
 // ── Solicitudes ───────────────────────────────────────────────
@@ -234,17 +662,16 @@ async function cargarSolicitudes() {
 }
 
 function renderSolicitudes() {
-  const q   = document.getElementById('searchSol').value.toLowerCase();
-  const est = document.getElementById('filtroEstSol').value;
-  const car = document.getElementById('filtroCarreraSol').value;
-  let items = solicitudes;
-  if (q)   items = items.filter(s=>`${s.prospectos?.nombres} ${s.prospectos?.apellidos} ${s.prospectos?.ci||''}`.toLowerCase().includes(q));
-  if (est) items = items.filter(s=>s.estado===est);
-  if (car) items = items.filter(s=>String(s.carrera_id)===car);
-  document.getElementById('solTotal').textContent = `${items.length} registros`;
-
-  const EST = {Pendiente:'badge-warning','En revisión':'badge-info',Aprobada:'badge-success',Rechazada:'badge-danger',Desistida:'badge-muted'};
-  document.getElementById('tbodySol').innerHTML = items.map((s,i)=>`<tr style="cursor:pointer" onclick="abrirSolicitud(${s.id})">
+  const q  =document.getElementById('searchSol').value.toLowerCase();
+  const est=document.getElementById('filtroEstSol').value;
+  const car=document.getElementById('filtroCarreraSol').value;
+  let items=solicitudes;
+  if(q)   items=items.filter(s=>`${s.prospectos?.nombres} ${s.prospectos?.apellidos} ${s.prospectos?.ci||''}`.toLowerCase().includes(q));
+  if(est) items=items.filter(s=>s.estado===est);
+  if(car) items=items.filter(s=>String(s.carrera_id)===car);
+  document.getElementById('solTotal').textContent=`${items.length} registros`;
+  const EST={Pendiente:'badge-warning','En revisión':'badge-info',Aprobada:'badge-success',Rechazada:'badge-danger',Desistida:'badge-muted'};
+  document.getElementById('tbodySol').innerHTML=items.map((s,i)=>`<tr style="cursor:pointer" onclick="abrirSolicitud(${s.id})">
     <td class="td-mono">${i+1}</td>
     <td class="td-bold">${s.prospectos?.nombres||''} ${s.prospectos?.apellidos||''}</td>
     <td class="td-mono">${s.prospectos?.ci||'—'}</td>
@@ -256,7 +683,7 @@ function renderSolicitudes() {
     <td><button class="btn btn-icon" onclick="event.stopPropagation();abrirSolicitud(${s.id})">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
     </button></td>
-  </tr>`).join('') || `<tr><td colspan="9" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin solicitudes</td></tr>`;
+  </tr>`).join('')||`<tr><td colspan="9" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin solicitudes</td></tr>`;
 }
 
 ['searchSol','filtroEstSol','filtroCarreraSol'].forEach(id=>{
@@ -276,22 +703,20 @@ async function cargarDocumentos() {
 }
 
 function renderDocumentos() {
-  const q   = document.getElementById('searchDoc').value.toLowerCase();
-  const est = document.getElementById('filtroEstDoc').value;
-  let items = documentos;
-  if (q)   items = items.filter(d=>`${d.solicitudes_admision?.prospectos?.nombres} ${d.solicitudes_admision?.prospectos?.apellidos}`.toLowerCase().includes(q));
-  if (est) items = items.filter(d=>d.estado_verificacion===est);
-  document.getElementById('docTotal').textContent = `${items.length} registros`;
-
-  const EST = {Pendiente:'badge-warning',Verificado:'badge-success',Rechazado:'badge-danger'};
-  const TIPO_LABEL = {cedula:'Cédula',foto_carnet:'Foto carnet',solicitud_inscripcion:'Solicitud',contrato:'Contrato',titulo:'Título',certificado_estudio:'Cert. estudio',certificado_nacimiento:'Cert. nacimiento',acta_nacimiento:'Acta nacimiento',constancia_trabajo:'Const. trabajo',comprobante_pago_inscripcion:'Comprobante pago',otro:'Otro'};
-
-  document.getElementById('tbodyDoc').innerHTML = items.map((d,i)=>{
-    const p = d.solicitudes_admision?.prospectos;
+  const q  =document.getElementById('searchDoc').value.toLowerCase();
+  const est=document.getElementById('filtroEstDoc').value;
+  let items=documentos;
+  if(q)   items=items.filter(d=>`${d.solicitudes_admision?.prospectos?.nombres} ${d.solicitudes_admision?.prospectos?.apellidos}`.toLowerCase().includes(q));
+  if(est) items=items.filter(d=>d.estado_verificacion===est);
+  document.getElementById('docTotal').textContent=`${items.length} registros`;
+  const EST={Pendiente:'badge-warning',Verificado:'badge-success',Rechazado:'badge-danger'};
+  const TL={cedula:'Cédula',foto_carnet:'Foto carnet',solicitud_inscripcion:'Solicitud',contrato:'Contrato',titulo:'Título',certificado_estudio:'Cert. estudio',certificado_nacimiento:'Cert. nacimiento',acta_nacimiento:'Acta nacimiento',constancia_trabajo:'Const. trabajo',comprobante_pago_inscripcion:'Comprobante pago',otro:'Otro'};
+  document.getElementById('tbodyDoc').innerHTML=items.map((d,i)=>{
+    const p=d.solicitudes_admision?.prospectos;
     return `<tr>
       <td class="td-mono">${i+1}</td>
       <td>${p?p.nombres+' '+p.apellidos:'—'}</td>
-      <td><span class="badge badge-muted" style="font-size:.65rem">${TIPO_LABEL[d.tipo_documento]||d.tipo_documento}</span></td>
+      <td><span class="badge badge-muted" style="font-size:.65rem">${TL[d.tipo_documento]||d.tipo_documento}</span></td>
       <td>${d.nombre_archivo?`<a href="${d.drive_url}" target="_blank" class="doc-link">${d.nombre_archivo}</a>`:`<a href="${d.drive_url}" target="_blank" class="doc-link">Ver archivo</a>`}</td>
       <td><span class="badge ${EST[d.estado_verificacion]||'badge-muted'}">${d.estado_verificacion}</span></td>
       <td class="td-mono" style="font-size:.75rem">${formatFechaHora(d.fecha_subida)}</td>
@@ -301,7 +726,7 @@ function renderDocumentos() {
         <button class="btn btn-icon" onclick="verificarDoc(${d.id},'Rechazado')" title="Rechazar" style="color:var(--danger)">✕</button>`:''}
       </td>
     </tr>`;
-  }).join('') || `<tr><td colspan="8" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin documentos</td></tr>`;
+  }).join('')||`<tr><td colspan="8" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin documentos</td></tr>`;
 }
 
 ['searchDoc','filtroEstDoc'].forEach(id=>{
@@ -311,11 +736,12 @@ function renderDocumentos() {
 
 window.verificarDoc = async (id, estado) => {
   await supabase.from('documentos_admision').update({
-    estado_verificacion: estado, verificado_por: sesion.id,
-    fecha_verificacion: new Date().toISOString()
+    estado_verificacion:estado, verificado_por:sesion.id,
+    fecha_verificacion:new Date().toISOString()
   }).eq('id',id);
   toast(estado==='Verificado'?'Documento verificado':'Documento rechazado', estado==='Verificado'?'success':'warning');
   await cargarDocumentos();
+  if(cohorteDatos.length) renderCohorte();
 };
 
 // ── Alumnos ───────────────────────────────────────────────────
@@ -324,34 +750,29 @@ async function cargarAlumnos() {
     .from('alumnos')
     .select('*, inscripciones_anuales(cohortes(nro_cohorte,anho_inicio,carreras(nombre)))')
     .order('apellidos');
-  alumnos = data || [];
+  alumnos = data||[];
   renderAlumnos();
 }
 
 function renderAlumnos() {
-  const q   = document.getElementById('searchAlumnos').value.toLowerCase();
-  const est = document.getElementById('filtroEstAlumnos').value;
-  let items = alumnos;
-  if (q)   items = items.filter(a=>`${a.nombres} ${a.apellidos} ${a.ci}`.toLowerCase().includes(q));
-  if (est) items = items.filter(a=>a.estado===est);
-  document.getElementById('alumnosTotal').textContent = `${items.length} alumnos`;
-
-  const EST = {Activo:'badge-success',Egresado:'badge-verde',Suspendido:'badge-warning',Baja:'badge-danger'};
-  document.getElementById('tbodyAlumnos').innerHTML = items.map((a,i)=>{
-    const insc = a.inscripciones_anuales?.[0];
-    const carr = insc?.cohortes?.carreras?.nombre || '—';
-    return `<tr>
-      <td class="td-mono">${i+1}</td>
-      <td class="td-bold">${a.nombres} ${a.apellidos}</td>
-      <td class="td-mono">${a.ci}</td>
-      <td>${a.telefono||'—'}</td>
-      <td>${a.email||'—'}</td>
-      <td>${a.pais||'—'}</td>
-      <td><span class="badge ${EST[a.estado]||'badge-muted'}">${a.estado}</span></td>
-      <td class="td-mono" style="font-size:.75rem">${formatFechaHora(a.created_at)}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="abrirAlumno(${a.id})">Ver</button></td>
-    </tr>`;
-  }).join('') || `<tr><td colspan="9" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin alumnos</td></tr>`;
+  const q  =document.getElementById('searchAlumnos').value.toLowerCase();
+  const est=document.getElementById('filtroEstAlumnos').value;
+  let items=alumnos;
+  if(q)   items=items.filter(a=>`${a.nombres} ${a.apellidos} ${a.ci}`.toLowerCase().includes(q));
+  if(est) items=items.filter(a=>a.estado===est);
+  document.getElementById('alumnosTotal').textContent=`${items.length} alumnos`;
+  const EST={Activo:'badge-success',Egresado:'badge-verde',Suspendido:'badge-warning',Baja:'badge-danger'};
+  document.getElementById('tbodyAlumnos').innerHTML=items.map((a,i)=>`<tr>
+    <td class="td-mono">${i+1}</td>
+    <td class="td-bold">${a.nombres} ${a.apellidos}</td>
+    <td class="td-mono">${a.ci}</td>
+    <td>${a.telefono||'—'}</td>
+    <td>${a.email||'—'}</td>
+    <td>${a.pais||'—'}</td>
+    <td><span class="badge ${EST[a.estado]||'badge-muted'}">${a.estado}</span></td>
+    <td class="td-mono" style="font-size:.75rem">${formatFechaHora(a.created_at)}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="abrirAlumno(${a.id})">Ver</button></td>
+  </tr>`).join('')||`<tr><td colspan="9" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin alumnos</td></tr>`;
 }
 
 ['searchAlumnos','filtroEstAlumnos','filtroCarreraAlumnos'].forEach(id=>{
@@ -359,29 +780,214 @@ function renderAlumnos() {
   document.getElementById(id)?.addEventListener('change',renderAlumnos);
 });
 
+// ── VISTA COHORTE ──────────────────────────────────────────────
+const TIPOS_DOC=[
+  {key:'cedula',label:'CI'},{key:'titulo',label:'Título'},
+  {key:'certificado_estudio',label:'Cert.'},{key:'solicitud_inscripcion',label:'Solicitud'},
+  {key:'contrato',label:'Contrato'},{key:'foto_carnet',label:'Foto'},
+];
+
+document.getElementById('cohCarrera').addEventListener('change', async (e) => {
+  const cId=e.target.value;
+  const sel=document.getElementById('cohCohorte');
+  const btn=document.getElementById('btnCargarCohorte');
+  sel.innerHTML='<option value="">Seleccionar cohorte...</option>';
+  sel.disabled=!cId; btn.disabled=true;
+  if(!cId) return;
+  const { data } = await supabase.from('cohortes').select('id,nro_cohorte,anho_inicio').eq('carrera_id',cId).order('nro_cohorte');
+  (data||[]).forEach(c=>{ sel.innerHTML+=`<option value="${c.id}">${c.nro_cohorte}ª Cohorte ${c.anho_inicio}</option>`; });
+});
+
+document.getElementById('cohCohorte').addEventListener('change',(e)=>{
+  document.getElementById('btnCargarCohorte').disabled=!e.target.value;
+});
+
+document.getElementById('btnCargarCohorte').addEventListener('click', async () => {
+  const carreraId=document.getElementById('cohCarrera').value;
+  const cohorteId=document.getElementById('cohCohorte').value;
+  if(!carreraId||!cohorteId) return;
+  document.getElementById('cohContent').innerHTML='<div style="padding:40px;text-align:center;color:var(--txt-muted)">Cargando...</div>';
+  const { data: sols } = await supabase
+    .from('solicitudes_admision')
+    .select('id,estado,prospectos(id,nombres,apellidos,ci,telefono_whatsapp,email),documentos_admision(*)')
+    .eq('cohorte_id',cohorteId)
+    .order('fecha_solicitud');
+  cohorteDatos=sols||[];
+  const shareUrl=`${PUBLIC_VIEW_URL}?carrera_id=${carreraId}&cohorte_id=${cohorteId}`;
+  const shareBtn=document.getElementById('btnShareCohorte');
+  shareBtn.href=shareUrl; shareBtn.style.display='inline-flex';
+  document.getElementById('cohInfo').textContent=`${cohorteDatos.length} inscriptos`;
+  renderCohorte();
+});
+
+function renderCohorte() {
+  if(!cohorteDatos.length){
+    document.getElementById('cohContent').innerHTML='<div style="padding:40px;text-align:center;color:var(--txt-muted)">Sin solicitudes para esta cohorte</div>';
+    return;
+  }
+  const total=cohorteDatos.length;
+  const listos=cohorteDatos.filter(s=>TIPOS_DOC.every(td=>{const d=(s.documentos_admision||[]).find(x=>x.tipo_documento===td.key);return d&&d.estado_verificacion==='Verificado';})).length;
+  const habilitados=cohorteDatos.filter(s=>s.estado==='Aprobada').length;
+
+  const iconoDoc=(url)=>url
+    ?`<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`
+    :`<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+
+  const rows=cohorteDatos.map((s,i)=>{
+    const p=s.prospectos;
+    const docs=s.documentos_admision||[];
+    const habilitado=s.estado==='Aprobada';
+    const todosVerificados=TIPOS_DOC.every(td=>{const d=docs.find(x=>x.tipo_documento===td.key);return d&&d.estado_verificacion==='Verificado';});
+
+    const docCeldas=TIPOS_DOC.map(td=>{
+      const doc=docs.find(x=>x.tipo_documento===td.key);
+      let cls='',lbl='—';
+      if(doc){
+        if(doc.estado_verificacion==='Verificado'){cls='ok';lbl='OK';}
+        else if(doc.estado_verificacion==='Rechazado'){cls='mal';lbl='✕';}
+        else{cls='pend';lbl='...';}
+      }
+      const btns=doc&&doc.estado_verificacion!=='Verificado'
+        ?`<div class="check-btns">
+            <button class="btn-check-ok"  onclick="cohVerificarDoc(${doc.id},'Verificado')">✓</button>
+            <button class="btn-check-mal" onclick="cohVerificarDoc(${doc.id},'Rechazado')">✕</button>
+          </div>`:'';
+      return `<td style="text-align:center"><div class="doc-cell">
+        <a href="${doc?.drive_url||'#'}" target="_blank" title="${td.label}" class="${doc?'':'sin-doc'}">${iconoDoc(doc?.drive_url)}</a>
+        <span class="doc-estado ${cls}">${lbl}</span>${btns}
+      </div></td>`;
+    }).join('');
+
+    const btnHabilitar=habilitado
+      ?`<button class="btn-habilitar habilitado">✓ Habilitado</button>`
+      :`<button class="btn-habilitar" ${!todosVerificados?'disabled title="Verificar todos los documentos primero"':''} onclick="habilitarAlumno(${s.id})">Habilitar</button>`;
+
+    return `<tr class="${habilitado?'habilitado':''}">
+      <td class="td-mono" style="font-size:.7rem">${i+1}</td>
+      <td class="td-bold" style="white-space:nowrap">${p?.apellidos||''}, ${p?.nombres||''}</td>
+      <td class="td-mono" style="font-size:.75rem">${p?.ci||'—'}</td>
+      <td style="font-size:.72rem">${p?.telefono_whatsapp||'—'}</td>
+      ${docCeldas}
+      <td style="text-align:center">${btnHabilitar}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('cohContent').innerHTML=`
+    <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap">
+      <div class="docs-progress" style="flex:1;min-width:200px">
+        <span style="color:var(--txt-muted);font-size:.75rem">Docs completos:</span>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${total?Math.round(listos/total*100):0}%"></div></div>
+        <span style="font-size:.75rem;font-weight:700;color:var(--verde)">${listos}/${total}</span>
+      </div>
+      <div style="font-size:.75rem;color:var(--txt-muted)">Habilitados: <strong style="color:var(--verde)">${habilitados}</strong> / ${total}</div>
+    </div>
+    <div class="cohorte-table-wrap"><table class="cohorte-table">
+      <thead><tr>
+        <th>#</th><th>Apellido, Nombre</th><th>CI</th><th>WhatsApp</th>
+        ${TIPOS_DOC.map(td=>`<th style="text-align:center">${td.label}</th>`).join('')}
+        <th style="text-align:center">Acción</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+window.cohVerificarDoc = async (docId, estado) => {
+  await supabase.from('documentos_admision').update({
+    estado_verificacion:estado, verificado_por:sesion.id,
+    fecha_verificacion:new Date().toISOString()
+  }).eq('id',docId);
+  cohorteDatos.forEach(s=>{
+    const doc=(s.documentos_admision||[]).find(d=>d.id===docId);
+    if(doc) doc.estado_verificacion=estado;
+  });
+  toast(estado==='Verificado'?'Documento verificado':'Rechazado', estado==='Verificado'?'success':'warning');
+  renderCohorte();
+  await cargarDocumentos();
+};
+
+window.habilitarAlumno = async (solicitudId) => {
+  const sol=cohorteDatos.find(s=>s.id===solicitudId);
+  if(!sol) return;
+  const p=sol.prospectos;
+  const cohorteId=document.getElementById('cohCohorte').value;
+  const carreraId=document.getElementById('cohCarrera').value;
+  const carreraNombre=document.getElementById('cohCarrera').selectedOptions[0]?.text||'';
+  const cohorteLabel=document.getElementById('cohCohorte').selectedOptions[0]?.text||'';
+
+  // Verificar/crear alumno
+  let alumnoId=null;
+  const { data: alumnoExist } = await supabase.from('alumnos').select('id').eq('ci',p.ci).maybeSingle();
+  if(alumnoExist){
+    alumnoId=alumnoExist.id;
+  } else {
+    const { data: nuevoAlumno, error: errA } = await supabase.from('alumnos').insert({
+      nombres:p.nombres, apellidos:p.apellidos, ci:p.ci,
+      email:p.email||null, telefono:p.telefono_whatsapp||null,
+      prospecto_id:p.id, estado:'Activo'
+    }).select('id').single();
+    if(errA){ toast('Error al crear alumno: '+errA.message,'error'); return; }
+    alumnoId=nuevoAlumno.id;
+    await supabase.from('prospectos').update({
+      etapa_crm:'Convertido', convertido_alumno_id:alumnoId,
+      fecha_conversion:new Date().toISOString()
+    }).eq('id',p.id);
+  }
+
+  // Verificar duplicado inscripción
+  const { data: inscExist } = await supabase.from('inscripciones_anuales').select('id')
+    .eq('alumno_id',alumnoId).eq('cohorte_id',cohorteId).maybeSingle();
+  if(inscExist){ toast('Este alumno ya tiene inscripción en esta cohorte','warning'); return; }
+
+  // Obtener año lectivo de la cohorte
+  const { data: cohData } = await supabase.from('cohortes').select('anho_inicio').eq('id',cohorteId).single();
+  const anhoLectivo = cohData?.anho_inicio || new Date().getFullYear();
+
+  // Abrir modal de cuotas con contexto
+  await abrirModalCuotas({
+    alumnoId, cohorteId, carreraId,
+    anhoLectivo, anhoCursada: 1,
+    nombre: `${p.nombres} ${p.apellidos}`,
+    carreraNombre, cohorteLabel,
+    onSuccess: async () => {
+      // Marcar solicitud como Aprobada
+      await supabase.from('solicitudes_admision').update({
+        estado:'Aprobada', revisado_por:sesion.id,
+        fecha_resolucion:new Date().toISOString()
+      }).eq('id',solicitudId);
+
+      // Disparar n8n
+      try {
+        await fetch(N8N_WEBHOOK_HABILITAR, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ alumno_id:alumnoId, nombres:p.nombres, apellidos:p.apellidos,
+            ci:p.ci, email:p.email, telefono:p.telefono_whatsapp, carrera_id:carreraId,
+            cohorte_id:cohorteId, solicitud_id:solicitudId })
+        });
+      } catch(e){ console.warn('n8n no disponible:',e.message); }
+
+      const sol2=cohorteDatos.find(s=>s.id===solicitudId);
+      if(sol2) sol2.estado='Aprobada';
+      renderCohorte();
+      await cargarAlumnos();
+    }
+  });
+};
+
 // ── Drawer solicitud ──────────────────────────────────────────
 window.abrirSolicitud = async (id) => {
-  const s = solicitudes.find(x=>x.id===id);
-  if (!s) return;
-  const p = s.prospectos;
-  const EST = {Pendiente:'badge-warning','En revisión':'badge-info',Aprobada:'badge-success',Rechazada:'badge-danger',Desistida:'badge-muted'};
-
-  document.getElementById('drawerTitle').textContent = `${p?.nombres||''} ${p?.apellidos||''}`;
-  document.getElementById('drawerSub').textContent   = `Solicitud #${s.id} · ${formatFechaHora(s.fecha_solicitud)}`;
-  const bdg = document.getElementById('drawerBadge');
-  bdg.className = 'badge '+(EST[s.estado]||'badge-muted');
-  bdg.textContent = s.estado;
-
-  // Documentos de esta solicitud
-  const { data: docs } = await supabase
-    .from('documentos_admision')
-    .select('*')
-    .eq('solicitud_id',id);
-
-  const TIPO_LABEL = {cedula:'Cédula',foto_carnet:'Foto carnet',solicitud_inscripcion:'Solicitud inscripción',contrato:'Contrato',titulo:'Título',certificado_estudio:'Cert. de estudio',certificado_nacimiento:'Cert. nacimiento',acta_nacimiento:'Acta nacimiento',constancia_trabajo:'Const. trabajo',comprobante_pago_inscripcion:'Comprobante pago',otro:'Otro'};
-  const EST_DOC = {Pendiente:'badge-warning',Verificado:'badge-success',Rechazado:'badge-danger'};
-
-  document.getElementById('drawerBody').innerHTML = `
+  const s=solicitudes.find(x=>x.id===id);
+  if(!s) return;
+  const p=s.prospectos;
+  const EST={Pendiente:'badge-warning','En revisión':'badge-info',Aprobada:'badge-success',Rechazada:'badge-danger',Desistida:'badge-muted'};
+  document.getElementById('drawerTitle').textContent=`${p?.nombres||''} ${p?.apellidos||''}`;
+  document.getElementById('drawerSub').textContent=`Solicitud #${s.id} · ${formatFechaHora(s.fecha_solicitud)}`;
+  const bdg=document.getElementById('drawerBadge');
+  bdg.className='badge '+(EST[s.estado]||'badge-muted');
+  bdg.textContent=s.estado;
+  const { data: docs } = await supabase.from('documentos_admision').select('*').eq('solicitud_id',id);
+  const TL={cedula:'Cédula',foto_carnet:'Foto carnet',solicitud_inscripcion:'Solicitud inscripción',contrato:'Contrato',titulo:'Título',certificado_estudio:'Cert. de estudio',certificado_nacimiento:'Cert. nacimiento',acta_nacimiento:'Acta nacimiento',constancia_trabajo:'Const. trabajo',comprobante_pago_inscripcion:'Comprobante pago',otro:'Otro'};
+  const EDOC={Pendiente:'badge-warning',Verificado:'badge-success',Rechazado:'badge-danger'};
+  document.getElementById('drawerBody').innerHTML=`
     <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px">
       <div class="form-row" style="gap:12px">
         <div><div style="font-size:.68rem;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.05em">Prospecto</div><div style="font-size:.85rem;font-weight:600">${p?.nombres||''} ${p?.apellidos||''}</div></div>
@@ -396,21 +1002,20 @@ window.abrirSolicitud = async (id) => {
     ${s.observaciones?`<div><div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Observaciones</div><div style="font-size:.83rem;color:var(--txt-secondary);background:var(--surface-2);border-radius:var(--radius);padding:10px 12px">${s.observaciones}</div></div>`:''}
     <div>
       <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Documentos (${docs?.length||0})</div>
-      ${docs?.length ? docs.map(d=>`
+      ${docs?.length?docs.map(d=>`
         <div class="doc-item">
           <div class="doc-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-          <span class="doc-nombre">${TIPO_LABEL[d.tipo_documento]||d.tipo_documento}</span>
-          <span class="badge ${EST_DOC[d.estado_verificacion]||'badge-muted'}" style="font-size:.65rem">${d.estado_verificacion}</span>
+          <span class="doc-nombre">${TL[d.tipo_documento]||d.tipo_documento}</span>
+          <span class="badge ${EDOC[d.estado_verificacion]||'badge-muted'}" style="font-size:.65rem">${d.estado_verificacion}</span>
           <a href="${d.drive_url}" target="_blank" class="doc-link">Ver</a>
-        </div>`).join('') : '<div style="color:var(--txt-muted);font-size:.8rem;text-align:center;padding:12px">Sin documentos cargados</div>'}
+        </div>`).join(''):'<div style="color:var(--txt-muted);font-size:.8rem;text-align:center;padding:12px">Sin documentos cargados</div>'}
     </div>
     ${['Pendiente','En revisión'].includes(s.estado)?`
     <div>
       <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Observación de resolución</div>
       <textarea class="form-control" id="obsResolucion" rows="2" placeholder="Motivo de aprobación o rechazo..."></textarea>
     </div>`:''}`;
-
-  document.getElementById('drawerFooter').innerHTML = `
+  document.getElementById('drawerFooter').innerHTML=`
     <button class="btn btn-ghost btn-sm" onclick="cerrarDrawer()">Cerrar</button>
     ${['Pendiente','En revisión'].includes(s.estado)?`
     <button class="btn btn-ghost btn-sm" onclick="resolverSolicitud(${s.id},'En revisión')">En revisión</button>
@@ -419,16 +1024,76 @@ window.abrirSolicitud = async (id) => {
       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
       Aprobar
     </button>`:''}`;
-
   document.getElementById('drawerOverlay').classList.add('open');
 };
 
 window.resolverSolicitud = async (id, estado) => {
-  const obs = document.getElementById('obsResolucion')?.value?.trim();
+  const s=solicitudes.find(x=>x.id===id);
+  const obs=document.getElementById('obsResolucion')?.value?.trim();
+
+  // Si se aprueba, verificar que tenga alumno e ir al flujo de cuotas
+  if(estado==='Aprobada' && s) {
+    const p=s.prospectos;
+    let alumnoId=null;
+    const { data: ae } = await supabase.from('alumnos').select('id').eq('ci',p.ci).maybeSingle();
+    if(ae){ alumnoId=ae.id; }
+    else {
+      const { data: na, error: errA } = await supabase.from('alumnos').insert({
+        nombres:p.nombres, apellidos:p.apellidos, ci:p.ci,
+        email:p.email||null, telefono:p.telefono_whatsapp||null,
+        prospecto_id:p.id, estado:'Activo'
+      }).select('id').single();
+      if(errA){ toast('Error al crear alumno: '+errA.message,'error'); return; }
+      alumnoId=na.id;
+      await supabase.from('prospectos').update({
+        etapa_crm:'Convertido', convertido_alumno_id:alumnoId,
+        fecha_conversion:new Date().toISOString()
+      }).eq('id',p.id);
+    }
+    // Verificar duplicado
+    const { data: ie } = await supabase.from('inscripciones_anuales').select('id')
+      .eq('alumno_id',alumnoId).eq('cohorte_id',s.cohorte_id).maybeSingle();
+
+    if(ie){
+      // Ya existe inscripción — solo marcar aprobada
+      await supabase.from('solicitudes_admision').update({
+        estado:'Aprobada', revisado_por:sesion.id,
+        fecha_resolucion:new Date().toISOString(), observaciones:obs||null
+      }).eq('id',id);
+      toast('Solicitud aprobada (inscripción ya existía)','success');
+      cerrarDrawer();
+      await cargarSolicitudes();
+      return;
+    }
+
+    // Traer año lectivo de cohorte
+    const { data: cohData } = await supabase.from('cohortes').select('anho_inicio,carrera_id').eq('id',s.cohorte_id).single();
+    const anhoLectivo=cohData?.anho_inicio||new Date().getFullYear();
+
+    cerrarDrawer();
+    await abrirModalCuotas({
+      alumnoId, cohorteId:s.cohorte_id, carreraId:s.carrera_id,
+      anhoLectivo, anhoCursada:1,
+      nombre:`${p.nombres} ${p.apellidos}`,
+      carreraNombre:s.carreras?.nombre||'',
+      cohorteLabel:s.cohortes?`${s.cohortes.nro_cohorte}ª Cohorte ${s.cohortes.anho_inicio}`:'',
+      onSuccess: async () => {
+        await supabase.from('solicitudes_admision').update({
+          estado:'Aprobada', revisado_por:sesion.id,
+          fecha_resolucion:new Date().toISOString(), observaciones:obs||null
+        }).eq('id',id);
+        toast('Solicitud aprobada y cuotas generadas','success');
+        await cargarSolicitudes();
+      }
+    });
+    return;
+  }
+
+  // Otros estados (En revisión, Rechazada)
   await supabase.from('solicitudes_admision').update({
-    estado, revisado_por: sesion.id,
-    fecha_resolucion: ['Aprobada','Rechazada'].includes(estado) ? new Date().toISOString() : null,
-    observaciones: obs || null
+    estado, revisado_por:sesion.id,
+    fecha_resolucion:['Aprobada','Rechazada'].includes(estado)?new Date().toISOString():null,
+    observaciones:obs||null
   }).eq('id',id);
   toast(`Solicitud ${estado.toLowerCase()}`,'success');
   cerrarDrawer();
@@ -436,18 +1101,15 @@ window.resolverSolicitud = async (id, estado) => {
 };
 
 window.abrirAlumno = async (id) => {
-  const a = alumnos.find(x=>x.id===id);
-  if (!a) return;
-  const EST = {Activo:'badge-success',Egresado:'badge-verde',Suspendido:'badge-warning',Baja:'badge-danger'};
-  document.getElementById('drawerTitle').textContent = `${a.nombres} ${a.apellidos}`;
-  document.getElementById('drawerSub').textContent   = `CI: ${a.ci}`;
-  const bdg = document.getElementById('drawerBadge');
-  bdg.className = 'badge '+(EST[a.estado]||'badge-muted');
-  bdg.textContent = a.estado;
-
-  const inscs = a.inscripciones_anuales || [];
-
-  document.getElementById('drawerBody').innerHTML = `
+  const a=alumnos.find(x=>x.id===id);
+  if(!a) return;
+  const EST={Activo:'badge-success',Egresado:'badge-verde',Suspendido:'badge-warning',Baja:'badge-danger'};
+  document.getElementById('drawerTitle').textContent=`${a.nombres} ${a.apellidos}`;
+  document.getElementById('drawerSub').textContent=`CI: ${a.ci}`;
+  const bdg=document.getElementById('drawerBadge');
+  bdg.className='badge '+(EST[a.estado]||'badge-muted'); bdg.textContent=a.estado;
+  const inscs=a.inscripciones_anuales||[];
+  document.getElementById('drawerBody').innerHTML=`
     <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px">
       <div style="font-size:.85rem;font-weight:700;margin-bottom:6px">${a.nombres} ${a.apellidos}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.78rem">
@@ -461,73 +1123,293 @@ window.abrirAlumno = async (id) => {
     </div>
     <div>
       <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Inscripciones (${inscs.length})</div>
-      ${inscs.map(i=>{
-        const co = i.cohortes;
-        return `<div style="background:var(--verde-light);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;font-size:.82rem">
-          <strong>${co?.carreras?.nombre||'—'}</strong>
-          <span style="color:var(--txt-muted)"> · ${co?.nro_cohorte||''}ª Cohorte ${co?.anho_inicio||''}</span>
-        </div>`;
-      }).join('') || '<div style="color:var(--txt-muted);font-size:.8rem;text-align:center;padding:8px">Sin inscripciones</div>'}
+      ${inscs.map(i=>{const co=i.cohortes;return `<div style="background:var(--verde-light);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;font-size:.82rem">
+        <strong>${co?.carreras?.nombre||'—'}</strong>
+        <span style="color:var(--txt-muted)"> · ${co?.nro_cohorte||''}ª Cohorte ${co?.anho_inicio||''}</span>
+      </div>`;}).join('')||'<div style="color:var(--txt-muted);font-size:.8rem;text-align:center;padding:8px">Sin inscripciones</div>'}
     </div>`;
-
-  document.getElementById('drawerFooter').innerHTML = `
+  document.getElementById('drawerFooter').innerHTML=`
     <button class="btn btn-ghost btn-sm" onclick="cerrarDrawer()">Cerrar</button>
     <a href="academico.html" class="btn btn-outline btn-sm">Ver académico →</a>`;
-
   document.getElementById('drawerOverlay').classList.add('open');
 };
 
 // ── Carreras y cohortes ───────────────────────────────────────
 async function cargarCarreras() {
   const { data } = await supabase.from('carreras').select('id,nombre').eq('estado','Activa').order('nombre');
-  carreras = data || [];
-  const opts = carreras.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
-  document.getElementById('filtroCarreraSol').innerHTML     = '<option value="">Todas las carreras</option>'+opts;
-  document.getElementById('filtroCarreraAlumnos').innerHTML = '<option value="">Todas las carreras</option>'+opts;
-  document.getElementById('fCarreraAdm').innerHTML          = '<option value="">Seleccionar...</option>'+opts;
+  carreras=data||[];
+  const opts=carreras.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+  ['filtroCarreraSol','filtroCarreraAlumnos'].forEach(id=>{
+    document.getElementById(id).innerHTML='<option value="">Todas las carreras</option>'+opts;
+  });
+  ['fCarreraAdm','cohCarrera','niCarrera','adCarrera'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.innerHTML='<option value="">Seleccionar...</option>'+opts;
+  });
 }
 
 document.getElementById('fCarreraAdm')?.addEventListener('change', async (e) => {
-  const carreraId = e.target.value;
-  if (!carreraId) return;
-  const { data } = await supabase.from('cohortes').select('id,nro_cohorte,anho_inicio').eq('carrera_id',carreraId).eq('estado','Activo').order('nro_cohorte');
-  cohortes = data || [];
-  document.getElementById('fCohorte').innerHTML = '<option value="">Seleccionar cohorte...</option>' +
-    cohortes.map(c=>`<option value="${c.id}">${c.nro_cohorte}ª Cohorte ${c.anho_inicio}</option>`).join('');
+  if(!e.target.value) return;
+  const { data } = await supabase.from('cohortes').select('id,nro_cohorte,anho_inicio').eq('carrera_id',e.target.value).eq('estado','Activo').order('nro_cohorte');
+  document.getElementById('fCohorte').innerHTML='<option value="">Seleccionar cohorte...</option>'+(data||[]).map(c=>`<option value="${c.id}">${c.nro_cohorte}ª Cohorte ${c.anho_inicio}</option>`).join('');
 });
 
-// ── Nueva solicitud ───────────────────────────────────────────
+// ── Nueva inscripción ─────────────────────────────────────────
+document.getElementById('niCarrera').addEventListener('change', async (e) => {
+  const sel=document.getElementById('niCohorte');
+  sel.disabled=!e.target.value;
+  sel.innerHTML='<option value="">Seleccionar cohorte...</option>';
+  document.getElementById('niDuplicadoWarning').style.display='none';
+  if(!e.target.value) return;
+  const { data } = await supabase.from('cohortes').select('id,nro_cohorte,anho_inicio').eq('carrera_id',e.target.value).eq('estado','Activo').order('nro_cohorte');
+  (data||[]).forEach(c=>{ sel.innerHTML+=`<option value="${c.id}">${c.nro_cohorte}ª Cohorte ${c.anho_inicio}</option>`; });
+});
+
+document.getElementById('niCohorte').addEventListener('change', async () => {
+  const cohorteId=document.getElementById('niCohorte').value;
+  const warn=document.getElementById('niDuplicadoWarning');
+  warn.style.display='none';
+  if(!niAlumnoActual||!cohorteId) return;
+  const { data } = await supabase.from('inscripciones_anuales').select('id').eq('alumno_id',niAlumnoActual.id).eq('cohorte_id',cohorteId).maybeSingle();
+  if(data) warn.style.display='block';
+});
+
+document.getElementById('btnBuscarAlumno').addEventListener('click', async () => {
+  const ci=document.getElementById('niCI').value.trim();
+  if(!ci){ toast('Ingresá un número de CI','warning'); return; }
+  const { data: alumno } = await supabase.from('alumnos')
+    .select('*, inscripciones_anuales(cohortes(nro_cohorte,anho_inicio,carreras(nombre)))')
+    .eq('ci',ci).maybeSingle();
+  const resultado=document.getElementById('niResultado');
+  const formCarrera=document.getElementById('niFormCarrera');
+  if(!alumno){
+    niAlumnoActual=null; formCarrera.style.display='none'; resultado.style.display='block';
+    resultado.innerHTML=`<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:var(--radius);padding:12px 14px;font-size:.82rem;color:#92400e;margin-top:10px">
+      No se encontró ningún alumno con CI <strong>${ci}</strong>.<br>
+      <span style="font-size:.75rem">Si es un ingresante nuevo, usá el botón "Alumno directo" en la barra superior.</span>
+    </div>`;
+    return;
+  }
+  niAlumnoActual=alumno;
+  const inscs=alumno.inscripciones_anuales||[];
+  resultado.style.display='block';
+  resultado.innerHTML=`<div class="alumno-encontrado">
+    <div class="al-nombre">✓ ${alumno.nombres} ${alumno.apellidos}</div>
+    <div class="al-data">
+      <span>CI: <strong>${alumno.ci}</strong></span>
+      <span>Email: <strong>${alumno.email||'—'}</strong></span>
+      <span>Tel: <strong>${alumno.telefono||'—'}</strong></span>
+      <span>Estado: <strong>${alumno.estado}</strong></span>
+    </div>
+    ${inscs.length?`<div class="inscripciones-actuales">
+      <div style="font-size:.7rem;color:var(--verde);font-weight:700;margin-bottom:4px">CARRERAS ACTUALES</div>
+      ${inscs.map(i=>`<span class="insc-pill">${i.cohortes?.carreras?.nombre||'—'} · ${i.cohortes?.nro_cohorte||''}ª Cohorte ${i.cohortes?.anho_inicio||''}</span>`).join('')}
+    </div>`:'<div style="font-size:.74rem;color:var(--txt-muted);margin-top:6px">Sin inscripciones previas</div>'}
+  </div>`;
+  document.getElementById('niAnhoLectivo').value=new Date().getFullYear();
+  formCarrera.style.display='block';
+});
+
+document.getElementById('btnNiLimpiar').addEventListener('click',()=>{
+  niAlumnoActual=null;
+  document.getElementById('niCI').value='';
+  document.getElementById('niResultado').style.display='none';
+  document.getElementById('niFormCarrera').style.display='none';
+  document.getElementById('niDuplicadoWarning').style.display='none';
+});
+
+document.getElementById('btnNiGuardar').addEventListener('click', async () => {
+  if(!niAlumnoActual) return;
+  const cohorteId=Number(document.getElementById('niCohorte').value);
+  const carreraId=Number(document.getElementById('niCarrera').value);
+  const anhoLectivo=Number(document.getElementById('niAnhoLectivo').value);
+  const anhoCursada=Number(document.getElementById('niAnhoCursada').value);
+  if(!cohorteId||!carreraId){ toast('Seleccioná carrera y cohorte','warning'); return; }
+  if(document.getElementById('niDuplicadoWarning').style.display!=='none'){ toast('Ya tiene esa inscripción','warning'); return; }
+
+  const carreraNombre=document.getElementById('niCarrera').selectedOptions[0]?.text||'';
+  const cohorteLabel=document.getElementById('niCohorte').selectedOptions[0]?.text||'';
+
+  await abrirModalCuotas({
+    alumnoId:niAlumnoActual.id, cohorteId, carreraId,
+    anhoLectivo, anhoCursada,
+    nombre:`${niAlumnoActual.nombres} ${niAlumnoActual.apellidos}`,
+    carreraNombre, cohorteLabel,
+    onSuccess: async () => {
+      toast(`${niAlumnoActual.nombres} inscripto correctamente`,'success');
+      document.getElementById('btnNiLimpiar').click();
+      await cargarAlumnos();
+    }
+  });
+});
+
+// ── ALUMNO DIRECTO ────────────────────────────────────────────
+document.getElementById('btnAlumnoDirecto').addEventListener('click',()=>{
+  // Reset form
+  ['adNombres','adApellidos','adCI','adTelefono','adEmail','adDepto','adMontoBase','adCantCuotas'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('adPais').value='Paraguay';
+  document.getElementById('adFechaNac').value='';
+  document.getElementById('adAnhoLectivo').value=new Date().getFullYear();
+  document.getElementById('adAnhoCursada').value='1';
+  document.getElementById('adCohorte').innerHTML='<option value="">Primero seleccioná carrera</option>';
+  document.getElementById('adCohorte').disabled=true;
+  document.getElementById('adBecaCheck').checked=false;
+  document.getElementById('adBecaWrap').style.display='none';
+  document.getElementById('adBecaPct').value=0;
+  document.getElementById('adMontoFinal').value='';
+  document.getElementById('modalAlumnoDirectoOverlay').classList.add('open');
+});
+
+document.getElementById('adCarrera').addEventListener('change', async (e) => {
+  const sel=document.getElementById('adCohorte');
+  sel.disabled=!e.target.value;
+  sel.innerHTML='<option value="">Seleccionar cohorte...</option>';
+  if(!e.target.value) return;
+  const { data } = await supabase.from('cohortes').select('id,nro_cohorte,anho_inicio').eq('carrera_id',e.target.value).eq('estado','Activo').order('nro_cohorte');
+  (data||[]).forEach(c=>{ sel.innerHTML+=`<option value="${c.id}">${c.nro_cohorte}ª Cohorte ${c.anho_inicio}</option>`; });
+  // Auto-completar precio si hay cohorte seleccionada
+});
+
+// Beca en modal alumno directo
+document.getElementById('adBecaCheck').addEventListener('change',(e)=>{
+  document.getElementById('adBecaWrap').style.display=e.target.checked?'block':'none';
+  if(!e.target.checked){ document.getElementById('adBecaPct').value=0; calcAdMontoFinal(); }
+});
+function calcAdMontoFinal(){
+  const base=Number(document.getElementById('adMontoBase').value)||0;
+  const pct=Number(document.getElementById('adBecaPct').value)||0;
+  document.getElementById('adMontoFinal').value=Math.round(base*(1-pct/100));
+}
+document.getElementById('adMontoBase').addEventListener('input',calcAdMontoFinal);
+document.getElementById('adBecaPct').addEventListener('input',calcAdMontoFinal);
+
+// Auto-cargar precio al seleccionar cohorte en alumno directo
+document.getElementById('adCohorte').addEventListener('change', async () => {
+  const carreraId=document.getElementById('adCarrera').value;
+  const anhoLectivo=Number(document.getElementById('adAnhoLectivo').value)||new Date().getFullYear();
+  if(!carreraId) return;
+  const { data: precio } = await supabase.from('configuracion_precios')
+    .select('monto_cuota_base,cantidad_cuotas')
+    .eq('carrera_id',carreraId).eq('anho_lectivo',anhoLectivo).maybeSingle();
+  if(precio){
+    document.getElementById('adMontoBase').value=precio.monto_cuota_base||'';
+    document.getElementById('adCantCuotas').value=precio.cantidad_cuotas||'';
+    calcAdMontoFinal();
+  }
+});
+
+document.getElementById('btnAdGuardar').addEventListener('click', async () => {
+  const nombres   =document.getElementById('adNombres').value.trim();
+  const apellidos =document.getElementById('adApellidos').value.trim();
+  const ci        =document.getElementById('adCI').value.trim();
+  const cohorteId =Number(document.getElementById('adCohorte').value);
+  const carreraId =Number(document.getElementById('adCarrera').value);
+  const anhoLectivo=Number(document.getElementById('adAnhoLectivo').value);
+  const anhoCursada=Number(document.getElementById('adAnhoCursada').value);
+  const montoBase  =Number(document.getElementById('adMontoBase').value);
+  const cantCuotas =Number(document.getElementById('adCantCuotas').value);
+
+  if(!nombres||!apellidos||!ci){ toast('Nombre, apellido y CI son obligatorios','warning'); return; }
+  if(!carreraId||!cohorteId){ toast('Seleccioná carrera y cohorte','warning'); return; }
+  if(!montoBase||!cantCuotas){ toast('Ingresá monto y cantidad de cuotas','warning'); return; }
+
+  const becaActiva=document.getElementById('adBecaCheck').checked;
+  const porcentajeBeca=becaActiva?Number(document.getElementById('adBecaPct').value):0;
+  const montoCuotaFinal=Math.round(montoBase*(1-porcentajeBeca/100));
+
+  const btn=document.getElementById('btnAdGuardar');
+  btn.disabled=true; btn.textContent='Procesando...';
+
+  try {
+    // Verificar CI duplicada
+    const { data: exist } = await supabase.from('alumnos').select('id').eq('ci',ci).maybeSingle();
+    if(exist){ toast('Ya existe un alumno con esa CI','warning'); btn.disabled=false; btn.textContent='Crear alumno e inscribir'; return; }
+
+    // Crear prospecto (registro mínimo)
+    const { data: prosp, error: errP } = await supabase.from('prospectos').insert({
+      nombres, apellidos, ci,
+      telefono_whatsapp: document.getElementById('adTelefono').value.trim()||null,
+      email: document.getElementById('adEmail').value.trim()||null,
+      carrera_interes_id: carreraId,
+      etapa_crm: 'Convertido',
+      canal_origen: 'Presencial'
+    }).select('id').single();
+    if(errP) throw new Error('prospecto: '+errP.message);
+
+    // Crear alumno
+    const { data: alumno, error: errA } = await supabase.from('alumnos').insert({
+      nombres, apellidos, ci,
+      fecha_nacimiento: document.getElementById('adFechaNac').value||null,
+      telefono: document.getElementById('adTelefono').value.trim()||null,
+      email: document.getElementById('adEmail').value.trim()||null,
+      pais: document.getElementById('adPais').value.trim()||'Paraguay',
+      departamento: document.getElementById('adDepto').value.trim()||null,
+      prospecto_id: prosp.id,
+      estado: 'Activo'
+    }).select('id').single();
+    if(errA) throw new Error('alumno: '+errA.message);
+
+    // Actualizar prospecto con alumno_id
+    await supabase.from('prospectos').update({
+      convertido_alumno_id:alumno.id, fecha_conversion:new Date().toISOString()
+    }).eq('id',prosp.id);
+
+    // Crear inscripción + cuotas
+    const inscripcionId = await crearInscripcionConCuotas({
+      alumnoId:alumno.id, cohorteId, anhoLectivo, anhoCursada,
+      montoBase, montoCuotaFinal, cantCuotas, porcentajeBeca
+    });
+
+    cerrarModal('modalAlumnoDirectoOverlay');
+    toast(`${nombres} ${apellidos} creado e inscripto (${cantCuotas} cuotas generadas)`,'success');
+
+    // Disparar n8n
+    try {
+      await fetch(N8N_WEBHOOK_HABILITAR,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ alumno_id:alumno.id, nombres, apellidos, ci,
+          email:document.getElementById('adEmail').value.trim()||null,
+          telefono:document.getElementById('adTelefono').value.trim()||null,
+          carrera_id:carreraId, cohorte_id:cohorteId, inscripcion_id:inscripcionId })
+      });
+    } catch(e){ console.warn('n8n:',e.message); }
+
+    await Promise.all([cargarAlumnos(), cargarSolicitudes()]);
+
+  } catch(e){
+    toast('Error: '+e.message,'error');
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Crear alumno e inscribir`;
+  }
+});
+
+// ── Nueva solicitud (modal existente) ─────────────────────────
 document.getElementById('btnNuevaSolicitud').addEventListener('click', async () => {
-  const { data } = await supabase.from('prospectos').select('id,nombres,apellidos,ci,carrera_interes_id').eq('etapa_crm','Aprobado').order('apellidos');
-  prospectos = data || [];
-  document.getElementById('fProspecto').innerHTML = '<option value="">Seleccionar prospecto aprobado...</option>'+
+  const { data } = await supabase.from('prospectos').select('id,nombres,apellidos,ci').eq('etapa_crm','Aprobado').order('apellidos');
+  prospectos=data||[];
+  document.getElementById('fProspecto').innerHTML='<option value="">Seleccionar prospecto aprobado...</option>'+
     prospectos.map(p=>`<option value="${p.id}">${p.nombres} ${p.apellidos}${p.ci?' — '+p.ci:''}</option>`).join('');
   document.getElementById('modalNuevoOverlay').classList.add('open');
 });
 
-window.cerrarModal = () => document.getElementById('modalNuevoOverlay').classList.remove('open');
-
 document.getElementById('btnGuardarAdm').addEventListener('click', async () => {
-  const prospectoId = Number(document.getElementById('fProspecto').value);
-  const carreraId   = Number(document.getElementById('fCarreraAdm').value);
-  if (!prospectoId || !carreraId) { toast('Seleccioná prospecto y carrera','warning'); return; }
-
+  const prospectoId=Number(document.getElementById('fProspecto').value);
+  const carreraId  =Number(document.getElementById('fCarreraAdm').value);
+  if(!prospectoId||!carreraId){ toast('Seleccioná prospecto y carrera','warning'); return; }
   const { error } = await supabase.from('solicitudes_admision').insert({
-    prospecto_id: prospectoId, carrera_id: carreraId,
-    cohorte_id: Number(document.getElementById('fCohorte').value) || null,
-    estado: 'Pendiente',
-    observaciones: document.getElementById('fObsAdm').value.trim() || null
+    prospecto_id:prospectoId, carrera_id:carreraId,
+    cohorte_id:Number(document.getElementById('fCohorte').value)||null,
+    estado:'Pendiente',
+    observaciones:document.getElementById('fObsAdm').value.trim()||null
   });
-  if (error) { toast('Error: '+error.message,'error'); return; }
+  if(error){ toast('Error: '+error.message,'error'); return; }
   toast('Solicitud creada','success');
-  cerrarModal();
+  cerrarModal('modalNuevoOverlay');
   await cargarSolicitudes();
 });
-
-// ── Helpers ───────────────────────────────────────────────────
-function cerrarDrawer() { document.getElementById('drawerOverlay').classList.remove('open'); }
-window.cerrarDrawer = cerrarDrawer;
-document.getElementById('drawerOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)cerrarDrawer();});
 </script>
 </body>
 </html>
