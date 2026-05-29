@@ -182,6 +182,58 @@
 
     /* Modal imagen */
     #modalImgBody img { max-width:100%; max-height:75vh; border-radius: var(--radius); object-fit:contain; }
+
+    /* ── Modal detalle item tanda ───────────────────────────── */
+    .tanda-item-info {
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px 14px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+      font-size: .82rem; margin-bottom: 14px;
+    }
+    .tanda-item-info .lbl { color: var(--txt-muted); font-size: .72rem; }
+    .tanda-item-info .val { font-weight: 600; color: var(--txt-primary); }
+    .tanda-item-monto-box {
+      background: var(--verde); color: #fff;
+      border-radius: var(--radius); padding: 10px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .tanda-item-monto-box .lbl { font-size: .72rem; opacity: .8; }
+    .tanda-item-monto-box .val { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; }
+    .factura-prefix {
+      display: flex; align-items: center;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;
+    }
+    .factura-prefix span {
+      background: var(--surface-2); padding: 9px 12px;
+      font-size: .85rem; font-weight: 600; color: var(--txt-muted);
+      border-right: 1.5px solid var(--border); white-space: nowrap;
+    }
+    .factura-prefix input {
+      flex: 1; border: none; padding: 9px 12px;
+      font-size: .95rem; font-family: var(--font-mono); font-weight: 600;
+      outline: none; background: var(--surface);
+    }
+    .factura-prefix input:focus { box-shadow: inset 0 0 0 2px rgba(26,107,60,.3); }
+    .modal-item-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-rechazar-item {
+      flex: 1; padding: 11px; border-radius: var(--radius); border: none;
+      background: var(--danger-bg); color: var(--danger);
+      font-size: .88rem; font-weight: 600; cursor: pointer;
+      transition: all var(--transition);
+    }
+    .btn-rechazar-item:hover { background: var(--danger); color: #fff; }
+    .btn-aprobar-item {
+      flex: 2; padding: 11px; border-radius: var(--radius); border: none;
+      background: var(--verde); color: #fff;
+      font-size: .88rem; font-weight: 600; cursor: pointer;
+      transition: all var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .btn-aprobar-item:hover { background: var(--verde-dark); }
+    .btn-aprobar-item:disabled { background: var(--border); color: var(--txt-muted); cursor: not-allowed; }
+    #tbodyDetalleTanda tr { cursor: pointer; }
+    #tbodyDetalleTanda tr:hover td { background: var(--verde-light); }
   </style>
 </head>
 <body>
@@ -418,7 +470,7 @@
                 </div>
                 <div class="card-body" style="padding-top:0">
                   <div class="table-wrapper">
-                    <table><thead><tr><th>Nº</th><th>Banco</th><th>Titular</th><th class="text-right">Monto</th><th>Alumno</th><th>Estado</th></tr></thead>
+                    <table><thead><tr><th>Nº</th><th>Banco</th><th>Titular</th><th class="text-right">Monto</th><th>Alumno</th><th>Concepto</th><th>Estado</th></tr></thead>
                     <tbody id="tbodyDetalleTanda"></tbody></table>
                   </div>
                 </div>
@@ -458,6 +510,69 @@
     </div><!-- /caja-wrap -->
   </div><!-- /main -->
 </div><!-- /app-layout -->
+
+<!-- Modal item tanda — Aprobar / Rechazar individual -->
+<div class="modal-overlay" id="modalItemTandaOverlay">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title">Procesar comprobante</span>
+      <button class="modal-close" onclick="cerrarModalItem()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Monto destacado -->
+      <div class="tanda-item-monto-box">
+        <div>
+          <div class="lbl">Monto del comprobante</div>
+          <div class="val" id="mitMonto">—</div>
+        </div>
+        <span class="badge" id="mitBadge">—</span>
+      </div>
+      <!-- Info alumno/concepto -->
+      <div class="tanda-item-info">
+        <div>
+          <div class="lbl">Alumno</div>
+          <div class="val" id="mitAlumno">—</div>
+        </div>
+        <div>
+          <div class="lbl">CI</div>
+          <div class="val" id="mitCI">—</div>
+        </div>
+        <div>
+          <div class="lbl">Concepto</div>
+          <div class="val" id="mitConcepto">—</div>
+        </div>
+        <div>
+          <div class="lbl">Estado actual</div>
+          <div class="val" id="mitEstado">—</div>
+        </div>
+      </div>
+      <!-- Número de factura (solo se muestra al aprobar) -->
+      <div id="mitFacturaWrap">
+        <div class="proc-section-label" style="margin-bottom:6px">Número de factura</div>
+        <div class="factura-prefix">
+          <span>089-002-</span>
+          <input type="text" id="mitFacturaInput" placeholder="0000000" maxlength="15"
+            style="width:100%" autocomplete="off">
+        </div>
+        <div style="font-size:.7rem;color:var(--txt-muted);margin-top:4px">
+          Completá el número antes de aprobar. Se enviará al alumno por WhatsApp.
+        </div>
+      </div>
+      <!-- Acciones -->
+      <div class="modal-item-actions">
+        <button class="btn-rechazar-item" id="btnRechazarItem" onclick="rechazarItem()">
+          ✕ Rechazado en tesorería
+        </button>
+        <button class="btn-aprobar-item" id="btnAprobarItem" onclick="aprobarItem()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Aprobado
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Modal imagen -->
 <div class="modal-overlay" id="modalImgOverlay">
@@ -550,7 +665,8 @@ async function cargarColaDirecta() {
       *,
       inscripciones_anuales!left(
         id,
-        alumnos(id, nombres, apellidos, ci, telefono),
+        telefono_remitente,
+        alumnos(id, nombres, apellidos, ci),
         cohortes(nro_cohorte, anho_inicio, carreras(nombre))
       )
     `)
@@ -569,7 +685,7 @@ async function cargarColaDirecta() {
       carrera_detectado: cohorte
         ? `${cohorte.carreras?.nombre} - ${cohorte.nro_cohorte}ª Cohorte - ${cohorte.anho_inicio}`
         : null,
-      telefono_alumno: alumno?.telefono || r.telefono_remitente,
+      telefono_alumno: r.telefono_remitente,
     };
   });
   renderCola();
@@ -615,7 +731,7 @@ function renderCola() {
         </div>
       </div>
       <div class="comp-item-meta">
-        <span>${c.telefono_alumno || c.telefono_remitente || '—'}</span>
+        <span>${c.telefono_remitente || '—'}</span>
         <span>${hace}</span>
         ${c.banco_origen ? `<span>${c.banco_origen}</span>` : ''}
         ${c.nro_comprobante ? `<span>Cta. Nº ${c.nro_comprobante}</span>` : ''}
@@ -651,6 +767,7 @@ window.irPagina = (p) => {
 
 window.selComp = async (id) => {
   compActivo = colaData.find(c => c.id === id) || null;
+  _inscripcionActiva = null;
   renderCola(); // resalta el activo
 
   if (!compActivo) return;
@@ -683,7 +800,16 @@ window.selComp = async (id) => {
     const match = [...selAlumno.options].find(o => o.dataset.ci === compActivo.alumno_ci);
     if (match) {
       selAlumno.value = match.value;
-      await cargarConceptos(Number(match.value));
+      await cargarInscripcionesAlumno(Number(match.value));
+      if (_inscripcionesAlumno.length > 1) {
+      const idxInsc = _inscripcionesAlumno.findIndex(ins => ins.id === compActivo.inscripcion_activa_id);
+      if (idxInsc !== -1) {
+        window.seleccionarInscripcion(idxInsc);
+        // Además marcamos el input radio visualmente
+        const radio = document.querySelector(`input[name="inscripcionSel"][value="${idxInsc}"]`);
+        if (radio) radio.checked = true;
+      }
+    }
     }
   } else {
     selAlumno.value = '';
@@ -708,124 +834,243 @@ async function cargarBancos() {
 
 // ── Alumnos ───────────────────────────────────────────────────
 async function cargarAlumnos() {
-  const { data } = await supabase.from('alumnos').select('id,nombres,apellidos,ci').eq('estado','Activo').order('apellidos');
+  const { data } = await supabase.from('alumnos')
+    .select('id,nombres,apellidos,ci').eq('estado','Activo').order('apellidos');
   if (!data) return;
   const sel = document.getElementById('selAlumno');
   sel.innerHTML = '<option value="">Seleccionar alumno...</option>' +
-    data.map(a => `<option value="${a.id}" data-ci="${a.ci}">${a.nombres} ${a.apellidos}</option>`).join('');
+    data.map(a => `<option value="${a.id}" data-ci="${a.ci}">${a.apellidos}, ${a.nombres}</option>`).join('');
 }
+
+// Inscripción actualmente seleccionada en el panel (puede haber varias por alumno)
+let _inscripcionActiva = null;
+let _inscripcionesAlumno = []; // cache de inscripciones del alumno actual
 
 document.getElementById('selAlumno').addEventListener('change', async (e) => {
   const id = Number(e.target.value);
-  if (!id) { resetConceptos(); return; }
-  await cargarConceptos(id);
+  _inscripcionActiva = null;
+  _inscripcionesAlumno = [];
+  resetConceptos();
+  if (!id) return;
+  await cargarInscripcionesAlumno(id);
 });
 
-async function cargarConceptos(alumnoId) {
-  await Promise.all([cargarCuotas(alumnoId), cargarExamenesVigentes(alumnoId)]);
-
-  // Info inscripción
-  const { data } = await supabase
+async function cargarInscripcionesAlumno(alumnoId) {
+  const { data: inscs } = await supabase
     .from('inscripciones_anuales')
-    .select('anho_cursada, anho_lectivo, cohortes(nro_cohorte, anho_inicio, carreras(nombre))')
-    .eq('alumno_id', alumnoId).eq('estado','Activo').single();
+    .select('id, anho_cursada, anho_lectivo, cohorte_id, cohortes(id, nro_cohorte, anho_inicio, carreras(nombre))')
+    .eq('alumno_id', alumnoId)
+    .eq('estado', 'Activo')
+    .order('anho_lectivo', { ascending: false });
 
   const infoEl = document.getElementById('alumnoInscriptoInfo');
-  if (data) {
-    const co = data.cohortes;
-    infoEl.style.display = 'block';
-    infoEl.textContent = `Inscripto a ${co?.carreras?.nombre} — ${co?.nro_cohorte}ª Cohorte ${co?.anho_inicio}`;
-  } else {
-    infoEl.style.display = 'none';
+  infoEl.style.display = 'block';
+  infoEl.style.fontWeight = '600';
+
+  if (!inscs?.length) {
+    infoEl.style.color = 'var(--danger)';
+    infoEl.textContent = 'Sin inscripciones activas';
+    return;
   }
+
+  _inscripcionesAlumno = inscs;
+
+  if (inscs.length === 1) {
+    _inscripcionActiva = inscs[0];
+    const co = inscs[0].cohortes;
+    infoEl.style.color = 'var(--verde)';
+    infoEl.textContent = `${co?.carreras?.nombre} — ${co?.nro_cohorte}ª Cohorte ${co?.anho_inicio}`;
+    await cargarConceptos(inscs[0]);
+    return;
+  }
+
+  // Múltiples inscripciones — selector de radio
+  infoEl.style.color = 'var(--txt-secondary)';
+  infoEl.style.fontWeight = 'normal';
+  infoEl.innerHTML = `
+    <div style="font-size:.7rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">
+      ${inscs.length} carreras — seleccioná una
+    </div>
+    ${inscs.map((ins, idx) => {
+      const co = ins.cohortes;
+      return `<label id="inscLabel_${idx}" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;margin-bottom:5px;background:var(--surface);font-size:.82rem">
+        <input type="radio" name="inscripcionSel" value="${idx}"
+          style="accent-color:var(--verde);width:15px;height:15px;flex-shrink:0"
+          onchange="seleccionarInscripcion(${idx})">
+        <div>
+          <div style="font-weight:600;color:var(--txt-primary)">${co?.carreras?.nombre || '—'}</div>
+          <div style="font-size:.7rem;color:var(--txt-muted)">${co?.nro_cohorte}ª Cohorte · ${ins.anho_lectivo} · ${ins.anho_cursada}º año</div>
+        </div>
+      </label>`;
+    }).join('')}`;
+
+  document.getElementById('listCuotas').innerHTML   = '<div class="ms-empty">Seleccioná la carrera primero</div>';
+  document.getElementById('listExamenes').innerHTML = '<div class="ms-empty">Seleccioná la carrera primero</div>';
 }
 
-async function cargarCuotas(alumnoId) {
+window.seleccionarInscripcion = async (idx) => {
+  _inscripcionActiva = _inscripcionesAlumno[idx];
+  // Highlight visual
+  _inscripcionesAlumno.forEach((_, i) => {
+    const lbl = document.getElementById(`inscLabel_${i}`);
+    if (!lbl) return;
+    lbl.style.borderColor = i === idx ? 'var(--verde)' : 'var(--border)';
+    lbl.style.background  = i === idx ? 'var(--verde-light)' : 'var(--surface)';
+  });
+  await cargarConceptos(_inscripcionActiva);
+};
+
+async function cargarConceptos(inscripcion) {
+  // Carga cuotas y exámenes en paralelo usando el objeto inscripcion completo
+  await Promise.all([
+    cargarCuotas(inscripcion.id),
+    cargarExamenesVigentes(inscripcion.cohorte_id || inscripcion.cohortes?.id),
+  ]);
+}
+
+async function cargarCuotas(inscripcionId) {
   const { data } = await supabase
     .from('cuotas_pagos')
-    .select('id, nro_cuota, monto_final, estado_pago, inscripciones_anuales!inner(alumno_id)')
-    .eq('inscripciones_anuales.alumno_id', alumnoId)
-    .in('estado_pago', ['Pendiente','Vencido'])
+    .select('id, nro_cuota, monto_final, estado_pago, fecha_vencimiento')
+    .eq('inscripcion_id', inscripcionId)
+    .in('estado_pago', ['Pendiente', 'Vencido'])
     .order('nro_cuota');
 
   const list = document.getElementById('listCuotas');
   list.innerHTML = data?.length
     ? data.map(c => `
         <label class="ms-item">
-          <input type="checkbox" data-tipo="cuota" data-id="${c.id}" data-monto="${c.monto_final}">
-          <span class="ms-item-label">Cuota ${c.nro_cuota} ${c.estado_pago==='Vencido'?'<span class="badge badge-danger" style="font-size:.6rem">Vencida</span>':''}</span>
+          <input type="checkbox" data-tipo="CUOTA" data-id="${c.id}" data-monto="${c.monto_final}">
+          <span class="ms-item-label">
+            Cuota ${c.nro_cuota}
+            ${c.estado_pago === 'Vencido' ? '<span class="badge badge-danger" style="font-size:.6rem">Vencida</span>' : ''}
+          </span>
           <span class="ms-item-monto">${formatGs(c.monto_final)}</span>
         </label>`).join('')
     : '<div class="ms-empty">Sin cuotas pendientes</div>';
 }
 
-async function cargarExamenesVigentes(alumnoId) {
+async function cargarExamenesVigentes(cohorteId) {
+  if (!cohorteId) {
+    document.getElementById('listExamenes').innerHTML = '<div class="ms-empty">Sin cohorte identificada</div>';
+    return;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
   const { data } = await supabase
     .from('calendario_examenes')
-    .select('id, oportunidad_nro, materias(nombre)')
-    .eq('estado','VIGENTE');
+    .select('id, oportunidad_nro, materia_id, materias(nombre)')
+    .eq('estado', 'VIGENTE')
+    .eq('cohorte_id', cohorteId)
+    .lte('fecha_desde', today)
+    .gte('fecha_hasta', today)
+    .order('materia_id');
 
   const list = document.getElementById('listExamenes');
   list.innerHTML = data?.length
     ? data.map(e => `
         <label class="ms-item">
-          <input type="checkbox" data-tipo="examen" data-id="${e.id}" data-monto="0">
-          <span class="ms-item-label">${e.materias?.nombre||'—'} — ${e.oportunidad_nro}ª oportunidad</span>
-          <span class="ms-item-monto">—</span>
+          <input type="checkbox" data-tipo="EXAMEN" data-id="${e.id}" data-monto="0">
+          <span class="ms-item-label">${e.materias?.nombre || '—'} — ${e.oportunidad_nro}ª oportunidad</span>
+          <span class="ms-item-monto" style="font-size:.7rem;color:var(--txt-muted)">S/ arancel</span>
         </label>`).join('')
-    : '<div class="ms-empty">Sin exámenes vigentes</div>';
+    : '<div class="ms-empty">Sin exámenes habilitados para esta cohorte</div>';
 }
 
 function resetConceptos() {
   document.getElementById('listCuotas').innerHTML    = '<div class="ms-empty">Seleccioná un alumno primero</div>';
   document.getElementById('listExamenes').innerHTML  = '<div class="ms-empty">Seleccioná un alumno primero</div>';
-  document.getElementById('alumnoInscriptoInfo').style.display = 'none';
+  const infoEl = document.getElementById('alumnoInscriptoInfo');
+  infoEl.style.display = 'none';
+  infoEl.innerHTML = '';
 }
-
-// ── Mandar a verificación ─────────────────────────────────────
+// ── Mandar a verificación (Corregido y Asegurado) ─────────────────────────────────────
 document.getElementById('btnMandarVerificacion').addEventListener('click', async () => {
   if (!compActivo) return;
+
   const alumnoId = Number(document.getElementById('selAlumno').value);
   const bancoId  = Number(document.getElementById('selBancoReceptor').value);
-  if (!alumnoId) { toast('Seleccioná el alumno','warning'); return; }
-  if (!bancoId)  { toast('Seleccioná el banco que recibió','warning'); return; }
+  if (!alumnoId)          { toast('Seleccioná el alumno', 'warning'); return; }
+  if (!bancoId)           { toast('Seleccioná el banco que recibió', 'warning'); return; }
+  if (!_inscripcionActiva){ toast('Seleccioná la carrera/inscripción del alumno', 'warning'); return; }
 
-  const { data: insc } = await supabase
-    .from('inscripciones_anuales')
-    .select('id').eq('alumno_id', alumnoId).eq('estado','Activo').single();
-  if (!insc) { toast('El alumno no tiene inscripción activa','error'); return; }
-
+  // 1. Recolectar conceptos seleccionados (Checkboxes)
   const conceptos = [];
   document.querySelectorAll('#listCuotas input:checked, #listExamenes input:checked').forEach(el => {
-    conceptos.push({ concepto_tipo: el.dataset.tipo, referencia_id: Number(el.dataset.id), monto_pactado: Number(el.dataset.monto)||0 });
+    conceptos.push({
+      concepto_tipo: el.dataset.tipo,  // 'CUOTA' o 'EXAMEN'
+      referencia_id: Number(el.dataset.id),
+      monto_pactado: Number(el.dataset.monto) || 0,
+    });
   });
+
+  // Capturar si escribió algo en "Otros Conceptos"
   const otros = document.getElementById('inputOtrosConceptos').value.trim();
-  if (otros) conceptos.push({ concepto_tipo: 'otro', referencia_id: null, monto_pactado: 0, nota: otros });
+  if (otros) {
+    conceptos.push({ 
+      concepto_tipo: otros, // Mantenemos las mayúsculas para consistencia
+      referencia_id: null, 
+      monto_pactado: 0 
+    });
+  }
 
-  const alumnoCI = [...document.getElementById('selAlumno').options].find(o => o.value == alumnoId)?.dataset.ci;
+  // Si obligatoriamente tiene que haber al menos un concepto para mandar a verificar:
+  if (conceptos.length === 0) {
+    toast('Debes seleccionar al menos una cuota, examen u otro concepto', 'warning');
+    return;
+  }
 
+  const alumnoCI = [...document.getElementById('selAlumno').options]
+    .find(o => o.value == alumnoId)?.dataset.ci;
+
+  // 2. Ejecutar transacciones en Supabase con verificación de errores real
   try {
-    await supabase.from('comprobantes_pago').update({
-      estado_procesamiento: 'En Verificación',
-      inscripcion_id: insc.id,
-      banco_receptor: bancoId,
-      ci_remitente: alumnoCI || compActivo.ci_remitente,
-      procesado_por: sesion.id,
-      procesado_en: new Date().toISOString(),
-    }).eq('id', compActivo.id);
+    
+    // PASO A: Actualizar la cabecera del comprobante
+    const { error: errComp } = await supabase
+      .from('comprobantes_pago')
+      .update({
+        estado_procesamiento: 'En Verificación',
+        inscripcion_id:  _inscripcionActiva.id,
+        banco_receptor:  bancoId,
+        ci_remitente:    alumnoCI || compActivo.ci_remitente,
+        procesado_por:   sesion.id, // Asegúrate de que 'sesion' global exista y tenga id
+        procesado_en:    new Date().toISOString(),
+      })
+      .eq('id', compActivo.id);
 
-    if (conceptos.length) {
-      await supabase.from('detalles_pago_comprobante').insert(
-        conceptos.map(c => ({ comprobante_id: compActivo.id, concepto_tipo: c.concepto_tipo, referencia_id: c.referencia_id, monto_pactado: c.monto_pactado }))
+    if (errComp) throw new Error("Error al actualizar comprobante: " + errComp.message);
+
+    // PASO B: Insertar los detalles vinculados
+    const { error: errDetalles } = await supabase
+      .from('detalles_pago_comprobante')
+      .insert(
+        conceptos.map(c => ({
+          comprobante_id: compActivo.id,
+          concepto_tipo:  c.concepto_tipo,
+          referencia_id:  c.referencia_id,
+          monto_pactado:  c.monto_pactado,
+        }))
       );
-    }
 
-    toast('Comprobante enviado a verificación','success');
+    if (errDetalles) throw new Error("Error al guardar detalles de pago: " + errDetalles.message);
+
+    // PASO C: Todo salió bien, limpiar interfaz
+    toast('Comprobante enviado a verificación con sus detalles', 'success');
+    
     compActivo = null;
+    _inscripcionActiva = null;
+    
     document.getElementById('procEmpty').style.display = 'flex';
     document.getElementById('procInner').style.display = 'none';
+    
+    // Recargar listas tras el éxito
     await Promise.all([cargarCola(), cargarKPIs()]);
-  } catch(err) { toast('Error: '+err.message,'error'); }
+
+  } catch(err) {
+    console.error("❌ Fallo en la verificación:", err);
+    toast(err.message, 'error');
+  }
 });
 
 document.getElementById('btnAnular').addEventListener('click', async () => {
@@ -840,18 +1085,26 @@ document.getElementById('btnAnular').addEventListener('click', async () => {
 
 // ── En verificación ───────────────────────────────────────────
 async function cargarVerif() {
-  const { data } = await supabase
+  // Capturamos el 'error' que devuelve Supabase
+  const { data, error } = await supabase
     .from('comprobantes_pago')
     .select(`
       id, titular_cuenta, monto_detectado, recibido_en, banco_origen, nro_comprobante,
       cuentas_bancarias(entidad, nombre),
-      alumnos:ci_remitente(nombres, apellidos, telefono, ci),
+      alumnos:ci_remitente(nombres, apellidos, ci),
+      telefono_remitente,
       inscripciones_anuales(cohortes(carreras(nombre))),
       detalles_pago_comprobante(concepto_tipo)
     `)
     .eq('estado_procesamiento','En Verificación')
     .is('tanda_id', null)
     .order('recibido_en');
+
+  // ¡ESTO TE VA A DECIR EL MOTIVO REAL!
+  if (error) {
+    console.error("❌ ERROR DETALLADO DE SUPABASE:", error.message, error.details, error.hint);
+    return;
+  }
 
   verifData = data || [];
   document.getElementById('verifCount').textContent = verifData.length + ' Records';
@@ -1042,39 +1295,198 @@ window.verTanda = async (id) => {
   tandaActiva = id;
   const { data } = await supabase
     .from('comprobantes_pago')
-    .select('*, cuentas_bancarias(entidad), alumnos:inscripciones_anuales(alumno_id(nombres,apellidos))')
-    .eq('tanda_id', id).order('recibido_en');
+    .select(`
+      id, titular_cuenta, monto_detectado, estado_tesoreria, estado_procesamiento,
+      ci_remitente, telefono_remitente,
+      cuentas_bancarias(entidad),
+      inscripciones_anuales(
+        alumnos(nombres, apellidos, ci, telefono),
+        cohortes(carreras(nombre))
+      ),
+      detalles_pago_comprobante(concepto_tipo, referencia_id, monto_pactado)
+    `)
+    .eq('tanda_id', id)
+    .order('id');
 
   const wrap = document.getElementById('detalleTandaWrap');
   wrap.style.display = 'block';
   document.getElementById('detalleTandaTitle').textContent = `Detalle Tanda #${id}`;
 
+  window._tandaItems = data || [];
+
   const tbody = document.getElementById('tbodyDetalleTanda');
-  tbody.innerHTML = (data||[]).map((r,i) => {
-    const al = r.alumnos?.alumno_id;
-    return `<tr>
-      <td class="td-mono">${i+1}</td>
-      <td>${r.cuentas_bancarias?.entidad||'—'}</td>
-      <td>${r.titular_cuenta||'—'}</td>
+  tbody.innerHTML = window._tandaItems.map((r, i) => {
+    const al  = r.inscripciones_anuales?.alumnos;
+    const est = r.estado_procesamiento || '—';
+    const estClass = {
+      'En Verificación':   'badge-warning',
+      'Procesando':'badge-success',
+      'Aplicado':'badge-success',
+      'Rechazado':             'badge-danger',
+    }[est] || 'badge-muted';
+    const conceptos = (r.detalles_pago_comprobante || [])
+      .map(d => d.concepto_tipo).join(', ') || '—';
+    const nombre = al ? `${al.nombres} ${al.apellidos}` : r.ci_remitente || '—';
+    // Solo filas pendientes son clickeables
+    const pendiente = est === 'En Verificación';
+    return `<tr onclick="${pendiente ? `abrirModalItem(${r.id})` : ''}"
+               style="cursor:${pendiente ? 'pointer' : 'default'}"
+               title="${pendiente ? 'Click para procesar' : ''}">
+      <td class="td-mono">${i + 1}</td>
+      <td>${r.cuentas_bancarias?.entidad || '—'}</td>
+      <td>${r.titular_cuenta || '—'}</td>
       <td class="text-right td-mono">${formatGs(r.monto_detectado)}</td>
-      <td>${al ? al.nombres+' '+al.apellidos : r.ci_remitente||'—'}</td>
-      <td><span class="badge badge-warning">${r.estado_tesoreria||'—'}</span></td>
+      <td>${nombre}</td>
+      <td style="font-size:.75rem;color:var(--txt-secondary)">${conceptos}</td>
+      <td><span class="badge ${estClass}">${est==='Procesando'?'Facturado':est}</span></td>
     </tr>`;
   }).join('');
 
-  wrap.scrollIntoView({behavior:'smooth'});
+  wrap.scrollIntoView({ behavior: 'smooth' });
 };
 
-document.getElementById('btnCerrarDetalle').addEventListener('click',()=>{
-  document.getElementById('detalleTandaWrap').style.display='none';
+// ── Modal item individual de tanda ────────────────────────────
+const N8N_KUDE = 'https://n8n.uniupg.edu.py/webhook/kude';
+let _itemActivo = null;
+
+window.abrirModalItem = (comprobanteId) => {
+  const item = (window._tandaItems || []).find(r => r.id === comprobanteId);
+  if (!item) return;
+  _itemActivo = item;
+
+  const al = item.inscripciones_anuales?.alumnos;
+  const conceptos = (item.detalles_pago_comprobante || [])
+    .map(d => d.concepto_tipo).join(', ') || '—';
+
+  document.getElementById('mitMonto').textContent   = formatGs(item.monto_detectado);
+  document.getElementById('mitAlumno').textContent  = al ? `${al.nombres} ${al.apellidos}` : '—';
+  document.getElementById('mitCI').textContent      = al?.ci || item.ci_remitente || '—';
+  document.getElementById('mitConcepto').textContent = conceptos;
+  document.getElementById('mitEstado').textContent  = item.estado_tesoreria || '—';
+  document.getElementById('mitFacturaInput').value  = '';
+
+  const bdg = document.getElementById('mitBadge');
+  bdg.className = 'badge badge-warning';
+  bdg.textContent = item.estado_procesamiento || '—';
+
+  document.getElementById('modalItemTandaOverlay').classList.add('open');
+  document.getElementById('mitFacturaInput').focus();
+};
+
+window.cerrarModalItem = () => {
+  document.getElementById('modalItemTandaOverlay').classList.remove('open');
+  _itemActivo = null;
+};
+
+document.getElementById('modalItemTandaOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) cerrarModalItem();
+});
+
+window.rechazarItem = async () => {
+  if (!_itemActivo) return;
+  if (!confirm('¿Marcar este comprobante como rechazado en tesorería?')) return;
+
+  const btn = document.getElementById('btnRechazarItem');
+  btn.disabled = true;
+
+  try {
+    await supabase.from('comprobantes_pago').update({
+      estado_procesamiento: 'Rechazado',
+      estado_tesoreria:     'Rechazado',
+      procesado_en:         new Date().toISOString(),
+    }).eq('id', _itemActivo.id);
+
+    toast('Comprobante rechazado en tesorería', 'warning');
+    cerrarModalItem();
+    await verTanda(tandaActiva); // refrescar detalle
+    await cargarTandas();
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+window.aprobarItem = async () => {
+  if (!_itemActivo) return;
+  const factura = document.getElementById('mitFacturaInput').value.trim();
+  if (!factura) {
+    toast('Ingresá el número de factura antes de aprobar', 'warning');
+    document.getElementById('mitFacturaInput').focus();
+    return;
+  }
+
+  const btn = document.getElementById('btnAprobarItem');
+  btn.disabled = true;
+  btn.innerHTML = '<div style="width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite"></div>';
+
+  const al        = _itemActivo.inscripciones_anuales?.alumnos;
+  const nombre    = al ? `${al.nombres} ${al.apellidos}` : (_itemActivo.ci_remitente || '');
+  const telefono  = _itemActivo.telefono_remitente || '';
+  const nroFactura = `089-002-${factura}`;
+
+try {
+    // 1. Actualizar estado a Procesando
+    await supabase.from('comprobantes_pago').update({
+      estado_procesamiento: 'Procesando',
+      procesado_en:         new Date().toISOString(),
+    }).eq('id', _itemActivo.id);
+
+    // 2. Disparar webhook kude para enviar factura por WhatsApp
+    await fetch(N8N_KUDE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        telefono: telefono,
+        nombre:   nombre,
+        factura:  nroFactura,
+      }).toString(),
+    });
+
+    toast(`Aprobado correctamente. Factura ${nroFactura} enviada a ${nombre}`, 'success');
+    cerrarModalItem();
+    await verTanda(tandaActiva);
+    await cargarTandas();
+
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Aprobado`;
+  }
+};
+
+document.getElementById('btnCerrarDetalle').addEventListener('click', () => {
+  document.getElementById('detalleTandaWrap').style.display = 'none';
 });
 
 document.getElementById('btnAprobarTanda').addEventListener('click', async () => {
-  if (!tandaActiva || !confirm(`¿Aprobar tanda #${tandaActiva} y generar recibos?`)) return;
-  const { error } = await supabase.rpc('fn_aprobar_tanda_completa',{ p_tanda_id:tandaActiva, p_usuario_id:sesion.id });
-  if (error) { toast('Error: '+error.message,'error'); return; }
-  toast(`Tanda #${tandaActiva} aprobada. Recibos generados.`,'success');
-  document.getElementById('detalleTandaWrap').style.display='none';
+  if (!tandaActiva) return;
+  const pendientes = (window._tandaItems || [])
+    .filter(r => r.estado_tesoreria === 'Enviado a Tesorería').length;
+  if (pendientes > 0) {
+    toast(`Aún quedan ${pendientes} comprobante${pendientes > 1 ? 's' : ''} sin procesar en esta tanda`, 'warning');
+    return;
+  }
+  if (!confirm(`¿Aprobar tanda #${tandaActiva} completa y generar recibos? Esta acción no se puede deshacer.`)) return;
+
+  const btn = document.getElementById('btnAprobarTanda');
+  btn.disabled = true;
+  btn.textContent = 'Procesando...';
+
+  const { error } = await supabase.rpc('fn_aprobar_tanda_completa', {
+    p_tanda_id:   tandaActiva,
+    p_usuario_id: sesion.id,
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Aprobar y generar recibos`;
+
+  if (error) { toast('Error: ' + error.message, 'error'); return; }
+
+  toast(`Tanda #${tandaActiva} aprobada. Recibos generados.`, 'success');
+  document.getElementById('detalleTandaWrap').style.display = 'none';
+  window._tandaItems = [];
   await cargarTandas();
 });
 

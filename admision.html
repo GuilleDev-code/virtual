@@ -119,8 +119,7 @@
     <div class="adm-wrap">
       <div class="adm-tabs">
         <button class="adm-tab active" data-tab="solicitudes">Solicitudes <span class="tc" id="tcPend">0</span></button>
-        <button class="adm-tab" data-tab="documentos">Documentos</button>
-        <button class="adm-tab" data-tab="cohorte">Vista Cohorte</button>
+        <button class="adm-tab" data-tab="cohorte">Documentos físicos</button>
         <button class="adm-tab" data-tab="alumnos">Alumnos inscriptos</button>
         <button class="adm-tab" data-tab="nueva-inscripcion">Nueva inscripción</button>
       </div>
@@ -158,30 +157,7 @@
           </div>
         </div>
 
-        <!-- ── DOCUMENTOS ──────────────────────────────────── -->
-        <div id="tab-documentos" style="display:none">
-          <div class="toolbar">
-            <div class="search-wrap">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input type="text" class="form-control" id="searchDoc" placeholder="Buscar solicitud...">
-            </div>
-            <select class="form-control" id="filtroEstDoc" style="width:auto">
-              <option value="">Todos</option>
-              <option value="Pendiente">Pendiente</option>
-              <option value="Verificado">Verificado</option>
-              <option value="Rechazado">Rechazado</option>
-            </select>
-            <span id="docTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
-          </div>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>#</th><th>Prospecto</th><th>Tipo documento</th><th>Archivo</th><th>Estado</th><th>Fecha subida</th><th>Físico</th><th></th></tr></thead>
-              <tbody id="tbodyDoc"><tr><td colspan="8" class="text-center" style="padding:40px;color:var(--txt-muted)">Cargando...</td></tr></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ── VISTA COHORTE ───────────────────────────────── -->
+        <!-- ── DOCUMENTOS FÍSICOS ─────────────────────────── -->
         <div id="tab-cohorte" style="display:none">
           <div class="cohorte-toolbar">
             <select class="form-control" id="cohCarrera" style="width:220px"><option value="">Seleccionar carrera...</option></select>
@@ -487,7 +463,7 @@ document.getElementById('fechaHoy').textContent =
 const PUBLIC_VIEW_URL = `${location.origin}/docs_cohorte.html`;
 const N8N_WEBHOOK_HABILITAR = 'https://n8n.tudominio.com/webhook/habilitar-alumno';
 
-let solicitudes=[], documentos=[], alumnos=[], carreras=[], prospectos=[];
+let solicitudes=[], alumnos=[], carreras=[], prospectos=[];
 let cohorteDatos=[];
 let niAlumnoActual=null;
 
@@ -502,7 +478,7 @@ window.cerrarDrawer = cerrarDrawer;
 document.getElementById('drawerOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)cerrarDrawer();});
 
 // ── Tabs ──────────────────────────────────────────────────────
-const ALL_TABS=['solicitudes','documentos','cohorte','alumnos','nueva-inscripcion'];
+const ALL_TABS=['solicitudes','cohorte','alumnos','nueva-inscripcion'];
 document.querySelectorAll('.adm-tab').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('.adm-tab').forEach(b=>b.classList.remove('active'));
@@ -512,7 +488,7 @@ document.querySelectorAll('.adm-tab').forEach(btn=>{
 });
 
 // ── Init ──────────────────────────────────────────────────────
-await Promise.all([cargarSolicitudes(), cargarDocumentos(), cargarAlumnos(), cargarCarreras()]);
+await Promise.all([cargarSolicitudes(), cargarAlumnos(), cargarCarreras()]);
 
 // ══════════════════════════════════════════════════════════════
 // FUNCIÓN CENTRAL: crear inscripcion_anual + cuotas_pagos bulk
@@ -692,57 +668,7 @@ function renderSolicitudes() {
 });
 document.getElementById('btnRefSol').addEventListener('click',cargarSolicitudes);
 
-// ── Documentos ────────────────────────────────────────────────
-async function cargarDocumentos() {
-  const { data } = await supabase
-    .from('documentos_admision')
-    .select('*, solicitudes_admision(prospectos(nombres,apellidos))')
-    .order('fecha_subida',{ascending:false});
-  documentos = data || [];
-  renderDocumentos();
-}
 
-function renderDocumentos() {
-  const q  =document.getElementById('searchDoc').value.toLowerCase();
-  const est=document.getElementById('filtroEstDoc').value;
-  let items=documentos;
-  if(q)   items=items.filter(d=>`${d.solicitudes_admision?.prospectos?.nombres} ${d.solicitudes_admision?.prospectos?.apellidos}`.toLowerCase().includes(q));
-  if(est) items=items.filter(d=>d.estado_verificacion===est);
-  document.getElementById('docTotal').textContent=`${items.length} registros`;
-  const EST={Pendiente:'badge-warning',Verificado:'badge-success',Rechazado:'badge-danger'};
-  const TL={cedula:'Cédula',foto_carnet:'Foto carnet',solicitud_inscripcion:'Solicitud',contrato:'Contrato',titulo:'Título',certificado_estudio:'Cert. estudio',certificado_nacimiento:'Cert. nacimiento',acta_nacimiento:'Acta nacimiento',constancia_trabajo:'Const. trabajo',comprobante_pago_inscripcion:'Comprobante pago',otro:'Otro'};
-  document.getElementById('tbodyDoc').innerHTML=items.map((d,i)=>{
-    const p=d.solicitudes_admision?.prospectos;
-    return `<tr>
-      <td class="td-mono">${i+1}</td>
-      <td>${p?p.nombres+' '+p.apellidos:'—'}</td>
-      <td><span class="badge badge-muted" style="font-size:.65rem">${TL[d.tipo_documento]||d.tipo_documento}</span></td>
-      <td>${d.nombre_archivo?`<a href="${d.drive_url}" target="_blank" class="doc-link">${d.nombre_archivo}</a>`:`<a href="${d.drive_url}" target="_blank" class="doc-link">Ver archivo</a>`}</td>
-      <td><span class="badge ${EST[d.estado_verificacion]||'badge-muted'}">${d.estado_verificacion}</span></td>
-      <td class="td-mono" style="font-size:.75rem">${formatFechaHora(d.fecha_subida)}</td>
-      <td>${d.entregado_fisico?'<span class="badge badge-success">Sí</span>':'<span class="badge badge-muted">No</span>'}</td>
-      <td>${d.estado_verificacion==='Pendiente'?`
-        <button class="btn btn-icon" onclick="verificarDoc(${d.id},'Verificado')" title="Verificar" style="color:var(--success)">✓</button>
-        <button class="btn btn-icon" onclick="verificarDoc(${d.id},'Rechazado')" title="Rechazar" style="color:var(--danger)">✕</button>`:''}
-      </td>
-    </tr>`;
-  }).join('')||`<tr><td colspan="8" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin documentos</td></tr>`;
-}
-
-['searchDoc','filtroEstDoc'].forEach(id=>{
-  document.getElementById(id)?.addEventListener('input',renderDocumentos);
-  document.getElementById(id)?.addEventListener('change',renderDocumentos);
-});
-
-window.verificarDoc = async (id, estado) => {
-  await supabase.from('documentos_admision').update({
-    estado_verificacion:estado, verificado_por:sesion.id,
-    fecha_verificacion:new Date().toISOString()
-  }).eq('id',id);
-  toast(estado==='Verificado'?'Documento verificado':'Documento rechazado', estado==='Verificado'?'success':'warning');
-  await cargarDocumentos();
-  if(cohorteDatos.length) renderCohorte();
-};
 
 // ── Alumnos ───────────────────────────────────────────────────
 async function cargarAlumnos() {
@@ -811,7 +737,7 @@ document.getElementById('btnCargarCohorte').addEventListener('click', async () =
     .from('solicitudes_admision')
     .select('id,estado,prospectos(id,nombres,apellidos,ci,telefono_whatsapp,email),documentos_admision(*)')
     .eq('cohorte_id',cohorteId)
-    .order('fecha_solicitud');
+    .order('prospectos(apellidos)');
   cohorteDatos=sols||[];
   const shareUrl=`${PUBLIC_VIEW_URL}?carrera_id=${carreraId}&cohorte_id=${cohorteId}`;
   const shareBtn=document.getElementById('btnShareCohorte');
@@ -826,41 +752,37 @@ function renderCohorte() {
     return;
   }
   const total=cohorteDatos.length;
-  const listos=cohorteDatos.filter(s=>TIPOS_DOC.every(td=>{const d=(s.documentos_admision||[]).find(x=>x.tipo_documento===td.key);return d&&d.estado_verificacion==='Verificado';})).length;
+  const listos=cohorteDatos.filter(s=>TIPOS_DOC.every(td=>{const d=(s.documentos_admision||[]).find(x=>x.tipo_documento===td.key);return d&&d.entregado_fisico===true;})).length;
   const habilitados=cohorteDatos.filter(s=>s.estado==='Aprobada').length;
-
-  const iconoDoc=(url)=>url
-    ?`<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`
-    :`<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 
   const rows=cohorteDatos.map((s,i)=>{
     const p=s.prospectos;
     const docs=s.documentos_admision||[];
     const habilitado=s.estado==='Aprobada';
-    const todosVerificados=TIPOS_DOC.every(td=>{const d=docs.find(x=>x.tipo_documento===td.key);return d&&d.estado_verificacion==='Verificado';});
+    const todosEntregados=TIPOS_DOC.every(td=>{const d=docs.find(x=>x.tipo_documento===td.key);return d&&d.entregado_fisico===true;});
 
     const docCeldas=TIPOS_DOC.map(td=>{
       const doc=docs.find(x=>x.tipo_documento===td.key);
-      let cls='',lbl='—';
-      if(doc){
-        if(doc.estado_verificacion==='Verificado'){cls='ok';lbl='OK';}
-        else if(doc.estado_verificacion==='Rechazado'){cls='mal';lbl='✕';}
-        else{cls='pend';lbl='...';}
-      }
-      const btns=doc&&doc.estado_verificacion!=='Verificado'
-        ?`<div class="check-btns">
-            <button class="btn-check-ok"  onclick="cohVerificarDoc(${doc.id},'Verificado')">✓</button>
-            <button class="btn-check-mal" onclick="cohVerificarDoc(${doc.id},'Rechazado')">✕</button>
-          </div>`:'';
-      return `<td style="text-align:center"><div class="doc-cell">
-        <a href="${doc?.drive_url||'#'}" target="_blank" title="${td.label}" class="${doc?'':'sin-doc'}">${iconoDoc(doc?.drive_url)}</a>
-        <span class="doc-estado ${cls}">${lbl}</span>${btns}
-      </div></td>`;
+      const entregado=doc?.entregado_fisico===true;
+      const checkedAttr=entregado?'checked':'';
+      const inputId=doc?`chk_${doc.id}`:`chk_nd_${td.key}_${s.id}`;
+      const onchange=doc?`cohToggleFisico(${doc.id},this.checked)`:'';
+      const disabled=doc?'':'disabled';
+      return `<td style="text-align:center">
+        <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:${doc?'pointer':'default'}">
+          <input type="checkbox" id="${inputId}" ${checkedAttr} ${disabled}
+            onchange="${onchange}"
+            style="width:16px;height:16px;accent-color:var(--verde);cursor:${doc?'pointer':'not-allowed'}">
+          <span class="doc-estado ${entregado?'ok':doc?'pend':'mal'}" style="font-size:.58rem">
+            ${doc?(entregado?'OK':'Falta'):'—'}
+          </span>
+        </label>
+      </td>`;
     }).join('');
 
     const btnHabilitar=habilitado
       ?`<button class="btn-habilitar habilitado">✓ Habilitado</button>`
-      :`<button class="btn-habilitar" ${!todosVerificados?'disabled title="Verificar todos los documentos primero"':''} onclick="habilitarAlumno(${s.id})">Habilitar</button>`;
+      :`<button class="btn-habilitar" ${!todosEntregados?'disabled title="Marcar todos los documentos físicos primero"':''} onclick="habilitarAlumno(${s.id})">Habilitar</button>`;
 
     return `<tr class="${habilitado?'habilitado':''}">
       <td class="td-mono" style="font-size:.7rem">${i+1}</td>
@@ -875,7 +797,7 @@ function renderCohorte() {
   document.getElementById('cohContent').innerHTML=`
     <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap">
       <div class="docs-progress" style="flex:1;min-width:200px">
-        <span style="color:var(--txt-muted);font-size:.75rem">Docs completos:</span>
+        <span style="color:var(--txt-muted);font-size:.75rem">Físicos entregados:</span>
         <div class="bar-wrap"><div class="bar-fill" style="width:${total?Math.round(listos/total*100):0}%"></div></div>
         <span style="font-size:.75rem;font-weight:700;color:var(--verde)">${listos}/${total}</span>
       </div>
@@ -891,18 +813,17 @@ function renderCohorte() {
     </table></div>`;
 }
 
-window.cohVerificarDoc = async (docId, estado) => {
-  await supabase.from('documentos_admision').update({
-    estado_verificacion:estado, verificado_por:sesion.id,
-    fecha_verificacion:new Date().toISOString()
-  }).eq('id',docId);
+window.cohToggleFisico = async (docId, valor) => {
+  await supabase.from('documentos_admision')
+    .update({ entregado_fisico: valor })
+    .eq('id', docId);
+  // Actualizar dato local sin re-fetch
   cohorteDatos.forEach(s=>{
     const doc=(s.documentos_admision||[]).find(d=>d.id===docId);
-    if(doc) doc.estado_verificacion=estado;
+    if(doc) doc.entregado_fisico=valor;
   });
-  toast(estado==='Verificado'?'Documento verificado':'Rechazado', estado==='Verificado'?'success':'warning');
+  toast(valor?'Documento físico recibido':'Marcado como no entregado', valor?'success':'warning');
   renderCohorte();
-  await cargarDocumentos();
 };
 
 window.habilitarAlumno = async (solicitudId) => {

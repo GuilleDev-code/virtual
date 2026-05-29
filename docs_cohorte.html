@@ -219,6 +219,7 @@
 <script type="module">
 // ── Config Supabase (igual que supabase.js del sistema) ──────
 // IMPORTANTE: usar solo anon key (solo lectura pública es suficiente)
+
 const SUPABASE_URL = 'https://dhamkbwoaswsxckudlmd.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_N5wBvz9PTzz4sSCemLyCnQ_XiFGmKhk';
 
@@ -303,13 +304,13 @@ async function cargar() {
       const p = s.prospectos;
       const docs = s.documentos_admision || [];
       const habilitado = s.estado === 'Aprobada';
+      
 
       const celdas = TIPOS_DOC.map(td => {
         const doc = docs.find(d => d.tipo_documento === td.key);
         let clase = 'nd', texto = '—';
         if (doc) {
-          if (doc.estado_verificacion === 'Verificado') { clase='ok'; texto='✓'; }
-          else if (doc.estado_verificacion === 'Rechazado') { clase='mal'; texto='✕'; }
+          if (doc.entregado_fisico) { clase='ok'; texto='✓'; }
           else { clase='pend'; texto='●'; }
         }
         return `<td class="centro">
@@ -355,9 +356,8 @@ async function cargar() {
       </div>
 
       <div class="leyenda">
-        <div class="item"><div class="icono ok" style="width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;background:#dcfce7;color:#16a34a">✓</div> Verificado</div>
+        <div class="item"><div class="icono ok" style="width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;background:#dcfce7;color:#16a34a">✓</div> Entregado</div>
         <div class="item"><div class="icono pend" style="width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;background:#fef3c7;color:#d97706">●</div> Pendiente</div>
-        <div class="item"><div class="icono mal" style="width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;background:#fee2e2;color:#dc2626">✕</div> Rechazado</div>
         <div class="item"><div class="icono nd" style="width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;background:#f3f4f6;color:#d1d5db">—</div> Sin documento</div>
         <span style="margin-left:auto;font-size:.7rem">Actualizado: ${new Date().toLocaleTimeString('es-PY')}</span>
       </div>

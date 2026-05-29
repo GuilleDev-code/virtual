@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Portal de Pagos — UPG</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --verde: #1a6b3c;
+            --verde-2: #145230;
+            --verde-light: #e6f2ec;
+            --naranja: #e8651a;
+            --naranja-l: #fdf0e8;
+            --cream: #faf8f4;
+            --ink: #1a1a18;
+            --ink-2: #3d3d38;
+            --ink-3: #7a7a72;
+            --border: #e2ddd6;
+            --white: #ffffff;
+            --danger: #c0392b;
+            --danger-l: #fdf2f2;
+            --success: #16a34a;
+            --success-l: #f0faf4;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 2px 16px rgba(26, 26, 24, .08);
+            --shadow-lg: 0 8px 40px rgba(26, 26, 24, .14);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: var(--verde);
+            padding: 0 20px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .header-brand {
+            font-family: 'Fraunces', serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -.01em;
+        }
+
+        .header-brand span {
+            font-weight: 400;
+            font-style: italic;
+            opacity: .8;
+        }
+
+        .header-badge {
+            font-size: .65rem;
+            font-weight: 600;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, .7);
+            border: 1px solid rgba(255, 255, 255, .3);
+            padding: 3px 9px;
+            border-radius: 999px;
+        }
+
+        /* ── PROGRESS STEPS ── */
+        .progress-wrap {
+            background: var(--verde-2);
+            padding: 14px 20px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+        }
+
+        .step-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .72rem;
+            font-weight: 700;
+            background: rgba(255, 255, 255, .15);
+            color: rgba(255, 255, 255, .5);
+            border: 1.5px solid rgba(255, 255, 255, .2);
+            transition: all .3s;
+            flex-shrink: 0;
+        }
+
+        .step-dot.active {
+            background: #fff;
+            color: var(--verde);
+            border-color: #fff;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, .2);
+        }
+
+        .step-dot.done {
+            background: rgba(255, 255, 255, .35);
+            color: #fff;
+            border-color: rgba(255, 255, 255, .5);
+        }
+
+        .step-dot.done::before {
+            content: '✓';
+            font-size: .8rem;
+        }
+
+        .step-dot.done .n {
+            display: none;
+        }
+
+        .step-line {
+            height: 1.5px;
+            width: 32px;
+            background: rgba(255, 255, 255, .15);
+            flex-shrink: 0;
+            transition: background .3s;
+        }
+
+        .step-line.done {
+            background: rgba(255, 255, 255, .4);
+        }
+
+        .step-labels {
+            display: flex;
+            gap: 0;
+            justify-content: center;
+            padding: 6px 20px 0;
+            background: var(--verde-2);
+        }
+
+        .step-label-item {
+            font-size: .6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: rgba(255, 255, 255, .4);
+            text-align: center;
+            transition: color .3s;
+            flex: 1;
+            max-width: 80px;
+        }
+
+        .step-label-item.active {
+            color: rgba(255, 255, 255, .9);
+        }
+
+        /* ── MAIN ── */
+        .main {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 24px 16px 80px;
+        }
+
+        /* ── CARD ── */
+        .card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            animation: slideUp .35s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-header {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-eyebrow {
+            font-size: .65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            color: var(--verde);
+            margin-bottom: 4px;
+        }
+
+        .card-title {
+            font-family: 'Fraunces', serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--ink);
+            line-height: 1.2;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* ── ALUMNO INFO ── */
+        .alumno-pill {
+            background: var(--verde-light);
+            border: 1.5px solid #b8d8c6;
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .alumno-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--verde);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Fraunces', serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .alumno-nombre {
+            font-size: .95rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .alumno-ci {
+            font-size: .75rem;
+            color: var(--ink-3);
+            margin-top: 1px;
+        }
+
+        /* ── CARRERA SELECTOR ── */
+        .carrera-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all .2s;
+            margin-bottom: 10px;
+            background: var(--white);
+        }
+
+        .carrera-option:hover {
+            border-color: var(--verde);
+            background: var(--verde-light);
+        }
+
+        .carrera-option.selected {
+            border-color: var(--verde);
+            background: var(--verde-light);
+        }
+
+        .carrera-option input[type=radio] {
+            accent-color: var(--verde);
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .carrera-nombre {
+            font-size: .9rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .carrera-meta {
+            font-size: .72rem;
+            color: var(--ink-3);
+            margin-top: 2px;
+        }
+
+        /* ── ITEMS PAGABLES ── */
+        .seccion-titulo {
+            font-size: .68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--ink-3);
+            margin: 0 0 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .seccion-titulo::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .item-pago {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 13px 14px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all .2s;
+            margin-bottom: 8px;
+            background: var(--white);
+        }
+
+        .item-pago:hover {
+            border-color: #a0c4b3;
+        }
+
+        .item-pago.selected {
+            border-color: var(--verde);
+            background: var(--verde-light);
+        }
+
+        .item-pago.vencido {
+            border-color: #f0c0b0;
+        }
+
+        .item-pago.vencido.selected {
+            border-color: var(--naranja);
+            background: var(--naranja-l);
+        }
+
+        .item-pago input[type=checkbox] {
+            accent-color: var(--verde);
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-label {
+            font-size: .88rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .item-sub {
+            font-size: .72rem;
+            color: var(--ink-3);
+            margin-top: 2px;
+        }
+
+        .item-sub.vencido-txt {
+            color: var(--naranja);
+            font-weight: 600;
+        }
+
+        .item-monto {
+            font-family: 'Fraunces', serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--ink);
+            white-space: nowrap;
+            align-self: center;
+        }
+
+        /* Examen badge */
+        .badge-examen {
+            display: inline-block;
+            background: #e8f0fe;
+            color: #3367d6;
+            font-size: .58rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        /* Otros monto */
+        .otros-wrap {
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            margin-bottom: 8px;
+            transition: border-color .2s;
+        }
+
+        .otros-wrap.active {
+            border-color: var(--verde);
+        }
+
+        .otros-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 14px;
+            cursor: pointer;
+            background: var(--white);
+        }
+
+        .otros-header input[type=checkbox] {
+            accent-color: var(--verde);
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .otros-body {
+            padding: 0 14px 14px;
+            background: var(--verde-light);
+            display: none;
+        }
+
+        .otros-body.show {
+            display: block;
+        }
+
+        .otros-label {
+            font-size: .72rem;
+            font-weight: 600;
+            color: var(--ink-3);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        .otros-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid #b8d8c6;
+            border-radius: 8px;
+            background: var(--white);
+            font-size: 1rem;
+            font-family: 'Fraunces', serif;
+            font-weight: 600;
+            color: var(--ink);
+            outline: none;
+        }
+
+        .otros-input:focus {
+            border-color: var(--verde);
+            box-shadow: 0 0 0 3px rgba(26, 107, 60, .1);
+        }
+
+        .otros-desc {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1.5px solid #b8d8c6;
+            border-radius: 8px;
+            background: var(--white);
+            font-size: .85rem;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--ink);
+            outline: none;
+            margin-top: 8px;
+            resize: none;
+        }
+
+        .otros-desc:focus {
+            border-color: var(--verde);
+            box-shadow: 0 0 0 3px rgba(26, 107, 60, .1);
+        }
+
+        /* Total flotante */
+        .total-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border-top: 1.5px solid var(--border);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            box-shadow: 0 -4px 20px rgba(26, 26, 24, .08);
+            z-index: 40;
+            transform: translateY(100%);
+            transition: transform .3s ease;
+        }
+
+        .total-bar.visible {
+            transform: translateY(0);
+        }
+
+        .total-label {
+            font-size: .72rem;
+            font-weight: 600;
+            color: var(--ink-3);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        .total-monto {
+            font-family: 'Fraunces', serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .btn-continuar {
+            background: var(--verde);
+            color: #fff;
+            border: none;
+            padding: 13px 24px;
+            border-radius: var(--radius-sm);
+            font-size: .9rem;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all .2s;
+            white-space: nowrap;
+        }
+
+        .btn-continuar:hover {
+            background: var(--verde-2);
+            transform: translateY(-1px);
+        }
+
+        .btn-continuar:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-continuar svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ── FORM DATOS ── */
+        .form-field {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: .72rem;
+            font-weight: 700;
+            color: var(--ink-3);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 13px 14px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: .95rem;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--ink);
+            background: var(--white);
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--verde);
+            box-shadow: 0 0 0 3px rgba(26, 107, 60, .08);
+        }
+
+        .form-hint {
+            font-size: .7rem;
+            color: var(--ink-3);
+            margin-top: 5px;
+        }
+
+        /* ── UPLOAD ZONA ── */
+        .upload-zone {
+            border: 2.5px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s;
+            background: var(--cream);
+            position: relative;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--verde);
+            background: var(--verde-light);
+        }
+
+        .upload-zone.has-file {
+            border-color: var(--verde);
+            border-style: solid;
+            background: var(--verde-light);
+        }
+
+        .upload-zone input[type=file] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 12px;
+            background: var(--verde-light);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--verde);
+            transition: transform .2s;
+        }
+
+        .upload-zone:hover .upload-icon,
+        .upload-zone.has-file .upload-icon {
+            transform: scale(1.1);
+        }
+
+        .upload-title {
+            font-size: .95rem;
+            font-weight: 600;
+            color: var(--ink);
+            margin-bottom: 4px;
+        }
+
+        .upload-sub {
+            font-size: .75rem;
+            color: var(--ink-3);
+        }
+
+        .upload-preview {
+            margin-top: 12px;
+            display: none;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .upload-preview.show {
+            display: block;
+        }
+
+        .upload-preview img {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .upload-preview .preview-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, .5));
+            padding: 20px 12px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .upload-preview .preview-name {
+            font-size: .72rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .upload-preview .preview-change {
+            font-size: .68rem;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: underline;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        /* ── RESUMEN ANTES DE ENVIAR ── */
+        .resumen-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: .85rem;
+        }
+
+        .resumen-item:last-child {
+            border-bottom: none;
+        }
+
+        .resumen-concepto {
+            color: var(--ink-2);
+        }
+
+        .resumen-monto {
+            font-family: 'Fraunces', serif;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .resumen-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0 0;
+            font-size: 1rem;
+        }
+
+        .resumen-total .label {
+            font-weight: 700;
+            color: var(--ink);
+            font-size: .9rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .resumen-total .monto {
+            font-family: 'Fraunces', serif;
+            font-weight: 700;
+            font-size: 1.35rem;
+            color: var(--verde);
+        }
+
+        /* ── BOTONES ── */
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border-radius: var(--radius-sm);
+            font-size: .95rem;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all .2s;
+        }
+
+        .btn-primary {
+            background: var(--verde);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--verde-2);
+        }
+
+        .btn-primary:disabled {
+            background: #b0c8bb;
+            cursor: not-allowed;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--ink-3);
+            border: 2px solid var(--border);
+            margin-top: 10px;
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--ink-3);
+            color: var(--ink);
+        }
+
+        /* ── ÉXITO ── */
+        .success-wrap {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--success-l);
+            border: 3px solid #a7d7b5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            animation: popIn .5s cubic-bezier(.175, .885, .32, 1.275);
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(.5);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .success-icon svg {
+            color: var(--success);
+        }
+
+        .success-title {
+            font-family: 'Fraunces', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 8px;
+        }
+
+        .success-sub {
+            font-size: .88rem;
+            color: var(--ink-3);
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .ref-box {
+            background: var(--verde-light);
+            border: 1.5px solid #b8d8c6;
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            margin-bottom: 20px;
+        }
+
+        .ref-label {
+            font-size: .65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--verde);
+            margin-bottom: 4px;
+        }
+
+        .ref-nro {
+            font-family: 'Fraunces', serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: .05em;
+        }
+
+        /* ── ERROR / LOADING ── */
+        .loading-wrap {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 3px solid var(--border);
+            border-top-color: var(--verde);
+            animation: spin .7s linear infinite;
+            margin: 0 auto 14px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-txt {
+            font-size: .85rem;
+            color: var(--ink-3);
+        }
+
+        .error-box {
+            background: var(--danger-l);
+            border: 1.5px solid #f0b8b0;
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-size: .83rem;
+            color: var(--danger);
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .error-box svg {
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        /* ── CI INPUT INICIAL ── */
+        .ci-screen {
+            min-height: calc(100vh - 100px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 16px;
+        }
+
+        .ci-logo {
+            font-family: 'Fraunces', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--verde);
+            margin-bottom: 6px;
+        }
+
+        .ci-logo span {
+            font-style: italic;
+            color: var(--ink-3);
+            font-size: 1rem;
+            font-weight: 400;
+            display: block;
+        }
+
+        .ci-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 360px;
+            margin-top: 28px;
+        }
+
+        .ci-card h2 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .ci-card p {
+            font-size: .82rem;
+            color: var(--ink-3);
+            margin-bottom: 20px;
+        }
+
+        .ci-input-wrap {
+            display: flex;
+            gap: 8px;
+        }
+
+        .ci-input {
+            flex: 1;
+            padding: 13px 14px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 1.1rem;
+            font-family: 'Fraunces', serif;
+            font-weight: 600;
+            color: var(--ink);
+            outline: none;
+            transition: border-color .2s;
+            -webkit-appearance: none;
+            width: 75%;
+        }
+
+        .ci-input:focus {
+            border-color: var(--verde);
+            box-shadow: 0 0 0 3px rgba(26, 107, 60, .1);
+        }
+
+        .ci-btn {
+            padding: 13px 18px;
+            background: var(--verde);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: .9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .ci-btn:hover {
+            background: var(--verde-2);
+        }
+
+        /* Responsive tweaks */
+        @media (max-width: 380px) {
+            .card-title {
+                font-size: 1.1rem;
+            }
+
+            .item-monto {
+                font-size: .9rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-brand">UPG <span>Educación a Distancia</span></div>
+        <div class="header-badge">Portal de pagos</div>
+    </header>
+
+    <!-- PROGRESS -->
+    <div class="progress-wrap" id="progressWrap" style="display:none">
+        <div class="step-dot active" id="sd1"><span class="n">1</span></div>
+        <div class="step-line" id="sl1"></div>
+        <div class="step-dot" id="sd2"><span class="n">2</span></div>
+        <div class="step-line" id="sl2"></div>
+        <div class="step-dot" id="sd3"><span class="n">3</span></div>
+        <div class="step-line" id="sl3"></div>
+        <div class="step-dot" id="sd4"><span class="n">4</span></div>
+    </div>
+    <div class="step-labels" id="stepLabels" style="display:none">
+        <div class="step-label-item active" id="sl-1">Carrera</div>
+        <div class="step-label-item" id="sl-2">Selección</div>
+        <div class="step-label-item" id="sl-3">Comprobante</div>
+        <div class="step-label-item" id="sl-4">Confirmar</div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main" id="mainWrap">
+        <div id="appRoot"></div>
+    </div>
+
+    <!-- TOTAL BAR -->
+    <div class="total-bar" id="totalBar">
+        <div>
+            <div class="total-label">Total seleccionado</div>
+            <div class="total-monto" id="totalMonto">Gs. 0</div>
+        </div>
+        <button class="btn-continuar" id="btnContinuar" onclick="irPaso3()">
+            Continuar
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.5">
+                <path d="m9 18 6-6-6-6" />
+            </svg>
+        </button>
+    </div>
+
+    <script type="module">
+        // ── Config Supabase ────────────────────────────────────────────
+        const SUPABASE_URL = 'https://dhamkbwoaswsxckudlmd.supabase.co';
+        const SUPABASE_ANON = 'sb_publishable_N5wBvz9PTzz4sSCemLyCnQ_XiFGmKhk';
+        const N8N_WEBHOOK = 'https://n8n.tudominio.com/webhook/comprobante-recibido';
+
+        async function sbGet(path, params = '') {
+            const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}${params}`, {
+                headers: {
+                    'apikey': SUPABASE_ANON,
+                    'Authorization': `Bearer ${SUPABASE_ANON}`,
+                    'Accept': 'application/json'
+                }
+            });
+            if (!r.ok) throw new Error(`Error ${r.status}: ${await r.text()}`);
+            return r.json();
+        }
+
+        async function sbPost(path, body) {
+            const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_ANON,
+                    'Authorization': `Bearer ${SUPABASE_ANON}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(body)
+            });
+            if (!r.ok) throw new Error(`Error ${r.status}: ${await r.text()}`);
+            return r.json();
+        }
+
+        // ── Estado global ──────────────────────────────────────────────
+        const state = {
+            paso: 0,          // 0=CI, 1=carrera, 2=selección, 3=comprobante, 4=confirmar, 5=éxito
+            alumno: null,
+            inscripciones: [], // [{id, cohorte, carrera_nombre, anho_cursada, ...}]
+            inscripcionSel: null,
+            cuotasPendientes: [],
+            examenesHabilitados: [],
+            seleccion: [],     // [{tipo:'cuota'|'examen'|'otro', id, label, monto}]
+            telefono: '',
+            archivoFile: null,
+            archivoUrl: null,  // URL pública en Supabase Storage
+        };
+
+        // ── Helpers ────────────────────────────────────────────────────
+        const root = document.getElementById('appRoot');
+        const fmt = n => 'Gs. ' + Number(n).toLocaleString('es-PY');
+
+        function setStep(n) {
+            state.paso = n;
+            const pw = document.getElementById('progressWrap');
+            const sl = document.getElementById('stepLabels');
+            if (n === 0) { pw.style.display = 'none'; sl.style.display = 'none'; return; }
+            pw.style.display = 'flex'; sl.style.display = 'flex';
+            // dots 1-4 map to pasos 1-4
+            [1, 2, 3, 4].forEach(i => {
+                const dot = document.getElementById('sd' + i);
+                const lbl = document.getElementById('sl-' + i);
+                const line = document.getElementById('sl' + i);
+                dot.classList.toggle('active', i === n);
+                dot.classList.toggle('done', i < n);
+                lbl.classList.toggle('active', i === n);
+                if (line) line.classList.toggle('done', i < n);
+            });
+        }
+
+        function updateTotalBar() {
+            const total = state.seleccion.reduce((s, x) => s + (x.monto || 0), 0);
+            document.getElementById('totalMonto').textContent = fmt(total);
+            const bar = document.getElementById('totalBar');
+            bar.classList.toggle('visible', state.seleccion.length > 0 && state.paso === 2);
+            document.getElementById('btnContinuar').disabled = state.seleccion.length === 0;
+        }
+
+        function loading(txt = 'Cargando...') {
+            root.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><div class="loading-txt">${txt}</div></div>`;
+        }
+
+        function errorMsg(txt) {
+            root.innerHTML = `<div class="error-box" style="margin-top:20px">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    ${txt}
+  </div>`;
+        }
+
+        // ── PASO 0: Pantalla CI ────────────────────────────────────────
+        function renderCI(ciPrefill = '') {
+            setStep(0);
+            document.getElementById('totalBar').classList.remove('visible');
+            root.innerHTML = `
+    <div class="ci-screen">
+      <div style="text-align:center">
+        <div class="ci-logo">UPG <span>Educación a Distancia</span></div>
+      </div>
+      <div class="ci-card">
+        <h2>Registrar pago</h2>
+        <p>Ingresá tu número de cédula para ver tus cuotas y exámenes pendientes.</p>
+        <div class="ci-input-wrap">
+          <input class="ci-input" type="number" id="ciInput" placeholder="Ej: 1234567"
+            value="${ciPrefill}" inputmode="numeric" autocomplete="off">
+          <button class="ci-btn" onclick="buscarAlumno()">Buscar</button>
+        </div>
+        <div id="ciError" style="margin-top:12px"></div>
+      </div>
+    </div>`;
+            document.getElementById('ciInput')?.addEventListener('keydown', e => {
+                if (e.key === 'Enter') buscarAlumno();
+            });
+            if (ciPrefill) buscarAlumno();
+        }
+
+        window.buscarAlumno = async () => {
+            const ci = document.getElementById('ciInput')?.value?.trim();
+            if (!ci) return;
+            const errEl = document.getElementById('ciError');
+            errEl.innerHTML = '';
+            const btn = document.querySelector('.ci-btn');
+            btn.textContent = '...'; btn.disabled = true;
+
+            try {
+                const data = await sbGet('alumnos',
+                    `?ci=eq.${ci}&select=id,nombres,apellidos,ci,telefono,email&limit=1`);
+
+                if (!data.length) {
+                    errEl.innerHTML = `<div class="error-box">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        No encontramos ningún alumno con esa cédula. Verificá el número o contactá a secretaría.
+      </div>`;
+                    btn.textContent = 'Buscar'; btn.disabled = false;
+                    return;
+                }
+
+                state.alumno = data[0];
+                await cargarInscripciones();
+
+            } catch (e) {
+                errEl.innerHTML = `<div class="error-box">Error al conectar. Intentá nuevamente.</div>`;
+                btn.textContent = 'Buscar'; btn.disabled = false;
+            }
+        };
+
+        // ── PASO 1: Cargar inscripciones y mostrar selector de carrera ──
+        async function cargarInscripciones() {
+            loading('Buscando tus carreras...');
+            setStep(1);
+
+            try {
+                const inscs = await sbGet('inscripciones_anuales',
+                    `?alumno_id=eq.${state.alumno.id}&estado=eq.Activo` +
+                    `&select=id,anho_cursada,anho_lectivo,monto_cuota_final,cohortes(id,nro_cohorte,anho_inicio,carreras(id,nombre))`
+                );
+
+                if (!inscs.length) {
+                    setStep(0);
+                    errorMsg('No tenés inscripciones activas. Contactá a secretaría.');
+                    return;
+                }
+
+                state.inscripciones = inscs;
+
+                if (inscs.length === 1) {
+                    // Una sola carrera → saltar directo a selección
+                    state.inscripcionSel = inscs[0];
+                    await cargarItemsPago();
+                } else {
+                    renderCarreras();
+                }
+            } catch (e) {
+                errorMsg('Error al cargar inscripciones: ' + e.message);
+            }
+        }
+
+        function renderCarreras() {
+            const a = state.alumno;
+            const iniciales = (a.nombres[0] + a.apellidos[0]).toUpperCase();
+
+            root.innerHTML = `
+    <div class="alumno-pill">
+      <div class="alumno-avatar">${iniciales}</div>
+      <div>
+        <div class="alumno-nombre">${a.nombres} ${a.apellidos}</div>
+        <div class="alumno-ci">CI: ${a.ci}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-eyebrow">Paso 1 de 4</div>
+        <div class="card-title">¿En qué carrera querés registrar el pago?</div>
+      </div>
+      <div class="card-body">
+        ${state.inscripciones.map((ins, i) => {
+                const c = ins.cohortes;
+                return `<label class="carrera-option" id="cop${i}">
+            <input type="radio" name="carrera" value="${i}" onchange="selCarrera(${i})">
+            <div>
+              <div class="carrera-nombre">${c?.carreras?.nombre || '—'}</div>
+              <div class="carrera-meta">${c?.nro_cohorte}ª Cohorte · Año ${ins.anho_lectivo} · ${ins.anho_cursada}º año cursada</div>
+            </div>
+          </label>`;
+            }).join('')}
+      </div>
+    </div>`;
+        }
+
+        window.selCarrera = async (idx) => {
+            document.querySelectorAll('.carrera-option').forEach((el, i) => {
+                el.classList.toggle('selected', i === idx);
+            });
+            state.inscripcionSel = state.inscripciones[idx];
+            await new Promise(r => setTimeout(r, 200)); // pequeña pausa visual
+            await cargarItemsPago();
+        };
+
+        // ── PASO 2: Cuotas + exámenes habilitados ──────────────────────
+        async function cargarItemsPago() {
+            loading('Buscando tus pagos pendientes...');
+            setStep(2);
+
+            try {
+                const inscId = state.inscripcionSel.id;
+                // Obtenemos de forma segura el carreraId desde la jerarquía cargada
+                const carreraId = state.inscripcionSel.cohortes?.carreras?.id || state.inscripcionSel.carrera_id;
+                const today = new Date().toISOString().split('T')[0];
+
+                // 1. Cuotas pendientes y vencidas (Se mantiene igual)
+                const cuotas = await sbGet('cuotas_pagos',
+                    `?inscripcion_id=eq.${inscId}&estado_pago=in.(Pendiente,Vencido)` +
+                    `&select=id,nro_cuota,fecha_vencimiento,monto_final,estado_pago` +
+                    `&order=nro_cuota.asc`
+                );
+
+                const cohorteId = state.inscripcionSel.cohortes?.id || state.inscripcionSel.cohorte_id;
+                const anhoLectivo = state.inscripcionSel.anho_lectivo;
+                const anhoCursada = state.inscripcionSel.anho_cursada;
+
+                // 2. Traer la configuración de tarifas/precios fija para esta carrera y nivel
+                const preciosConfig = await sbGet('configuracion_precios',
+                    `?carrera_id=eq.${carreraId}&anho_lectivo=eq.${anhoLectivo}&anho_cursada=eq.${anhoCursada}&limit=1`
+                );
+
+                // Inicializamos un objeto por si las dudas no encuentra configuración cargada (evita crashes)
+                const precios = preciosConfig.length > 0 ? preciosConfig[0] : {
+                    monto_examen_1ra: 0,
+                    monto_examen_2da: 0,
+                    monto_examen_3ra: 0,
+                    monto_examen_extraordinario: 0
+                };
+
+                // 3. Exámenes habilitados HOY según calendario y filtro estricto por Cohorte y rango de fechas
+                const examenes = await sbGet('calendario_examenes',
+                    `?estado=eq.VIGENTE&cohorte_id=eq.${cohorteId}` +
+                    `&fecha_desde=lte.${today}&fecha_hasta=gte.${today}` +
+                    `&select=id,oportunidad_nro,fecha_desde,fecha_hasta,materia_id,materias(nombre,carrera_id,anho_curricula)` +
+                    `&order=materia_id.asc`
+                );
+
+                // Filtrar solo las materias de la carrera del alumno (doble check de seguridad)
+                const examenesCarrera = examenes.filter(
+                    e => e.materias?.carrera_id === carreraId
+                );
+
+                // 4. Verificar cuáles ya tienen pagos de derecho de examen (para no duplicar)
+                let derechosYaPagados = new Set();
+                if (examenesCarrera.length) {
+                    const derechos = await sbGet('derechos_examen',
+                        `?inscripcion_id=eq.${inscId}&select=materia_id,oportunidad_nro`
+                    );
+                    derechos.forEach(d => derechosYaPagados.add(`${d.materia_id}_${d.oportunidad_nro}`));
+                }
+
+                state.cuotasPendientes = cuotas;
+
+                // 5. CORRECCIÓN CLAVE: Primero filtramos los no pagados y luego les inyectamos el monto
+                const examenesNoPagados = examenesCarrera.filter(
+                    e => !derechosYaPagados.has(`${e.materia_id}_${e.oportunidad_nro}`)
+                );
+
+                // Mapeamos los precios correspondientes evaluando la oportunidad
+                state.examenesHabilitados = examenesNoPagados.map(ex => {
+                    let montoExamen = 0;
+
+                    if (ex.oportunidad_nro === 1) montoExamen = precios.monto_examen_1ra;
+                    else if (ex.oportunidad_nro === 2) montoExamen = precios.monto_examen_2da;
+                    else if (ex.oportunidad_nro === 3) montoExamen = precios.monto_examen_3ra;
+                    else if (ex.oportunidad_nro === 4) montoExamen = precios.monto_examen_extraordinario;
+
+                    return {
+                        ...ex,
+                        monto_final: montoExamen // Se inyecta dinámicamente el precio de forma limpia
+                    };
+                });
+
+                // Continuar al renderizado de la UI en el Paso 2
+                renderSeleccion();
+            } catch (e) {
+                errorMsg('Error al cargar pagos: ' + e.message);
+            }
+        }
+
+        function renderSeleccion() {
+            const a = state.alumno;
+            const iniciales = (a.nombres[0] + a.apellidos[0]).toUpperCase();
+            const ins = state.inscripcionSel;
+            const carreraNombre = ins.cohortes?.carreras?.nombre || '—';
+
+            const hoy = new Date();
+
+            const cuotasHTML = state.cuotasPendientes.length
+                ? state.cuotasPendientes.map(c => {
+                    const venc = new Date(c.fecha_vencimiento + 'T00:00:00');
+                    const esVenc = c.estado_pago === 'Vencido' || venc < hoy;
+                    const diffDias = Math.round((hoy - venc) / 86400000);
+                    const subTxt = esVenc
+                        ? `Venció hace ${diffDias} día${diffDias !== 1 ? 's' : ''}`
+                        : `Vence ${venc.toLocaleDateString('es-PY', { day: '2-digit', month: 'long' })}`;
+                    return `<label class="item-pago ${esVenc ? 'vencido' : ''}" onclick="toggleItem(this)">
+          <input type="checkbox" value="cuota_${c.id}"
+            data-tipo="cuota" data-id="${c.id}"
+            data-label="Cuota ${c.nro_cuota}" data-monto="${c.monto_final}"
+            onchange="syncSeleccion()">
+          <div class="item-info">
+            <div class="item-label">Cuota ${c.nro_cuota}</div>
+          </div>
+          <div class="item-monto">${fmt(c.monto_final)}</div>
+        </label>`;
+                }).join('')
+                : `<div style="padding:14px;text-align:center;font-size:.82rem;color:var(--ink-3)">
+        ✓ No tenés cuotas pendientes
+      </div>`;
+
+
+const examenesHTML = state.examenesHabilitados.length
+    ? state.examenesHabilitados.map(e => {
+        const hasta = new Date(e.fecha_hasta + 'T23:59:00');
+        const diff = Math.round((hasta - new Date()) / 86400000);
+        return `<label class="item-pago" onclick="toggleItem(this)">
+          <input type="checkbox" value="examen_${e.id}"
+            data-tipo="examen" data-id="${e.id}"
+            data-label="${e.materias?.nombre || '?'} — ${e.oportunidad_nro}ª oportunidad"
+            data-monto="${e.monto_final}" 
+            data-materia-id="${e.materia_id}"
+            data-oportunidad="${e.oportunidad_nro}"
+            onchange="syncSeleccion()">
+          <div class="item-info">
+            <div class="item-label">
+              ${e.materias?.nombre || '?'}
+              <span class="badge-examen">${e.oportunidad_nro}ª oport.</span>
+            </div>
+            <div class="item-sub">Habilitado · cierra en ${diff} día${diff !== 1 ? 's' : ''}</div>
+          </div>
+          <div class="item-monto">${fmt(e.monto_final)}</div>
+        </label>`;
+    }).join('')
+    : `<div style="padding:14px;text-align:center;font-size:.82rem;color:var(--ink-3)">
+    No hay exámenes habilitados en este momento
+  </div>`;
+
+            root.innerHTML = `
+    <div class="alumno-pill">
+      <div class="alumno-avatar">${iniciales}</div>
+      <div>
+        <div class="alumno-nombre">${a.nombres} ${a.apellidos}</div>
+        <div class="alumno-ci">${carreraNombre} · Año ${ins.anho_lectivo}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-eyebrow">Paso 2 de 4</div>
+        <div class="card-title">¿Qué vas a pagar hoy?</div>
+      </div>
+      <div class="card-body">
+        <div class="seccion-titulo">Cuotas</div>
+        ${cuotasHTML}
+
+        <div class="seccion-titulo" style="margin-top:18px">Exámenes habilitados</div>
+        ${examenesHTML}
+
+        <div class="seccion-titulo" style="margin-top:18px">Otro concepto</div>
+        <div class="otros-wrap" id="otrosWrap">
+          <div class="otros-header" onclick="toggleOtros()">
+            <input type="checkbox" id="chkOtros" onchange="syncSeleccion()">
+            <div>
+              <div style="font-size:.88rem;font-weight:600;color:var(--ink)">Otro monto</div>
+              <div style="font-size:.72rem;color:var(--ink-3)">Matricula, título, constancia u otro concepto</div>
+            </div>
+          </div>
+          <div class="otros-body" id="otrosBody">
+            <div class="otros-label">Descripción del concepto</div>
+            <textarea class="otros-desc" id="otrosDesc" rows="2" placeholder="Ej: Matrícula 2026, Título de especialización..."></textarea>
+            <div class="otros-label" style="margin-top:10px">Monto (Gs.)</div>
+            <input class="otros-input" type="number" id="otrosMonto" inputmode="numeric"
+              placeholder="0" oninput="syncSeleccion()">
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+            updateTotalBar();
+        }
+
+        window.toggleItem = (label) => {
+            const chk = label.querySelector('input[type=checkbox]');
+            if (chk) {
+                chk.checked = !chk.checked;
+                label.classList.toggle('selected', chk.checked);
+                syncSeleccion();
+            }
+        };
+
+        window.toggleOtros = () => {
+            const chk = document.getElementById('chkOtros');
+            const body = document.getElementById('otrosBody');
+            const wrap = document.getElementById('otrosWrap');
+            chk.checked = !chk.checked;
+            body.classList.toggle('show', chk.checked);
+            wrap.classList.toggle('active', chk.checked);
+            syncSeleccion();
+        };
+
+        window.syncSeleccion = () => {
+            state.seleccion = [];
+
+            // Cuotas y exámenes
+            document.querySelectorAll('.item-pago input[type=checkbox]:checked').forEach(chk => {
+                state.seleccion.push({
+                    tipo: chk.dataset.tipo,
+                    id: Number(chk.dataset.id),
+                    label: chk.dataset.label,
+                    monto: Number(chk.dataset.monto),
+                    materia_id: chk.dataset.materiaId ? Number(chk.dataset.materiaId) : null,
+                    oportunidad: chk.dataset.oportunidad ? Number(chk.dataset.oportunidad) : null,
+                });
+                chk.closest('.item-pago')?.classList.add('selected');
+            });
+
+            // Otros
+            const chkOtros = document.getElementById('chkOtros');
+            if (chkOtros?.checked) {
+                const monto = Number(document.getElementById('otrosMonto')?.value) || 0;
+                const desc = document.getElementById('otrosDesc')?.value?.trim() || 'Otro concepto';
+                state.seleccion.push({ tipo: 'otro', id: null, label: desc, monto });
+            }
+
+            updateTotalBar();
+        };
+
+        window.irPaso3 = () => {
+            if (!state.seleccion.length) return;
+            renderComprobante();
+        };
+
+        // ── PASO 3: Teléfono + foto comprobante ───────────────────────
+        function renderComprobante() {
+            setStep(3);
+            document.getElementById('totalBar').classList.remove('visible');
+
+            root.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-eyebrow">Paso 3 de 4</div>
+        <div class="card-title">Datos de contacto y comprobante</div>
+      </div>
+      <div class="card-body">
+        <div class="form-field">
+          <label class="form-label" for="telInput">Tu número de WhatsApp</label>
+          <input class="form-input" type="tel" id="telInput" inputmode="tel"
+            placeholder="Ej: 0981 123456"
+            value="${state.telefono || state.alumno.telefono || ''}"
+            autocomplete="tel">
+          <div class="form-hint">Acá te enviamos la confirmación de tu pago.</div>
+        </div>
+
+        <div class="form-field" style="margin-bottom:0">
+          <label class="form-label">Foto del comprobante</label>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="fileInput" accept="image/*,application/pdf"
+              capture="environment" onchange="onFileChange(event)">
+            <div class="upload-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </div>
+            <div class="upload-title">Subir comprobante</div>
+            <div class="upload-sub">Foto o captura de pantalla del pago · JPG, PNG, PDF</div>
+          </div>
+          <div class="upload-preview" id="uploadPreview">
+            <img id="previewImg" src="" alt="Comprobante">
+            <div class="preview-overlay">
+              <span class="preview-name" id="previewName"></span>
+              <button class="preview-change" onclick="cambiarArchivo()">Cambiar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btnIrConfirmar" onclick="irPaso4()" style="margin-top:16px" disabled>
+      Revisar y confirmar
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+    <button class="btn btn-ghost" onclick="volverPaso2()">← Volver</button>`;
+        }
+
+        window.onFileChange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            state.archivoFile = file;
+
+            const zone = document.getElementById('uploadZone');
+            const preview = document.getElementById('uploadPreview');
+            const img = document.getElementById('previewImg');
+            const name = document.getElementById('previewName');
+
+            zone.style.display = 'none';
+            preview.classList.add('show');
+            name.textContent = file.name;
+
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = ev => { img.src = ev.target.result; };
+                reader.readAsDataURL(file);
+            } else {
+                img.src = '';
+                img.style.display = 'none';
+                preview.style.padding = '14px';
+            }
+
+            checkBtnConfirmar();
+        };
+
+        window.cambiarArchivo = () => {
+            state.archivoFile = null;
+            document.getElementById('uploadZone').style.display = 'block';
+            document.getElementById('uploadPreview').classList.remove('show');
+            document.getElementById('fileInput').value = '';
+            checkBtnConfirmar();
+        };
+
+        function checkBtnConfirmar() {
+            const tel = document.getElementById('telInput')?.value?.trim();
+            const btn = document.getElementById('btnIrConfirmar');
+            if (btn) btn.disabled = !(state.archivoFile && tel);
+        }
+
+        document.addEventListener('input', e => {
+            if (e.target.id === 'telInput') checkBtnConfirmar();
+        });
+
+        window.volverPaso2 = () => {
+            setStep(2);
+            renderSeleccion();
+        };
+
+        window.irPaso4 = () => {
+            const tel = document.getElementById('telInput')?.value?.trim();
+            if (!tel) return;
+            state.telefono = tel;
+            renderConfirmar();
+        };
+
+        // ── PASO 4: Resumen y envío ────────────────────────────────────
+        function renderConfirmar() {
+            setStep(4);
+            const total = state.seleccion.reduce((s, x) => s + x.monto, 0);
+
+            const itemsHTML = state.seleccion.map(x => `
+    <div class="resumen-item">
+      <span class="resumen-concepto">${x.label}</span>
+      <span class="resumen-monto">${x.monto > 0 ? fmt(x.monto) : 'S/ arancel'}</span>
+    </div>`).join('');
+
+            root.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-eyebrow">Paso 4 de 4</div>
+        <div class="card-title">Revisá tu pago antes de enviar</div>
+      </div>
+      <div class="card-body">
+        <div style="margin-bottom:16px">
+          ${itemsHTML}
+          <div class="resumen-total">
+            <span class="label">Total declarado</span>
+            <span class="monto">${total > 0 ? fmt(total) : '—'}</span>
+          </div>
+        </div>
+
+        <div style="background:var(--cream);border-radius:var(--radius-sm);padding:12px 14px;font-size:.8rem;color:var(--ink-3);margin-bottom:4px">
+          📱 Confirmación a: <strong style="color:var(--ink)">${state.telefono}</strong>
+        </div>
+
+        <div id="envioError" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btnEnviar" onclick="enviarPago()" style="margin-top:16px">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Enviar comprobante
+    </button>
+    <button class="btn btn-ghost" onclick="irPaso3()">← Volver</button>`;
+        }
+
+        // ── ENVÍO ──────────────────────────────────────────────────────
+        window.enviarPago = async () => {
+            const btn = document.getElementById('btnEnviar');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;margin:0"></div>';
+
+            try {
+                // 1. Subir imagen a Supabase Storage
+                const ext = state.archivoFile.name.split('.').pop();
+                const fname = `comprobantes/${state.alumno.ci}_${Date.now()}.${ext}`;
+
+                const uploadRes = await fetch(
+                    `${SUPABASE_URL}/storage/v1/object/comprobantes/${fname}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON,
+                            'Authorization': `Bearer ${SUPABASE_ANON}`,
+                            'Content-Type': state.archivoFile.type,
+                            'x-upsert': 'false'
+                        },
+                        body: state.archivoFile
+                    }
+                );
+                if (!uploadRes.ok) throw new Error('No se pudo subir la imagen.');
+
+                const imagenUrl = `${SUPABASE_URL}/storage/v1/object/public/comprobantes/${fname}`;
+
+                // 2. INSERT comprobante_pago
+                const comp = await sbPost('comprobantes_pago', {
+                    inscripcion_id: state.inscripcionSel.id,
+                    telefono_remitente: state.telefono,
+                    ci_remitente: state.alumno.ci,
+                    imagen_url: imagenUrl,
+                    estado_procesamiento: 'Recibido',
+                    llego_a_las: new Date().toISOString(),
+                });
+                const comprobanteId = comp[0].id;
+
+                // 3. INSERT detalles_pago_comprobante (uno por ítem seleccionado)
+                const detalles = state.seleccion.map(x => ({
+                    comprobante_id: comprobanteId,
+                    concepto_tipo: x.tipo,
+                    referencia_id: x.id || null,
+                    monto_pactado: x.monto || null,
+                }));
+                if (detalles.length) await sbPost('detalles_pago_comprobante', detalles);
+
+                // 4. Notificar a n8n (no bloqueante)
+                fetch(N8N_WEBHOOK, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        comprobante_id: comprobanteId,
+                        alumno_id: state.alumno.id,
+                        alumno_nombre: `${state.alumno.nombres} ${state.alumno.apellidos}`,
+                        ci: state.alumno.ci,
+                        telefono: state.telefono,
+                        inscripcion_id: state.inscripcionSel.id,
+                        carrera: state.inscripcionSel.cohortes?.carreras?.nombre,
+                        conceptos: state.seleccion.map(x => x.label),
+                        total: state.seleccion.reduce((s, x) => s + x.monto, 0),
+                        imagen_url: imagenUrl,
+                    })
+                }).catch(() => { });
+
+                renderExito(comprobanteId);
+
+            } catch (e) {
+                document.getElementById('envioError').innerHTML =
+                    `<div class="error-box"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${e.message}</div>`;
+                btn.disabled = false;
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Enviar comprobante`;
+            }
+        };
+
+        // ── ÉXITO ──────────────────────────────────────────────────────
+        function renderExito(comprobanteId) {
+            setStep(5);
+            document.getElementById('progressWrap').style.display = 'none';
+            document.getElementById('stepLabels').style.display = 'none';
+
+            const refNro = String(comprobanteId).padStart(6, '0');
+
+            root.innerHTML = `
+    <div class="card" style="margin-top:16px">
+      <div class="card-body">
+        <div class="success-wrap">
+          <div class="success-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="success-title">¡Comprobante enviado!</div>
+          <div class="success-sub">
+            Tu comprobante fue recibido y está siendo revisado por el equipo de secretaría.
+            Te avisamos por WhatsApp cuando esté confirmado.
+          </div>
+          <div class="ref-box">
+            <div class="ref-label">Número de referencia</div>
+            <div class="ref-nro">#${refNro}</div>
+          </div>
+          <div style="font-size:.78rem;color:var(--ink-3);line-height:1.6">
+            Guardá este número por cualquier consulta.<br>
+            Enviado al ${state.telefono}
+          </div>
+        </div>
+      </div>
+    </div>`;
+        }
+
+        // ── INIT ───────────────────────────────────────────────────────
+        const params = new URLSearchParams(location.search);
+        const ciParam = params.get('ci') || '';
+        renderCI(ciParam);
+    </script>
+</body>
+
+</html>

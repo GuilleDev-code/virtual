@@ -603,10 +603,20 @@ document.getElementById('btnNuevaMateria')?.addEventListener('click', () => {
 
 // ── Calendario de exámenes ────────────────────────────────────
 async function cargarCalendarios() {
-  const { data } = await supabase
-    .from('calendario_examenes')
-    .select('*, materias(nombre,anho_curricula,carreras:carrera_id(nombre))')
-    .order('fecha_desde',{ascending:false});
+  // Al leer el calendario para pintarlo en la tabla
+const { data, error } = await supabase
+  .from('calendario_examenes')
+  .select(`
+    id,
+    anho_lectivo,
+    oportunidad_nro,
+    fecha_desde,
+    fecha_hasta,
+    estado,
+    materias ( id, nombre ),
+    cohortes ( id, nro_cohorte, anho_inicio, carreras ( id, nombre ) )
+  `)
+  .order('fecha_desde', { ascending: false });
   calendarios = data || [];
   renderCalendarios();
 }
@@ -625,6 +635,8 @@ function renderCalendarios() {
   document.getElementById('calGrid').innerHTML = items.map(c=>`
     <div class="cal-card ${c.estado==='VIGENTE'?'cal-vigente':''}">
       <div class="cal-card-materia">${c.materias?.nombre||'—'}</div>
+      <div class="cal-card-dates">Carrera: ${c.cohortes?.carreras?.nombre||'—'}</div>
+      <div class="cal-card-dates">${c.cohortes?.nro_cohorte||'—'}ª Cohorte - ${c.cohortes?.anho_inicio||'—'}</div>
       <div class="cal-card-dates">
         ${new Date(c.fecha_desde).toLocaleDateString('es-PY')} — ${new Date(c.fecha_hasta).toLocaleDateString('es-PY')}
       </div>
@@ -647,41 +659,159 @@ window.cambiarEstadoCal = async (id, nuevoEst) => {
   await cargarCalendarios();
 };
 
-document.getElementById('btnNuevoCalendario')?.addEventListener('click', () => {
+
+document.getElementById('btnNuevoCalendario')?.addEventListener('click', async () => {
   document.getElementById('modalTitle').textContent = 'Nuevo período de examen';
   document.getElementById('modalBody').innerHTML = `
-    <div class="form-group"><label class="form-label">Materia <span class="required">*</span></label>
-      <select class="form-control" id="calMateria">
-        <option value="">Seleccionar...</option>
-        ${materias.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('')}
-      </select></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Oportunidad <span class="required">*</span></label>
-        <select class="form-control" id="calOp"><option value="1">1ª</option><option value="2">2ª</option><option value="3">3ª</option><option value="4">Extraordinaria</option></select></div>
-      <div class="form-group"><label class="form-label">Año lectivo <span class="required">*</span></label>
-        <input type="number" class="form-control" id="calAnho" value="${new Date().getFullYear()}" min="2020" max="2030"></div>
+    <div class="form-group">
+      <label>Carrera</label>
+      <select id="calCarreraId" class="form-control">
+        <option value="">-- Selecciona una Carrera --</option>
+      </select>
     </div>
+
+    <div class="form-group">
+      <label>Cohorte Específico</label>
+      <select id="calCohorteId" class="form-control" disabled>
+        <option value="">-- Selecciona primero la carrera --</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Materia</label>
+      <select id="calMateriaId" class="form-control" disabled>
+        <option value="">-- Selecciona primero la carrera --</option>
+      </select>
+    </div>
+
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Desde <span class="required">*</span></label><input type="date" class="form-control" id="calDesde"></div>
-      <div class="form-group"><label class="form-label">Hasta <span class="required">*</span></label><input type="date" class="form-control" id="calHasta"></div>
+      <div class="form-group">
+        <label>Año Lectivo</label>
+        <input type="number" id="calAnhoLectivo" class="form-control" value="2026">
+      </div>
+      <div class="form-group">
+        <label>Oportunidad</label>
+        <select id="calOportunidadNro" class="form-control">
+          <option value="1">1° Oportunidad</option>
+          <option value="2">2° Oportunidad</option>
+          <option value="3">3° Oportunidad</option>
+          <option value="4">Extraordinario (4°)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Fecha Desde</label>
+        <input type="date" id="calFechaDesde" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Fecha Hasta</label>
+        <input type="date" id="calFechaHasta" class="form-control">
+      </div>
     </div>`;
 
-  modalGuardarFn = async () => {
-    const materiaId = Number(document.getElementById('calMateria').value);
-    const desde = document.getElementById('calDesde').value;
-    const hasta = document.getElementById('calHasta').value;
-    if (!materiaId||!desde||!hasta) { toast('Completá todos los campos','warning'); return; }
-    const { error } = await supabase.from('calendario_examenes').insert({
-      materia_id: materiaId,
-      oportunidad_nro: Number(document.getElementById('calOp').value),
-      anho_lectivo: Number(document.getElementById('calAnho').value),
-      fecha_desde: desde, fecha_hasta: hasta, estado: 'PENDIENTE'
+  // --- LÓGICA DE DETECCIÓN DE CAMBIOS (CASCADA) INDEPENDIENTE ---
+  const selectCarrera = document.getElementById('calCarreraId');
+  const selectCohorte = document.getElementById('calCohorteId');
+  const selectMateria = document.getElementById('calMateriaId');
+
+  // Cargamos inmediatamente las Carreras Activas al abrir el modal
+  const { data: carreras } = await supabase
+    .from('carreras')
+    .select('id, nombre, codigo')
+    .eq('estado', 'Activa')
+    .order('nombre');
+
+  if (carreras) {
+    carreras.forEach(c => {
+      selectCarrera.innerHTML += `<option value="${c.id}">${c.nombre} (${c.codigo})</option>`;
     });
-    if (error) { toast('Error: '+error.message,'error'); return; }
-    toast('Período creado','success');
+  }
+
+  // Listener nativo en lugar de usar onchange="" en el HTML inyectado
+  selectCarrera.addEventListener('change', async () => {
+    const carreraId = selectCarrera.value;
+
+    if (!carreraId) {
+      selectCohorte.disabled = true;
+      selectMateria.disabled = true;
+      selectCohorte.innerHTML = '<option value="">-- Selecciona primero la carrera --</option>';
+      selectMateria.innerHTML = '<option value="">-- Selecciona primero la carrera --</option>';
+      return;
+    }
+
+    // Consultamos cohortes y materias de esa carrera en paralelo
+    const [resCohortes, resMaterias] = await Promise.all([
+      supabase.from('cohortes').select('id, nro_cohorte, anho_inicio').eq('carrera_id', carreraId).eq('estado', 'Activo').order('anho_inicio', { ascending: false }),
+      supabase.from('materias').select('id, nombre, codigo').eq('carrera_id', carreraId).eq('activa', true).order('codigo')
+    ]);
+
+    // Renderizar los Cohortes activos de la carrera
+    selectCohorte.innerHTML = '<option value="">-- Selecciona el Cohorte --</option>';
+    if (resCohortes.data && resCohortes.data.length > 0) {
+      resCohortes.data.forEach(coh => {
+        selectCohorte.innerHTML += `<option value="${coh.id}">${coh.nro_cohorte}ª Cohorte - ${coh.anho_inicio}</option>`;
+      });
+      selectCohorte.disabled = false;
+    } else {
+      selectCohorte.innerHTML = '<option value="">⚠️ Sin cohortes activos</option>';
+      selectCohorte.disabled = true;
+    }
+
+    // Renderizar las Materias fijas de la carrera
+    selectMateria.innerHTML = '<option value="">-- Selecciona la Materia --</option>';
+    if (resMaterias.data && resMaterias.data.length > 0) {
+      resMaterias.data.forEach(mat => {
+        selectMateria.innerHTML += `<option value="${mat.id}">${mat.nombre} [${mat.codigo}]</option>`;
+      });
+      selectMateria.disabled = false;
+    } else {
+      selectMateria.innerHTML = '<option value="">⚠️ Sin materias cargadas</option>';
+      selectMateria.disabled = true;
+    }
+  });
+  // -------------------------------------------------------------
+
+  modalGuardarFn = async () => {
+    const cohorteId = selectCohorte.value;
+    const materiaId = selectMateria.value;
+    const anhoLectivo = document.getElementById('calAnhoLectivo').value;
+    const opNro = document.getElementById('calOportunidadNro').value;
+    const desde = document.getElementById('calFechaDesde').value;
+    const hasta = document.getElementById('calFechaHasta').value;
+
+    if (!cohorteId || !materiaId || !desde || !hasta) {
+      toast('Por favor, completa todos los campos obligatorios', 'warning');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('calendario_examenes')
+      .insert({
+        materia_id: parseInt(materiaId),
+        cohorte_id: parseInt(cohorteId), // Tu nuevo campo clave
+        anho_lectivo: parseInt(anhoLectivo),
+        oportunidad_nro: parseInt(opNro),
+        fecha_desde: desde,
+        fecha_hasta: hasta,
+        estado: 'PENDIENTE'
+      });
+
+    if (error) {
+      if (error.code === '23505') {
+        toast('Error: Ya existe una ventana de examen para esta materia, cohorte y oportunidad.', 'danger');
+      } else {
+        toast('Error al guardar: ' + error.message, 'danger');
+      }
+      return;
+    }
+
+    toast('Período creado', 'success');
     cerrarModal();
     await cargarCalendarios();
   };
+
   document.getElementById('modalOverlay').classList.add('open');
 });
 
