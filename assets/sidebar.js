@@ -20,6 +20,7 @@ const NAV_ITEMS = [
       { id: 'admision',     label: 'Admisión',       href: 'admision.html',     icon: iconAdmision(),   rol: 'Admin,Academico' },
       { id: 'caja',         label: 'Caja',           href: 'caja.html',         icon: iconCaja(),       rol: 'Admin,Cajero' },
       { id: 'academico',    label: 'Académico',      href: 'academico.html',    icon: iconAcademico(),  rol: 'Admin,Academico,Docente' },
+      { id: 'examenes',     label: 'Exámenes',       href: 'examenes.html',     icon: iconExamenes(),   rol: 'Admin,Academico' },
       { id: 'secretaria',   label: 'Secretaría',     href: 'secretaria.html',   icon: iconSecretaria(), rol: 'Admin,Academico' },
     ]
   },
@@ -118,6 +119,9 @@ function iconAcademico() {
 }
 function iconSecretaria() {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`;
+}
+function iconExamenes() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>`;
 }
 function iconConfig() {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 1.07.9"/><path d="M19.07 19.07a10 10 0 0 1-14.14 0A10 10 0 0 1 4.93 4.93a10 10 0 0 1 14.14 0"/></svg>`;

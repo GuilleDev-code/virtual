@@ -9,9 +9,9 @@ const PUBLIC_PAGES = ['login.html'];
 
 // Mapa de permisos por rol → páginas permitidas
 const PERMISOS = {
-  Admin:     ['dashboard', 'crm', 'admision', 'caja', 'academico', 'configuracion', 'secretaria'],
-  Academico: ['dashboard', 'academico', 'secretaria'],
-  Cajero:    ['dashboard', 'caja'],
+  Admin:     ['dashboard', 'crm', 'admision', 'caja', 'academico', 'configuracion', 'secretaria','examenes'],
+  Academico: ['dashboard', 'academico', 'secretaria','examenes'],
+  Cajero:    ['dashboard', 'caja','examenes'],
   Docente:   ['dashboard', 'academico'],
 };
 

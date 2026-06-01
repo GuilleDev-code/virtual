@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exámenes — Sistema UPG</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    /* ── Layout ── */
+    .ex-wrap    { display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h)); overflow:hidden; }
+    .ex-tabs    { display:flex; padding:0 24px; background:var(--surface); border-bottom:2px solid var(--border); flex-shrink:0; }
+    .ex-tab     { padding:12px 18px; font-size:.86rem; font-weight:500; color:var(--txt-secondary); border-bottom:2px solid transparent; margin-bottom:-2px; transition:all var(--transition); white-space:nowrap; }
+    .ex-tab:hover  { color:var(--verde); }
+    .ex-tab.active { color:var(--verde); border-bottom-color:var(--verde); font-weight:600; }
+    .ex-content { flex:1; overflow-y:auto; padding:20px 24px; }
+
+    /* ── Toolbar selectores ── */
+    .sel-toolbar { display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+    .sel-group   { display:flex; flex-direction:column; gap:4px; }
+    .sel-label   { font-size:.68rem; font-weight:700; color:var(--txt-muted); text-transform:uppercase; letter-spacing:.07em; }
+
+    /* ── Tabla habilitados ── */
+    .hab-table-wrap { overflow-x:auto; }
+    .hab-table { width:100%; border-collapse:collapse; font-size:.8rem; }
+    .hab-table th {
+      background:var(--surface-2); color:var(--txt-muted);
+      font-size:.67rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+      padding:9px 10px; white-space:nowrap; border-bottom:2px solid var(--border);
+      position:sticky; top:0; z-index:2;
+    }
+    .hab-table td { padding:8px 10px; border-bottom:1px solid var(--border-light); vertical-align:middle; }
+    .hab-table tr:hover td { background:var(--surface-2); }
+    .hab-table tr.excluido td { opacity:.4; text-decoration:line-through; }
+    .hab-table tr.excluido td:last-child { opacity:1; text-decoration:none; }
+
+    /* Celda puntaje */
+    .inp-puntaje {
+      width:60px; padding:4px 6px; text-align:center;
+      border:1.5px solid var(--border); border-radius:var(--radius-sm);
+      font-size:.82rem; font-weight:600; background:var(--surface);
+      outline:none; transition:border-color .15s;
+    }
+    .inp-puntaje:focus { border-color:var(--verde); box-shadow:0 0 0 2px rgba(26,107,60,.1); }
+    .inp-puntaje:disabled { background:var(--surface-2); color:var(--txt-muted); }
+
+    /* Celda checkbox habilitado */
+    .chk-hab { width:18px; height:18px; accent-color:var(--verde); cursor:pointer; }
+
+    /* Botón sync GoodSystem */
+    .btn-sync {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:3px 8px; border-radius:var(--radius-sm); border:1.5px dashed #d97706;
+      background:#fef3c7; color:#92400e; font-size:.68rem; font-weight:700;
+      cursor:pointer; transition:all .15s; white-space:nowrap;
+    }
+    .btn-sync:hover { background:#d97706; color:#fff; border-color:#d97706; border-style:solid; }
+    .btn-sync:disabled { opacity:.5; cursor:wait; }
+    .btn-sync.cargando { opacity:.6; cursor:wait; }
+
+    /* Indicador pagado/no pagado */
+    .ind { display:inline-flex; align-items:center; justify-content:center;
+           width:22px; height:22px; border-radius:50%; font-size:.78rem; font-weight:700; }
+    .ind.si  { background:#dcfce7; color:#16a34a; }
+    .ind.no  { background:#fee2e2; color:#dc2626; }
+    .ind.nd  { background:#f3f4f6; color:#9ca3af; }
+
+    /* Botón excluir */
+    .btn-excluir {
+      width:24px; height:24px; border-radius:50%; border:none;
+      background:var(--surface-2); color:var(--txt-muted);
+      font-size:.78rem; cursor:pointer; display:inline-flex;
+      align-items:center; justify-content:center; transition:all .15s;
+    }
+    .btn-excluir:hover { background:#fee2e2; color:#dc2626; }
+    .btn-excluir.incluir { background:#dcfce7; color:#16a34a; }
+    .btn-excluir.incluir:hover { background:#16a34a; color:#fff; }
+
+    /* Obs input */
+    .inp-obs {
+      width:100%; min-width:140px; padding:4px 6px;
+      border:1.5px solid transparent; border-radius:var(--radius-sm);
+      font-size:.75rem; background:transparent; outline:none;
+      transition:border-color .15s;
+    }
+    .inp-obs:focus { border-color:var(--verde); background:var(--surface); }
+
+    /* Stats bar */
+    .stats-bar {
+      display:flex; gap:16px; flex-wrap:wrap;
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:12px 16px; margin-bottom:16px;
+    }
+    .stat-item { text-align:center; }
+    .stat-item .val { font-size:1.3rem; font-weight:700; color:var(--verde); }
+    .stat-item .lbl { font-size:.65rem; color:var(--txt-muted); text-transform:uppercase; letter-spacing:.05em; }
+
+    /* Toolbar acciones tabla */
+    .table-actions { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+
+    /* ── MODAL DOCUMENTO ── */
+    .modal-doc { max-width:780px; width:95vw; }
+    .doc-preview {
+      font-family:'Segoe UI', sans-serif;
+      font-size:11px; color:#000;
+    }
+    .doc-header-inst {
+      text-align:center; border-bottom:2px solid #06402b;
+      padding-bottom:10px; margin-bottom:14px;
+    }
+    .doc-inst-nombre {
+      font-size:13px; font-weight:700; color:#06402b; text-transform:uppercase;
+    }
+    .doc-inst-sub { font-size:10px; color:#444; margin-top:2px; }
+    .doc-titulo-bloque {
+      background:#06402b; color:#fff;
+      text-align:center; padding:6px 12px;
+      font-size:11px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.05em; border-radius:4px 4px 0 0;
+      margin-bottom:0;
+    }
+    .doc-subtitulo-bloque {
+      background:#e8f5ef; border:1px solid #b8d8c6;
+      text-align:center; padding:4px 12px;
+      font-size:11px; font-weight:700; color:#06402b;
+      text-transform:uppercase; border-radius:0 0 4px 4px;
+      margin-bottom:12px;
+    }
+    .doc-table { width:100%; border-collapse:collapse; font-size:10px; }
+    .doc-table th {
+      background:#06402b; color:#fff; padding:5px 6px;
+      font-size:9px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.04em; border:1px solid #055030;
+    }
+    .doc-table td { padding:4px 6px; border:1px solid #ccc; vertical-align:middle; }
+    .doc-table tr:nth-child(even) td { background:#f0faf4; }
+    .doc-table .centro { text-align:center; }
+    .doc-table .si-cell { background:#dcfce7!important; color:#16a34a; font-weight:700; text-align:center; }
+    .doc-table .no-cell { background:#fee2e2!important; color:#dc2626; font-weight:700; text-align:center; }
+    .doc-footer {
+      margin-top:16px; display:flex; justify-content:space-between;
+      font-size:9px; color:#666; border-top:1px solid #ccc; padding-top:6px;
+    }
+
+    /* Historial tab */
+    .hist-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:16px; margin-bottom:10px;
+      cursor:pointer; transition:all .15s;
+    }
+    .hist-card:hover { border-color:var(--verde); box-shadow:0 2px 8px rgba(26,107,60,.08); }
+    .hist-card-title { font-size:.88rem; font-weight:700; margin-bottom:4px; }
+    .hist-card-meta  { font-size:.75rem; color:var(--txt-muted); display:flex; gap:12px; flex-wrap:wrap; }
+    .hist-card-stats { display:flex; gap:8px; margin-top:8px; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <aside id="sidebar" class="sidebar"></aside>
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">Exámenes</div>
+      <div class="topbar-actions" id="topbarActions"></div>
+    </header>
+
+    <div class="ex-wrap">
+      <div class="ex-tabs">
+        <button class="ex-tab active" data-tab="habilitacion">Habilitación</button>
+        <button class="ex-tab" data-tab="historial">Historial</button>
+      </div>
+
+      <div class="ex-content">
+
+        <!-- ── HABILITACIÓN ────────────────────────── -->
+        <div id="tab-habilitacion">
+          <div class="sel-toolbar">
+            <div class="sel-group">
+              <div class="sel-label">Carrera</div>
+              <select class="form-control" id="selCarrera" style="width:240px">
+                <option value="">Seleccionar carrera...</option>
+              </select>
+            </div>
+            <div class="sel-group">
+              <div class="sel-label">Cohorte</div>
+              <select class="form-control" id="selCohorte" style="width:200px" disabled>
+                <option value="">Primero seleccioná carrera</option>
+              </select>
+            </div>
+            <div class="sel-group">
+              <div class="sel-label">Examen</div>
+              <select class="form-control" id="selCalendario" style="width:300px" disabled>
+                <option value="">Primero seleccioná cohorte</option>
+              </select>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="btnCargar" disabled style="margin-bottom:1px">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Cargar
+            </button>
+          </div>
+
+          <div id="habContent">
+            <div style="text-align:center;padding:60px;color:var(--txt-muted);font-size:.85rem">
+              Seleccioná carrera, cohorte y examen para cargar la lista
+            </div>
+          </div>
+        </div>
+
+        <!-- ── HISTORIAL ───────────────────────────── -->
+        <div id="tab-historial" style="display:none">
+          <div class="toolbar" style="margin-bottom:16px">
+            <div class="search-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" class="form-control" id="searchHist" placeholder="Buscar materia...">
+            </div>
+            <select class="form-control" id="filtroCarreraHist" style="width:auto">
+              <option value="">Todas las carreras</option>
+            </select>
+            <span id="histTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
+          </div>
+          <div id="histContent">
+            <div style="text-align:center;padding:40px;color:var(--txt-muted)">Cargando...</div>
+          </div>
+        </div>
+
+      </div><!-- /ex-content -->
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Modal documento ── -->
+<div class="modal-overlay" id="modalDocOverlay">
+  <div class="modal modal-doc">
+    <div class="modal-header">
+      <span class="modal-title">Vista previa del documento</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-primary btn-sm" onclick="imprimirDoc()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Imprimir / PDF
+        </button>
+        <button class="modal-close" onclick="document.getElementById('modalDocOverlay').classList.remove('open')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body" id="modalDocBody" style="overflow-y:auto;max-height:75vh"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { supabase, formatFechaHora, toast } from './assets/supabase.js';
+import { requireAuth } from './assets/auth.js';
+import { initSidebar } from './assets/sidebar.js';
+
+const sesion = requireAuth('examenes');
+if (!sesion) throw new Error('Sin sesión');
+initSidebar('examenes');
+
+// ── Estado ────────────────────────────────────────────────────
+let filas = [];       // [{alumno, inscripcion, cuotaPagada, derechoPagado, habAcad, puntaje, obs, excluido}]
+let calendarioActivo = null;
+let cohorteActivo    = null;
+let carreraActiva    = null;
+let historial        = [];
+
+// ── Tabs ──────────────────────────────────────────────────────
+document.querySelectorAll('.ex-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ex-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-habilitacion').style.display = btn.dataset.tab === 'habilitacion' ? 'block' : 'none';
+    document.getElementById('tab-historial').style.display    = btn.dataset.tab === 'historial'    ? 'block' : 'none';
+    if (btn.dataset.tab === 'historial' && !historial.length) cargarHistorial();
+  });
+});
+
+// ── Config Moodle ─────────────────────────────────────────────
+const MOODLE_URL   = 'https://mooc.uniupg.edu.py';
+const MOODLE_TOKEN = 'f783afebb75d1529ce29dcafcfa4b427';
+const MINIMO_PROCESO = 42; // puntaje mínimo para habilitar académicamente
+
+// ── Init ──────────────────────────────────────────────────────
+await cargarCarreras();
+
+// ── Selectores en cascada ─────────────────────────────────────
+async function cargarCarreras() {
+  const { data } = await supabase.from('carreras').select('id,nombre').eq('estado','Activa').order('nombre');
+  const opts = (data||[]).map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+  document.getElementById('selCarrera').innerHTML = '<option value="">Seleccionar carrera...</option>' + opts;
+  document.getElementById('filtroCarreraHist').innerHTML = '<option value="">Todas las carreras</option>' + opts;
+}
+
+document.getElementById('selCarrera').addEventListener('change', async e => {
+  const carreraId = e.target.value;
+  const selCoh = document.getElementById('selCohorte');
+  const selCal = document.getElementById('selCalendario');
+  selCoh.innerHTML = '<option value="">Seleccionar cohorte...</option>';
+  selCal.innerHTML = '<option value="">Primero seleccioná cohorte</option>';
+  selCoh.disabled = !carreraId;
+  selCal.disabled = true;
+  document.getElementById('btnCargar').disabled = true;
+  carreraActiva = carreraId;
+  if (!carreraId) return;
+
+  const { data } = await supabase.from('cohortes')
+    .select('id,nro_cohorte,anho_inicio')
+    .eq('carrera_id', carreraId).order('nro_cohorte');
+  (data||[]).forEach(c => {
+    selCoh.innerHTML += `<option value="${c.id}">${c.nro_cohorte}ª Cohorte ${c.anho_inicio}</option>`;
+  });
+});
+
+document.getElementById('selCohorte').addEventListener('change', async e => {
+  const cohorteId = e.target.value;
+  const selCal = document.getElementById('selCalendario');
+  selCal.innerHTML = '<option value="">Sin exámenes para esta cohorte</option>';
+  selCal.disabled = !cohorteId;
+  document.getElementById('btnCargar').disabled = true;
+  cohorteActivo = cohorteId;
+  if (!cohorteId) return;
+
+  const { data } = await supabase.from('calendario_examenes')
+    .select('id,oportunidad_nro,materia_id,fecha_desde,fecha_hasta,estado,materias(nombre,anho_curricula)')
+    .eq('cohorte_id', cohorteId)
+    .order('materia_id');
+
+  if (!data?.length) return;
+  selCal.innerHTML = '<option value="">Seleccionar examen...</option>';
+  data.forEach(c => {
+    const estado = c.estado === 'VIGENTE' ? ' ✓' : '';
+    selCal.innerHTML += `<option value="${c.id}">${c.materias?.nombre} — ${c.oportunidad_nro}ª oport.${estado}</option>`;
+  });
+  selCal.disabled = false;
+});
+
+document.getElementById('selCalendario').addEventListener('change', e => {
+  document.getElementById('btnCargar').disabled = !e.target.value;
+});
+
+document.getElementById('btnCargar').addEventListener('click', cargarLista);
+
+// ── Cargar lista principal ─────────────────────────────────────
+async function cargarLista() {
+  const calendarioId = document.getElementById('selCalendario').value;
+  const cohorteId    = document.getElementById('selCohorte').value;
+  const carreraId    = document.getElementById('selCarrera').value;
+  if (!calendarioId || !cohorteId) return;
+
+  document.getElementById('habContent').innerHTML =
+    '<div style="text-align:center;padding:40px;color:var(--txt-muted)">Cargando alumnos...</div>';
+
+  // 1. Datos del calendario seleccionado
+  const { data: cal } = await supabase.from('calendario_examenes')
+    .select('id,oportunidad_nro,fecha_desde,fecha_hasta,estado,materia_id,id_moodle,materias(nombre,anho_curricula)')
+    .eq('id', calendarioId).single();
+  calendarioActivo = cal;
+
+  // 2. Todos los alumnos activos de la cohorte con sus inscripciones
+  const { data: inscs } = await supabase.from('inscripciones_anuales')
+    .select('id,anho_cursada,alumnos(id,nombres,apellidos,ci,telefono)')
+    .eq('cohorte_id', cohorteId)
+    .eq('estado','Activo')
+    .order('alumnos(apellidos)');
+
+  if (!inscs?.length) {
+    document.getElementById('habContent').innerHTML =
+      '<div style="text-align:center;padding:40px;color:var(--txt-muted)">Sin alumnos activos en esta cohorte</div>';
+    return;
+  }
+
+  // Excluir alumnos que ya aprobaron en oportunidades anteriores
+  let inscsFiltradas = inscs;
+  if (cal.oportunidad_nro > 1) {
+    const opsPrevias = Array.from({ length: cal.oportunidad_nro - 1 }, (_, i) => i + 1);
+    const inscIds0   = inscs.map(i => i.id);
+    const { data: aprobados } = await supabase.from('historial_examenes')
+      .select('inscripcion_id')
+      .eq('materia_id', cal.materia_id)
+      .in('oportunidad_nro', opsPrevias)
+      .in('inscripcion_id', inscIds0)
+      .or('estado_materia.eq.Aprobado,nota_obtenida.gte.2');
+    const aprobadosSet = new Set((aprobados||[]).map(a => a.inscripcion_id));
+    inscsFiltradas = inscs.filter(i => !aprobadosSet.has(i.id));
+  }
+
+  const inscIds = inscsFiltradas.map(i => i.id);
+  if (!inscIds.length) {
+    document.getElementById('habContent').innerHTML =
+      '<div style="text-align:center;padding:40px;color:var(--txt-muted)">Todos los alumnos ya aprobaron en oportunidades anteriores</div>';
+    return;
+  }
+
+  // 3. Cuotas pendientes/vencidas — guardamos el id para poder actualizarlas
+  const { data: cuotas } = await supabase.from('cuotas_pagos')
+    .select('id,inscripcion_id,estado_pago,nro_cuota,monto_final')
+    .in('inscripcion_id', inscIds)
+    .order('nro_cuota', { ascending: false });
+
+  // Mapa: inscripcion_id → {pagada, cuota_id, monto}
+  const cuotaMap = {};
+  (cuotas||[]).forEach(c => {
+    if (!cuotaMap[c.inscripcion_id]) {
+      cuotaMap[c.inscripcion_id] = {
+        pagada:   c.estado_pago === 'Pagado',
+        cuota_id: c.id,
+        monto:    c.monto_final,
+        nro:      c.nro_cuota,
+      };
+    }
+  });
+
+  // 4. Derechos de examen para esta materia + oportunidad
+  const { data: derechos } = await supabase.from('derechos_examen')
+    .select('inscripcion_id')
+    .eq('materia_id', cal.materia_id)
+    .eq('oportunidad_nro', cal.oportunidad_nro)
+    .in('inscripcion_id', inscIds);
+
+  const derechoSet = new Set((derechos||[]).map(d => d.inscripcion_id));
+
+  // 4b. Precio del derecho de examen según oportunidad
+  const { data: precioConf } = await supabase.from('configuracion_precios')
+    .select('monto_examen_1ra,monto_examen_2da,monto_examen_3ra,monto_examen_extraordinario')
+    .eq('carrera_id', carreraId)
+    .order('anho_lectivo', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const MONTO_EXAMEN_MAP = {
+    1: precioConf?.monto_examen_1ra,
+    2: precioConf?.monto_examen_2da,
+    3: precioConf?.monto_examen_3ra,
+    4: precioConf?.monto_examen_extraordinario,
+  };
+  const montoExamen = MONTO_EXAMEN_MAP[cal.oportunidad_nro] || 0;
+  // Guardarlo en el calendario activo para usarlo en sincronizar
+  cal._montoExamen = montoExamen;
+
+  // 5. Historial previo (si ya se cargó esta lista antes)
+  const { data: histPrev } = await supabase.from('historial_examenes')
+    .select('inscripcion_id,estado_materia,nota_obtenida')
+    .eq('materia_id', cal.materia_id)
+    .eq('oportunidad_nro', cal.oportunidad_nro)
+    .in('inscripcion_id', inscIds);
+
+  const histMap = {};
+  (histPrev||[]).forEach(h => { histMap[h.inscripcion_id] = h; });
+
+  filas = inscsFiltradas.map(ins => {
+    const al       = ins.alumnos;
+    const cq       = cuotaMap[ins.id];
+    const cuota    = cq?.pagada ?? false;
+    const derecho  = derechoSet.has(ins.id);
+    const prev     = histMap[ins.id];
+    let obs = '';
+    if (!cuota && !derecho) obs = 'No abonó cuota ni derecho';
+    else if (!cuota)         obs = 'No abonó cuota';
+    else if (!derecho)       obs = 'No abonó derecho';
+    return {
+      inscripcion_id: ins.id,
+      alumno_id:      al?.id,
+      ci:             al?.ci || '—',
+      nombre:         al ? `${al.nombres} ${al.apellidos}` : '—',
+      telefono:       al?.telefono || '',
+      cuotaPagada:    cuota,
+      cuota_id:       cq?.cuota_id ?? null,
+      cuota_monto:    cq?.monto ?? 0,
+      derechoPagado:  derecho,
+      habAcad:        prev ? true : false,
+      puntaje:        prev?.nota_obtenida ?? '',
+      obs,
+      excluido:       false,
+      historial_id:   prev?.id ?? null,
+    };
+  });
+
+  renderTabla();
+  actualizarTopbar();
+}
+
+// ── Render tabla ───────────────────────────────────────────────
+function renderTabla() {
+  const habilitados = filas.filter(f => !f.excluido && f.habAcad && f.cuotaPagada && f.derechoPagado).length;
+  const noHab       = filas.filter(f => !f.excluido && (!f.habAcad || !f.cuotaPagada || !f.derechoPagado)).length;
+  const excluidos   = filas.filter(f => f.excluido).length;
+  const total       = filas.filter(f => !f.excluido).length;
+
+  document.getElementById('habContent').innerHTML = `
+    <div class="stats-bar">
+      <div class="stat-item"><div class="val">${total}</div><div class="lbl">Total</div></div>
+      <div class="stat-item"><div class="val" style="color:#16a34a">${habilitados}</div><div class="lbl">Habilitados</div></div>
+      <div class="stat-item"><div class="val" style="color:#dc2626">${noHab}</div><div class="lbl">No habilitados</div></div>
+      ${excluidos ? `<div class="stat-item"><div class="val" style="color:var(--txt-muted)">${excluidos}</div><div class="lbl">Excluidos</div></div>` : ''}
+    </div>
+
+    <div class="table-actions">
+      <button class="btn btn-ghost btn-sm" onclick="habilitarTodos()">Habilitar todos académicamente</button>
+      <button class="btn btn-ghost btn-sm" onclick="limpiarHab()">Limpiar selección</button>
+      <button class="btn btn-ghost btn-sm" id="btnMoodle" onclick="sincronizarMoodle()" style="color:#5b21b6;border-color:#c4b5fd">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Sincronizar Moodle
+      </button>
+      <button class="btn btn-primary btn-sm" id="btnGuardar" onclick="guardarHabilitaciones()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Guardar
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="abrirDocumento()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Ver documento
+      </button>
+    </div>
+
+    <div class="hab-table-wrap">
+      <table class="hab-table">
+        <thead>
+          <tr>
+            <th style="width:36px">Nº</th>
+            <th>CI</th>
+            <th>Nombre</th>
+            <th style="text-align:center;width:70px">Puntaje</th>
+            <th style="text-align:center;width:80px">Hab. Acad.</th>
+            <th style="text-align:center;width:60px">Cuota</th>
+            <th style="text-align:center;width:70px">Derecho</th>
+            <th>Observaciones</th>
+            <th style="width:34px"></th>
+          </tr>
+        </thead>
+        <tbody id="tbodyHab">
+          ${filas.map((f, i) => renderFila(f, i)).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderFila(f, i) {
+  const n = filas.filter((x, j) => !x.excluido && j <= i).length;
+  return `<tr id="fila_${i}" class="${f.excluido ? 'excluido' : ''}">
+    <td class="td-mono" style="font-size:.7rem;color:var(--txt-muted)">${f.excluido ? '—' : n}</td>
+    <td class="td-mono">${f.ci}</td>
+    <td style="font-weight:600">${f.nombre}</td>
+    <td style="text-align:center">
+      <input class="inp-puntaje" type="number" min="0" max="100" step="1"
+        value="${f.puntaje}" ${f.excluido ? 'disabled' : ''}
+        onchange="filas[${i}].puntaje = Number(this.value); actualizarObs(${i})">
+    </td>
+    <td style="text-align:center">
+      <input type="checkbox" class="chk-hab" ${f.habAcad ? 'checked' : ''} ${f.excluido ? 'disabled' : ''}
+        onchange="filas[${i}].habAcad = this.checked; actualizarObs(${i}); refreshFila(${i})">
+    </td>
+    <td style="text-align:center">
+      ${f.cuotaPagada
+        ? `<span class="ind si">Si</span>`
+        : f.excluido
+          ? `<span class="ind no">no</span>`
+          : `<button class="btn-sync" id="btnCuota_${i}" onclick="sincronizarCuota(${i})" title="Registrar pago en GoodSystem">
+               ↑ GS
+             </button>`}
+    </td>
+    <td style="text-align:center">
+      ${f.derechoPagado
+        ? `<span class="ind si">Si</span>`
+        : f.excluido
+          ? `<span class="ind no">no</span>`
+          : `<button class="btn-sync" id="btnDerecho_${i}" onclick="sincronizarDerecho(${i})" title="Registrar derecho en GoodSystem">
+               ↑ GS
+             </button>`}
+    </td>
+    <td>
+      <input class="inp-obs" type="text" value="${f.obs}" placeholder="—"
+        onchange="filas[${i}].obs = this.value">
+    </td>
+    <td>
+      <button class="btn-excluir ${f.excluido ? 'incluir' : ''}"
+        title="${f.excluido ? 'Incluir' : 'Excluir'}"
+        onclick="toggleExcluir(${i})">
+        ${f.excluido ? '↩' : '✕'}
+      </button>
+    </td>
+  </tr>`;
+}
+
+// ── Acciones de tabla ──────────────────────────────────────────
+window.toggleExcluir = (i) => {
+  filas[i].excluido = !filas[i].excluido;
+  renderTabla();
+};
+
+window.habilitarTodos = () => {
+  filas.forEach(f => { if (!f.excluido) f.habAcad = true; });
+  renderTabla();
+};
+
+window.limpiarHab = () => {
+  filas.forEach(f => { f.habAcad = false; });
+  renderTabla();
+};
+
+window.actualizarObs = (i) => {
+  const f = filas[i];
+  if (!f.excluido) {
+    let obs = '';
+    if (!f.cuotaPagada && !f.derechoPagado) obs = 'No abonó cuota ni derecho';
+    else if (!f.cuotaPagada)  obs = 'No abonó cuota';
+    else if (!f.derechoPagado) obs = 'No abonó derecho';
+    if (obs) filas[i].obs = obs;
+    // Actualizar input obs sin re-render completo
+    const obsInput = document.querySelector(`#fila_${i} .inp-obs`);
+    if (obsInput && obs) obsInput.value = obs;
+  }
+};
+
+window.refreshFila = (i) => {
+  const tr = document.getElementById(`fila_${i}`);
+  if (tr) tr.outerHTML = renderFila(filas[i], i);
+};
+
+// ── Sincronización desde GoodSystem ───────────────────────────
+// Crea recibo con origen 'GoodSystem' y actualiza cuota/derecho
+
+async function crearReciboGoodSystem({ inscripcionId, monto, concepto }) {
+  const nroRecibo = `GS-${inscripcionId}-${Date.now()}`;
+  const { data, error } = await supabase.from('recibos').insert({
+    nro_recibo:     nroRecibo,
+    inscripcion_id: inscripcionId,
+    monto_total:    monto,
+    concepto:       concepto,
+    tipo_pago:      'Otro',
+    referencia:     'GoodSystem - pago presencial en filial',
+    usuario_caja_id: sesion.id,
+    fecha_emision:  new Date().toISOString(),
+  }).select('id').single();
+  if (error) throw new Error('recibo: ' + error.message);
+  return data.id;
+}
+
+window.sincronizarCuota = async (i) => {
+  const f = filas[i];
+  if (f.cuotaPagada || !f.cuota_id) {
+    toast('Esta cuota ya está pagada o no tiene cuota asignada', 'warning');
+    return;
+  }
+  if (!confirm(`¿Marcar cuota de ${f.nombre} como pagada (origen GoodSystem)?`)) return;
+
+  const btn = document.getElementById(`btnCuota_${i}`);
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  try {
+    const reciboId = await crearReciboGoodSystem({
+      inscripcionId: f.inscripcion_id,
+      monto:         f.cuota_monto,
+      concepto:      'Cuota — pago presencial GoodSystem',
+    });
+
+    await supabase.from('cuotas_pagos').update({
+      estado_pago: 'Pagado',
+      fecha_pago:  new Date().toISOString().split('T')[0],
+      recibo_id:   reciboId,
+    }).eq('id', f.cuota_id);
+
+    // Actualizar estado local
+    filas[i].cuotaPagada = true;
+    // Recalcular obs
+    if (filas[i].derechoPagado) filas[i].obs = '';
+    else filas[i].obs = 'No abonó derecho';
+
+    refreshFila(i);
+    // Actualizar stats
+    renderTabla();
+    toast(`Cuota de ${f.nombre} marcada como pagada (GoodSystem)`, 'success');
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '↑ GS'; }
+  }
+};
+
+window.sincronizarDerecho = async (i) => {
+  const f   = filas[i];
+  const cal = calendarioActivo;
+  if (f.derechoPagado) { toast('El derecho ya está registrado', 'warning'); return; }
+  if (!cal) return;
+
+  if (!confirm(`¿Registrar derecho de examen de ${f.nombre} (origen GoodSystem)?`)) return;
+
+  const btn = document.getElementById(`btnDerecho_${i}`);
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  try {
+    const monto    = cal._montoExamen || 0;
+    const reciboId = await crearReciboGoodSystem({
+      inscripcionId: f.inscripcion_id,
+      monto,
+      concepto: `Derecho examen ${cal.materias?.nombre} — ${cal.oportunidad_nro}ª oport. GoodSystem`,
+    });
+
+    await supabase.from('derechos_examen').insert({
+      inscripcion_id:  f.inscripcion_id,
+      materia_id:      cal.materia_id,
+      oportunidad_nro: cal.oportunidad_nro,
+      recibo_id:       reciboId,
+      monto_pagado:    monto,
+      fecha_pago:      new Date().toISOString(),
+    });
+
+    // Actualizar estado local
+    filas[i].derechoPagado = true;
+    if (filas[i].cuotaPagada) filas[i].obs = '';
+    else filas[i].obs = 'No abonó cuota';
+
+    refreshFila(i);
+    renderTabla();
+    toast(`Derecho de ${f.nombre} registrado (GoodSystem)`, 'success');
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '↑ GS'; }
+  }
+};
+
+ 
+window.sincronizarMoodle = async () => {
+  if (!calendarioActivo) { toast('Cargá la lista primero', 'warning'); return; }
+  if (!calendarioActivo.id_moodle) {
+    toast('Este examen no tiene id_moodle configurado en el calendario', 'warning');
+    return;
+  }
+ 
+  const btn = document.getElementById('btnMoodle');
+  btn.disabled = true;
+  btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Conectando...`;
+ 
+  try {
+    const courseId = calendarioActivo.id_moodle;
+    const base = `${MOODLE_URL}/webservice/rest/server.php?wstoken=${MOODLE_TOKEN}&moodlewsrestformat=json`;
+ 
+    // ── Llamada 1: todas las notas del curso (sin userid) ──────
+    const resNotas = await fetch(`${base}&wsfunction=gradereport_user_get_grade_items&courseid=${courseId}`);
+    if (!resNotas.ok) throw new Error(`HTTP ${resNotas.status}`);
+    const dataNotas = await resNotas.json();
+    console.log(dataNotas)
+    if (dataNotas.exception) throw new Error(dataNotas.message);
+ 
+    // usergrades: [{userid, userfullname, useridnumber, gradeitems[]}]
+    const usergrades = dataNotas.usergrades || [];
+    if (!usergrades.length) {
+      toast('Moodle no devolvió alumnos para este curso', 'warning');
+      return;
+    }
+ 
+    // Mapa userid → puntaje total del curso
+    const userIdToNota = {};
+    usergrades.forEach(u => {
+      const totalItem = u.gradeitems?.find(g => g.itemtype === 'course');
+      if (totalItem && totalItem.graderaw !== null) {
+        userIdToNota[u.userid] = Number(totalItem.graderaw);
+      }
+    });
+ 
+    // ── Llamada 2: buscar userid por username=CI ───────────────
+    const cis = filas.map(f => f.ci).filter(Boolean);
+    const paramsCIs = cis.map((ci, i) => `values[${i}]=${encodeURIComponent(ci)}`).join('&');
+ 
+    const resUsuarios = await fetch(`${base}&wsfunction=core_user_get_users_by_field&field=username&${paramsCIs}`);
+    if (!resUsuarios.ok) throw new Error(`HTTP ${resUsuarios.status}`);
+    const usuarios = await resUsuarios.json();
+    if (usuarios.exception) throw new Error(usuarios.message);
+ 
+    // Mapa ci → userid de Moodle
+    const ciToUserId = {};
+    (usuarios || []).forEach(u => { ciToUserId[u.username] = u.id; });
+ 
+    // ── Cruzar: ci → userid → nota ─────────────────────────────
+    let actualizados = 0;
+    filas.forEach((f, i) => {
+      const userId = ciToUserId[f.ci];
+      if (!userId) return;
+      const nota = userIdToNota[userId];
+      if (nota === undefined) return;
+      filas[i].puntaje = nota;
+      filas[i].habAcad = nota >= MINIMO_PROCESO;
+      actualizados++;
+    });
+ 
+    const noEncontrados = cis.length - Object.keys(ciToUserId).length;
+    if (actualizados === 0) {
+      toast('No se encontraron coincidencias. Verificá que los usernames en Moodle sean los CIs.', 'warning');
+    } else {
+      toast(`${actualizados} alumnos sincronizados${noEncontrados > 0 ? ` · ${noEncontrados} sin cuenta en Moodle` : ''}`, 'success');
+    }
+    renderTabla();
+ 
+  } catch(e) {
+    toast('Error Moodle: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Sincronizar Moodle`;
+  }
+};
+
+// ── Guardar habilitaciones ─────────────────────────────────────
+window.guardarHabilitaciones = async () => {
+  if (!calendarioActivo) return;
+  const btn = document.getElementById('btnGuardar');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  try {
+    const activas = filas.filter(f => !f.excluido);
+
+    for (const f of activas) {
+      const payload = {
+        inscripcion_id: f.inscripcion_id,
+        materia_id:     calendarioActivo.materia_id,
+        oportunidad_nro: calendarioActivo.oportunidad_nro,
+        estado_materia: f.habAcad ? 'Cursando' : 'Ausente',
+        nota_obtenida:  f.puntaje !== '' ? Number(f.puntaje) : null,
+        registrado_por: sesion.id,
+        fecha_registro: new Date().toISOString(),
+      };
+
+      if (f.historial_id) {
+        // Ya existe — actualizar
+        await supabase.from('historial_examenes')
+          .update({ estado_materia: payload.estado_materia, nota_obtenida: payload.nota_obtenida, registrado_por: sesion.id })
+          .eq('id', f.historial_id);
+      } else {
+        // Insertar nuevo — upsert por si acaso
+        const { data: inserted } = await supabase.from('historial_examenes')
+          .upsert(payload, { onConflict: 'inscripcion_id,materia_id,oportunidad_nro' })
+          .select('id').single();
+        if (inserted) f.historial_id = inserted.id;
+      }
+    }
+
+    toast(`${activas.length} registros guardados en historial`, 'success');
+    actualizarTopbar();
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar`;
+  }
+};
+
+// ── Topbar contextual ──────────────────────────────────────────
+function actualizarTopbar() {
+  if (!calendarioActivo) {
+    document.getElementById('topbarActions').innerHTML = '';
+    return;
+  }
+  const cal = calendarioActivo;
+  document.getElementById('topbarActions').innerHTML = `
+    <span style="font-size:.78rem;color:var(--txt-muted)">
+      ${cal.materias?.nombre} — ${cal.oportunidad_nro}ª oportunidad
+    </span>
+    <button class="btn btn-ghost btn-sm" onclick="abrirDocumento()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Generar acta
+    </button>`;
+}
+
+// ── Documento / Acta ───────────────────────────────────────────
+window.abrirDocumento = () => {
+  if (!filas.length || !calendarioActivo) { toast('Cargá la lista primero','warning'); return; }
+
+  const cal       = calendarioActivo;
+  const carNombre = document.getElementById('selCarrera').selectedOptions[0]?.text || '—';
+  const cohNombre = document.getElementById('selCohorte').selectedOptions[0]?.text || '—';
+  const oport     = ['1RA','2DA','3RA','4TA'][cal.oportunidad_nro - 1] || cal.oportunidad_nro+'RA';
+  const visibles  = filas.filter(f => !f.excluido);
+  const fechaHoy  = new Date().toLocaleDateString('es-PY', {day:'2-digit', month:'long', year:'numeric'});
+
+  const filasDom = visibles.map((f, i) => {
+    const hab    = f.habAcad ? 'Si' : 'No';
+    const cuota  = f.cuotaPagada ? 'Si' : 'no';
+    const derech = f.derechoPagado ? 'Si' : 'no';
+    const habClass = f.habAcad ? 'si-cell' : 'no-cell';
+    return `<tr>
+      <td class="centro">${i+1}</td>
+      <td class="centro">${f.ci}</td>
+      <td class="centro">${f.puntaje !== '' ? f.puntaje : '—'}</td>
+      <td class="${habClass}">${hab}</td>
+      <td class="centro ${f.cuotaPagada ? 'si-cell' : 'no-cell'}">${cuota}</td>
+      <td class="centro ${f.derechoPagado ? 'si-cell' : 'no-cell'}">${derech}</td>
+      <td>${f.obs || ''}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('modalDocBody').innerHTML = `
+    <div class="doc-preview" id="docPreviewContent">
+      <div class="doc-header-inst">
+        <div class="doc-inst-nombre">Universidad Privada del Guairá</div>
+        <div class="doc-inst-sub">${carNombre} — ${cohNombre}</div>
+      </div>
+      <div class="doc-titulo-bloque">PROGRAMA DE ${carNombre.toUpperCase()}</div>
+      <div class="doc-subtitulo-bloque">
+        ${cal.materias?.nombre?.toUpperCase()} — EXAMEN FINAL ${oport}. OPORTUNIDAD<br>
+        <span style="font-weight:400;font-size:10px">LISTA DE HABILITADOS</span>
+      </div>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th class="centro" style="width:28px">Nº</th>
+            <th class="centro" style="width:70px">Nº de C.I.</th>
+            <th class="centro" style="width:55px">Puntaje de proceso</th>
+            <th class="centro" style="width:60px">Habilita / No Habilita</th>
+            <th class="centro" style="width:45px">Cuota</th>
+            <th class="centro" style="width:55px">Derecho ${oport}</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>${filasDom}</tbody>
+      </table>
+      <div class="doc-footer">
+        <span>Generado: ${fechaHoy}</span>
+        <span>Sistema UPG · Educación a Distancia</span>
+      </div>
+    </div>`;
+
+  document.getElementById('modalDocOverlay').classList.add('open');
+};
+
+window.imprimirDoc = () => {
+  const contenido = document.getElementById('docPreviewContent').outerHTML;
+  const ventana = window.open('', '_blank');
+  ventana.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8"><title>Acta de Examen</title>
+    <style>
+      body { font-family:'Segoe UI',sans-serif; font-size:10px; color:#000; margin:20px; }
+      table { width:100%; border-collapse:collapse; }
+      th { background:#06402b; color:#fff; padding:5px 6px; font-size:9px; text-transform:uppercase; border:1px solid #055030; }
+      td { padding:4px 6px; border:1px solid #ccc; }
+      tr:nth-child(even) td { background:#f0faf4; }
+      .si-cell { background:#dcfce7!important; color:#16a34a; font-weight:700; text-align:center; }
+      .no-cell { background:#fee2e2!important; color:#dc2626; font-weight:700; text-align:center; }
+      .centro { text-align:center; }
+      .doc-header-inst { text-align:center; border-bottom:2px solid #06402b; padding-bottom:8px; margin-bottom:12px; }
+      .doc-inst-nombre { font-size:13px; font-weight:700; color:#06402b; text-transform:uppercase; }
+      .doc-titulo-bloque { background:#06402b; color:#fff; text-align:center; padding:5px; font-weight:700; text-transform:uppercase; font-size:11px; }
+      .doc-subtitulo-bloque { background:#e8f5ef; border:1px solid #b8d8c6; text-align:center; padding:4px; font-weight:700; color:#06402b; text-transform:uppercase; font-size:10px; margin-bottom:10px; }
+      .doc-footer { margin-top:12px; display:flex; justify-content:space-between; font-size:9px; color:#666; border-top:1px solid #ccc; padding-top:5px; }
+      @media print { @page { margin:15mm; } }
+    </style>
+  </head><body>${contenido}</body></html>`);
+  ventana.document.close();
+  ventana.focus();
+  setTimeout(() => ventana.print(), 400);
+};
+
+// ── Historial ──────────────────────────────────────────────────
+async function cargarHistorial() {
+  const { data } = await supabase.from('historial_examenes')
+    .select(`
+      materia_id, oportunidad_nro,
+      materias(nombre, carrera_id, carreras(nombre)),
+      inscripciones_anuales(cohortes(nro_cohorte, anho_inicio))
+    `)
+    .order('materia_id');
+
+  // Agrupar por materia + oportunidad
+  const grupos = {};
+  (data||[]).forEach(h => {
+    const key = `${h.materia_id}_${h.oportunidad_nro}`;
+    if (!grupos[key]) grupos[key] = {
+      materia: h.materias?.nombre || '—',
+      carrera: h.materias?.carreras?.nombre || '—',
+      oportunidad: h.oportunidad_nro,
+      registros: 0,
+    };
+    grupos[key].registros++;
+  });
+
+  historial = Object.values(grupos);
+  renderHistorial();
+}
+
+function renderHistorial() {
+  const q   = document.getElementById('searchHist').value.toLowerCase();
+  const car = document.getElementById('filtroCarreraHist').value;
+  let items = historial;
+  if (q)   items = items.filter(h => h.materia.toLowerCase().includes(q));
+  const OPORT = ['','1RA','2DA','3RA','4TA'];
+
+  document.getElementById('histTotal').textContent = `${items.length} registros`;
+  document.getElementById('histContent').innerHTML = items.length
+    ? items.map(h => `
+        <div class="hist-card">
+          <div class="hist-card-title">${h.materia}</div>
+          <div class="hist-card-meta">
+            <span>${h.carrera}</span>
+            <span>${OPORT[h.oportunidad] || h.oportunidad+'RA'}. Oportunidad</span>
+          </div>
+          <div class="hist-card-stats">
+            <span class="badge badge-muted">${h.registros} registros</span>
+          </div>
+        </div>`).join('')
+    : '<div style="text-align:center;padding:40px;color:var(--txt-muted)">Sin historial</div>';
+}
+
+['searchHist','filtroCarreraHist'].forEach(id => {
+  document.getElementById(id).addEventListener('input',  renderHistorial);
+  document.getElementById(id).addEventListener('change', renderHistorial);
+});
+
+document.getElementById('modalDocOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget)
+    document.getElementById('modalDocOverlay').classList.remove('open');
+});
+</script>
+</body>
+</html>
