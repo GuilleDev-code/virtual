@@ -1809,6 +1809,7 @@
 
                 // Opcional: Si n8n te responde ya con el ID generado tras procesar, puedes pasarlo aquí
                 const n8nData = await n8nRes.json();
+                console.log(n8nRes)
                 renderExito(n8nData.comprobante_id || null);
 
             } catch (e) {
