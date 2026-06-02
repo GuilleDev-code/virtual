@@ -1081,7 +1081,7 @@
         // ── Config Supabase ────────────────────────────────────────────
         const SUPABASE_URL = 'https://dhamkbwoaswsxckudlmd.supabase.co';
         const SUPABASE_ANON = 'sb_publishable_N5wBvz9PTzz4sSCemLyCnQ_XiFGmKhk';
-        const N8N_WEBHOOK = 'https://n8n.tudominio.com/webhook/comprobante-recibido';
+        const N8N_WEBHOOK = 'https://n8n.uniupg.edu.py/webhook/comprobantes_moodle';
 
         async function sbGet(path, params = '') {
             const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}${params}`, {
@@ -1411,11 +1411,11 @@
       </div>`;
 
 
-const examenesHTML = state.examenesHabilitados.length
-    ? state.examenesHabilitados.map(e => {
-        const hasta = new Date(e.fecha_hasta + 'T23:59:00');
-        const diff = Math.round((hasta - new Date()) / 86400000);
-        return `<label class="item-pago" onclick="toggleItem(this)">
+            const examenesHTML = state.examenesHabilitados.length
+                ? state.examenesHabilitados.map(e => {
+                    const hasta = new Date(e.fecha_hasta + 'T23:59:00');
+                    const diff = Math.round((hasta - new Date()) / 86400000);
+                    return `<label class="item-pago" onclick="toggleItem(this)">
           <input type="checkbox" value="examen_${e.id}"
             data-tipo="examen" data-id="${e.id}"
             data-label="${e.materias?.nombre || '?'} — ${e.oportunidad_nro}ª oportunidad"
@@ -1432,8 +1432,8 @@ const examenesHTML = state.examenesHabilitados.length
           </div>
           <div class="item-monto">${fmt(e.monto_final)}</div>
         </label>`;
-    }).join('')
-    : `<div style="padding:14px;text-align:center;font-size:.82rem;color:var(--ink-3)">
+                }).join('')
+                : `<div style="padding:14px;text-align:center;font-size:.82rem;color:var(--ink-3)">
     No hay exámenes habilitados en este momento
   </div>`;
 
@@ -1686,67 +1686,61 @@ const examenesHTML = state.examenesHabilitados.length
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;margin:0"></div>';
 
+            // Limpiar errores previos si los hubiera
+            document.getElementById('envioError').innerHTML = '';
+
             try {
-                // 1. Subir imagen a Supabase Storage
-                const ext = state.archivoFile.name.split('.').pop();
-                const fname = `comprobantes/${state.alumno.ci}_${Date.now()}.${ext}`;
+                if (!state.archivoFile) throw new Error('Por favor, selecciona un comprobante.');
 
-                const uploadRes = await fetch(
-                    `${SUPABASE_URL}/storage/v1/object/comprobantes/${fname}`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'apikey': SUPABASE_ANON,
-                            'Authorization': `Bearer ${SUPABASE_ANON}`,
-                            'Content-Type': state.archivoFile.type,
-                            'x-upsert': 'false'
-                        },
-                        body: state.archivoFile
-                    }
-                );
-                if (!uploadRes.ok) throw new Error('No se pudo subir la imagen.');
+                // 1. Subir imagen al servidor local (Carpeta comprobantes)
+                const formData = new FormData();
+                formData.append('comprobante', state.archivoFile);
+                formData.append('ci', state.alumno.ci);
 
-                const imagenUrl = `${SUPABASE_URL}/storage/v1/object/public/comprobantes/${fname}`;
-
-                // 2. INSERT comprobante_pago
-                const comp = await sbPost('comprobantes_pago', {
-                    inscripcion_id: state.inscripcionSel.id,
-                    telefono_remitente: state.telefono,
-                    ci_remitente: state.alumno.ci,
-                    imagen_url: imagenUrl,
-                    estado_procesamiento: 'Recibido',
-                    llego_a_las: new Date().toISOString(),
+                // Cambia '/upload.php' o '/api/upload' por la ruta exacta de tu backend local
+                const uploadRes = await fetch('./api/upload.php', {
+                    method: 'POST',
+                    body: formData
                 });
-                const comprobanteId = comp[0].id;
 
-                // 3. INSERT detalles_pago_comprobante (uno por ítem seleccionado)
-                const detalles = state.seleccion.map(x => ({
-                    comprobante_id: comprobanteId,
-                    concepto_tipo: x.tipo,
-                    referencia_id: x.id || null,
-                    monto_pactado: x.monto || null,
-                }));
-                if (detalles.length) await sbPost('detalles_pago_comprobante', detalles);
+                if (!uploadRes.ok) throw new Error('No se pudo guardar el comprobante en el servidor.');
 
-                // 4. Notificar a n8n (no bloqueante)
-                fetch(N8N_WEBHOOK, {
+                const uploadData = await uploadRes.json();
+                // Asumiendo que tu backend responde con la ruta o nombre final: { url: 'comprobantes/nombre_archivo.ext' }
+                const imagenUrlLocal = uploadData.url;
+
+                console.log(imagenUrlLocal)
+
+                // 2. Enviar todo a n8n para que procese con OpenAI e inserte en la DB
+                // Nota: Quitamos el catch vacío para que si n8n falla, el usuario lo sepa
+                /*const n8nRes = await fetch(N8N_WEBHOOK, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        comprobante_id: comprobanteId,
                         alumno_id: state.alumno.id,
                         alumno_nombre: `${state.alumno.nombres} ${state.alumno.apellidos}`,
                         ci: state.alumno.ci,
                         telefono: state.telefono,
                         inscripcion_id: state.inscripcionSel.id,
                         carrera: state.inscripcionSel.cohortes?.carreras?.nombre,
-                        conceptos: state.seleccion.map(x => x.label),
+                        imagen_url_local: imagenUrlLocal,
+                        // Enviamos la selección completa para que n8n genere los detalles_pago_comprobante
+                        items_seleccionados: state.seleccion.map(x => ({
+                            concepto_tipo: x.tipo,
+                            referencia_id: x.id || null,
+                            monto_pactado: x.monto || null,
+                            label: x.label
+                        })),
                         total: state.seleccion.reduce((s, x) => s + x.monto, 0),
-                        imagen_url: imagenUrl,
+                        llego_a_las: new Date().toISOString()
                     })
-                }).catch(() => { });
+                });
 
-                renderExito(comprobanteId);
+                if (!n8nRes.ok) throw new Error('Error al iniciar el procesamiento en n8n.');
+
+                // Opcional: Si n8n te responde ya con el ID generado tras procesar, puedes pasarlo aquí
+                const n8nData = await n8nRes.json();
+                renderExito(n8nData.comprobante_id || null);*/
 
             } catch (e) {
                 document.getElementById('envioError').innerHTML =
