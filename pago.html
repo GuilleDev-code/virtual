@@ -1706,14 +1706,15 @@
                 if (!uploadRes.ok) throw new Error('No se pudo guardar el comprobante en el servidor.');
 
                 const uploadData = await uploadRes.json();
-                // Asumiendo que tu backend responde con la ruta o nombre final: { url: 'comprobantes/nombre_archivo.ext' }
-                const imagenUrlLocal = uploadData.url;
+                const rutaLimpia = uploadData.url.replace(/^\.\.\//, '');
 
-                console.log(imagenUrlLocal)
+                const imagenUrlPublica = `https://app.uniupg.edu.py/${rutaLimpia}`;
+
+
 
                 // 2. Enviar todo a n8n para que procese con OpenAI e inserte en la DB
                 // Nota: Quitamos el catch vacío para que si n8n falla, el usuario lo sepa
-                /*const n8nRes = await fetch(N8N_WEBHOOK, {
+                const n8nRes = await fetch(N8N_WEBHOOK, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1723,7 +1724,7 @@
                         telefono: state.telefono,
                         inscripcion_id: state.inscripcionSel.id,
                         carrera: state.inscripcionSel.cohortes?.carreras?.nombre,
-                        imagen_url_local: imagenUrlLocal,
+                        imagen_url_local: imagenUrlPublica,
                         // Enviamos la selección completa para que n8n genere los detalles_pago_comprobante
                         items_seleccionados: state.seleccion.map(x => ({
                             concepto_tipo: x.tipo,
@@ -1740,7 +1741,7 @@
 
                 // Opcional: Si n8n te responde ya con el ID generado tras procesar, puedes pasarlo aquí
                 const n8nData = await n8nRes.json();
-                renderExito(n8nData.comprobante_id || null);*/
+                renderExito(n8nData.comprobante_id || null);
 
             } catch (e) {
                 document.getElementById('envioError').innerHTML =
