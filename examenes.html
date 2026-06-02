@@ -352,9 +352,10 @@ async function cargarLista() {
 
   // 1. Datos del calendario seleccionado
   const { data: cal } = await supabase.from('calendario_examenes')
-    .select('id,oportunidad_nro,fecha_desde,fecha_hasta,estado,materia_id,id_moodle,materias(nombre,anho_curricula)')
+    .select('id,oportunidad_nro,fecha_desde,fecha_hasta,estado,materia_id,id_moodle,materias(nombre,anho_curricula,cuota_requerida_examen)')
     .eq('id', calendarioId).single();
   calendarioActivo = cal;
+
 
   // 2. Todos los alumnos activos de la cohorte con sus inscripciones
   const { data: inscs } = await supabase.from('inscripciones_anuales')
@@ -395,6 +396,7 @@ async function cargarLista() {
   const { data: cuotas } = await supabase.from('cuotas_pagos')
     .select('id,inscripcion_id,estado_pago,nro_cuota,monto_final')
     .in('inscripcion_id', inscIds)
+    .eq('nro_cuota',calendarioActivo.materias.cuota_requerida_examen)
     .order('nro_cuota', { ascending: false });
 
   // Mapa: inscripcion_id → {pagada, cuota_id, monto}
@@ -415,6 +417,7 @@ async function cargarLista() {
     .select('inscripcion_id')
     .eq('materia_id', cal.materia_id)
     .eq('oportunidad_nro', cal.oportunidad_nro)
+    .eq('estado','PAGADO')
     .in('inscripcion_id', inscIds);
 
   const derechoSet = new Set((derechos||[]).map(d => d.inscripcion_id));
@@ -736,7 +739,6 @@ window.sincronizarMoodle = async () => {
     const resNotas = await fetch(`${base}&wsfunction=gradereport_user_get_grade_items&courseid=${courseId}`);
     if (!resNotas.ok) throw new Error(`HTTP ${resNotas.status}`);
     const dataNotas = await resNotas.json();
-    console.log(dataNotas)
     if (dataNotas.exception) throw new Error(dataNotas.message);
  
     // usergrades: [{userid, userfullname, useridnumber, gradeitems[]}]

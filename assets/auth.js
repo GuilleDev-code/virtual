@@ -12,7 +12,7 @@ const PERMISOS = {
   Admin:     ['dashboard', 'crm', 'admision', 'caja', 'academico', 'configuracion', 'secretaria','examenes'],
   Academico: ['dashboard', 'academico', 'secretaria','examenes'],
   Cajero:    ['dashboard', 'caja','examenes'],
-  Docente:   ['dashboard', 'academico'],
+  Docente:   ['academico'],
 };
 
 // ------------------------------------------------------------

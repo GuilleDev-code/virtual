@@ -1521,7 +1521,7 @@
             if (chkOtros?.checked) {
                 const monto = Number(document.getElementById('otrosMonto')?.value) || 0;
                 const desc = document.getElementById('otrosDesc')?.value?.trim() || 'Otro concepto';
-                state.seleccion.push({ tipo: 'otro', id: null, label: desc, monto });
+                state.seleccion.push({ tipo: 'desc', id: null, label: desc, monto });
             }
 
             updateTotalBar();
@@ -1805,12 +1805,10 @@
                     })
                 });
 
-                if (!n8nRes.ok) throw new Error('Error al iniciar el procesamiento en n8n.');
 
                 // Opcional: Si n8n te responde ya con el ID generado tras procesar, puedes pasarlo aquí
                 const n8nData = await n8nRes.json();
-                console.log(n8nData)
-                renderExito(n8nData.comprobante_id || null);
+                (n8nData.respuesta=="ok") ? renderExito():console.log(error)
 
             } catch (e) {
                 document.getElementById('envioError').innerHTML =
@@ -1821,12 +1819,11 @@
         };
 
         // ── ÉXITO ──────────────────────────────────────────────────────
-        function renderExito(comprobanteId) {
+        function renderExito() {
             setStep(5);
             document.getElementById('progressWrap').style.display = 'none';
             document.getElementById('stepLabels').style.display = 'none';
 
-            const refNro = String(comprobanteId).padStart(6, '0');
 
             root.innerHTML = `
     <div class="card" style="margin-top:16px">
@@ -1839,10 +1836,6 @@
           <div class="success-sub">
             Tu comprobante fue recibido y está siendo revisado por el equipo de secretaría.
             Te avisamos por WhatsApp cuando esté confirmado.
-          </div>
-          <div class="ref-box">
-            <div class="ref-label">Número de referencia</div>
-            <div class="ref-nro">#${refNro}</div>
           </div>
           <div style="font-size:.78rem;color:var(--ink-3);line-height:1.6">
             Guardá este número por cualquier consulta.<br>

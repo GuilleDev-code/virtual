@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   {
     section: 'Principal',
     items: [
-      { id: 'dashboard',    label: 'Dashboard',     href: 'dashboard.html',    icon: iconDashboard()   },
+      { id: 'dashboard',    label: 'Dashboard',     href: 'dashboard.html',    icon: iconDashboard(), rol: 'Admin,Academico,Cajero'   },
     ]
   },
   {
