@@ -1532,18 +1532,42 @@
             renderComprobante();
         };
 
+        if (!state.cuentasBancarias) {
+            // Ejemplo si usas una función helper de fetch/supabase
+            state.cuentasBancarias = await sbGet('cuentas_bancarias');
+        }
         // ── PASO 3: Teléfono + foto comprobante ───────────────────────
         function renderComprobante() {
             setStep(3);
             document.getElementById('totalBar').classList.remove('visible');
 
+            // Generar las opciones del Select dinámicamente desde el state
+            const cuentas = state.cuentasBancarias || [];
+            const opcionesCuentas = cuentas.map(c => `
+        <option value="${c.id}" ${state.cuentaBancariaSel?.id == c.id ? 'selected' : ''}>
+            ${c.nombre || 'Cuenta'}
+        </option>
+    `).join('');
+
             root.innerHTML = `
     <div class="card">
       <div class="card-header">
         <div class="card-eyebrow">Paso 3 de 4</div>
-        <div class="card-title">Datos de contacto y comprobante</div>
+        <div class="card-title">Datos de depósito o transferencia</div>
       </div>
       <div class="card-body">
+        
+        <div class="form-field">
+          <label class="form-label" for="bancoSelect">Banco o Entidad de destino</label>
+          <select class="form-input" id="bancoSelect" onchange="onBancoChange(this.value)">
+            <option value="" disabled ${!state.cuentaBancariaSel ? 'selected' : ''}>-- Selecciona dónde transferiste o depositaste --</option>
+            ${opcionesCuentas}
+          </select>
+        </div>
+
+        <div id="bancoDetallesContainer">
+            </div>
+
         <div class="form-field">
           <label class="form-label" for="telInput">Tu número de WhatsApp</label>
           <input class="form-input" type="tel" id="telInput" inputmode="tel"
@@ -1580,8 +1604,51 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
     </button>
     <button class="btn btn-ghost" onclick="volverPaso2()">← Volver</button>`;
-        }
 
+            // Si ya había una cuenta seleccionada previamente, renderizar sus detalles de entrada
+            if (state.cuentaBancariaSel) {
+                renderDetallesBanco(state.cuentaBancariaSel);
+            }
+        }
+        // Maneja el cambio del select de bancos
+        window.onBancoChange = (id) => {
+            const cuenta = state.cuentasBancarias.find(c => c.id == id);
+            if (!cuenta) return;
+
+            // Guardamos en el estado qué cuenta seleccionó el alumno
+            state.cuentaBancariaSel = cuenta;
+
+            // Renderizamos los datos abajo
+            renderDetallesBanco(cuenta);
+
+            // Validar si ya podemos habilitar el botón "Siguiente" (si ya hay archivo e internet)
+            / * Si tenías una función de validación de botones acá, la ejecutas * /
+        };
+
+        // Renderiza la tarjeta con los datos de transferencia abajo del select
+        window.renderDetallesBanco = (cuenta) => {
+            const container = document.getElementById('bancoDetallesContainer');
+            if (!container) return;
+
+            // Lógica para asignar un logo según la entidad de la base de datos
+            let logoUrl = 'https://placehold.co/40x40?text=🏦'; // Icono por defecto
+            const entidadNormalizada = cuenta.entidad.toLowerCase();
+
+            if (entidadNormalizada.includes('continental')) logoUrl = 'https://play-lh.googleusercontent.com/ytawnDfXNXh5B0ys86f4W2sWG0OngjbtlV8jdn8F4xLmOUiEHQsfsjxPWK4MICna6vuw';
+            else if (entidadNormalizada.includes('bnf')) logoUrl = 'https://logoroga.com/wp-content/uploads/2013/03/Banco-Nacional-de-Fomento-png.png';
+
+            container.innerHTML = `
+        <div class="banco-info-card" style="display: flex; align-items: center; gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+            <img src="${logoUrl}" alt="${cuenta.entidad}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: contain; background: white; padding: 2px; border: 1px solid #cbd5e1;" onerror="this.src='https://placehold.co/40x40?text=🏦'">
+            <div style="flex: 1; font-size: 13px; color: #334155; line-height: 1.4;">
+                <div style="font-weight: bold; font-size: 14px; color: #0f172a;">${cuenta.entidad}</div>
+                <div><strong>Cuenta N°:</strong> ${cuenta.nombre || 'N/A'}</div>
+                <div><strong>Titular:</strong> ${cuenta.titular || 'N/A'}</div>
+                <div><strong>RUC:</strong> ${cuenta.RUC || 'N/A'}</div>
+            </div>
+        </div>
+    `;
+        };
         window.onFileChange = (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -1725,6 +1792,7 @@
                         inscripcion_id: state.inscripcionSel.id,
                         carrera: state.inscripcionSel.cohortes?.carreras?.nombre,
                         imagen_url_local: imagenUrlPublica,
+                        banco_destino_nombre: state.cuentaBancariaSel?.id || 'No seleccionado',
                         // Enviamos la selección completa para que n8n genere los detalles_pago_comprobante
                         items_seleccionados: state.seleccion.map(x => ({
                             concepto_tipo: x.tipo,
