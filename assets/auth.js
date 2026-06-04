@@ -59,6 +59,7 @@ export async function login(nombreUsuario, password) {
     id:     data.id,
     nombre: data.nombre,
     rol:    data.rol,
+    ci:    data.ci,
     loginAt: new Date().toISOString()
   };
 

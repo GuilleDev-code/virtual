@@ -133,10 +133,52 @@
 
 </div>
 
+<!-- Modal cambio de contraseña obligatorio -->
+<div id="modalCambioPass" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border-radius:12px;padding:32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:16px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <h2 style="font-size:1.1rem;font-weight:700;margin:0">Cambio de contraseña requerido</h2>
+    </div>
+    <p style="font-size:.84rem;color:var(--txt-muted);margin-bottom:20px">Estás usando la contraseña por defecto. Debés establecer una contraseña personal para continuar.</p>
+
+    <div id="cambioPassError" style="display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:8px 12px;font-size:.82rem;color:#dc2626;margin-bottom:14px"></div>
+
+    <div class="form-group">
+      <label class="form-label">Nueva contraseña <span style="color:var(--danger)">*</span></label>
+      <div class="input-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input type="password" id="nuevaPass" class="form-control" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Confirmar contraseña <span style="color:var(--danger)">*</span></label>
+      <div class="input-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input type="password" id="confirmarPass" class="form-control" placeholder="Repetí la nueva contraseña" autocomplete="new-password">
+      </div>
+    </div>
+
+    <!-- Indicador de fortaleza -->
+    <div style="margin-bottom:16px">
+      <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+        <div id="passStrengthBar" style="height:100%;width:0%;border-radius:2px;transition:width .3s,background .3s"></div>
+      </div>
+      <div id="passStrengthLabel" style="font-size:.72rem;color:var(--txt-muted);margin-top:4px"></div>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;justify-content:center" id="btnCambiarPass">
+      <span id="btnCambiarPassTxt">Establecer contraseña</span>
+      <span class="spinner" id="spinnerCambio" style="display:none;width:14px;height:14px;border-width:2px;border-top-color:#fff;border-color:rgba(255,255,255,.3)"></span>
+    </button>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script type="module">
   import { login, getSesion } from './assets/auth.js';
+  import { supabase } from './assets/supabase.js';
 
   // Si ya hay sesión activa, redirigir
   if (getSesion()) {
@@ -158,25 +200,21 @@
       : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
   });
 
-  // Enter en los inputs
   [inputUser, inputPass].forEach(el => {
-    el.addEventListener('keydown', e => {
-      if (e.key === 'Enter') doLogin();
-    });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   });
 
   btnLogin.addEventListener('click', doLogin);
+
+  // Sesión temporal mientras se procesa el cambio
+  let _sesionPendiente = null;
 
   async function doLogin() {
     const usuario  = inputUser.value.trim();
     const password = inputPass.value;
 
     errorBox.classList.remove('show');
-
-    if (!usuario || !password) {
-      showError('Completá usuario y contraseña.');
-      return;
-    }
+    if (!usuario || !password) { showError('Completá usuario y contraseña.'); return; }
 
     btnLogin.classList.add('loading');
     btnLogin.disabled = true;
@@ -184,14 +222,24 @@
     try {
       const sesion = await login(usuario, password);
 
-      // Redirigir según rol
-      const destinos = {
-        Admin:     'dashboard.html',
-        Academico: 'dashboard.html',
-        Cajero:    'caja.html',
-        Docente:   'academico.html',
-      };
-      window.location.href = destinos[sesion.rol] || 'dashboard.html';
+      // ── Verificar si usó contraseña por defecto ──────────────
+      // La RPC fn_login devuelve un flag `es_password_default` cuando
+      // el hash corresponde a la contraseña de primer acceso
+      const { data: chk } = await supabase.rpc('fn_es_password_default', {
+        p_nombre: usuario
+      });
+
+      if (chk === true) {
+        // Guardar sesión temporalmente sin redirigir
+        _sesionPendiente = sesion;
+        // Limpiar la sesión del storage hasta que cambie la contraseña
+        sessionStorage.removeItem('upgSesion');
+        mostrarModalCambio();
+        return;
+      }
+
+      // Contraseña OK, redirigir según rol
+      redirigir(sesion.rol);
 
     } catch (err) {
       showError(err.message || 'Error al iniciar sesión.');
@@ -202,10 +250,113 @@
     }
   }
 
+  function redirigir(rol) {
+    const destinos = {
+      Admin:     'dashboard.html',
+      Academico: 'dashboard.html',
+      Cajero:    'caja.html',
+      Docente:   'academico.html',
+    };
+    window.location.href = destinos[rol] || 'dashboard.html';
+  }
+
   function showError(msg) {
     errorBox.textContent = msg;
     errorBox.classList.add('show');
   }
+
+  // ── Modal cambio de contraseña ──────────────────────────────
+  function mostrarModalCambio() {
+    const modal = document.getElementById('modalCambioPass');
+    modal.style.display = 'flex';
+    btnLogin.classList.remove('loading');
+    btnLogin.disabled = false;
+    document.getElementById('nuevaPass').focus();
+  }
+
+  // Indicador de fortaleza en tiempo real
+  document.getElementById('nuevaPass').addEventListener('input', function() {
+    const val   = this.value;
+    const bar   = document.getElementById('passStrengthBar');
+    const label = document.getElementById('passStrengthLabel');
+    let score   = 0;
+    if (val.length >= 8)          score++;
+    if (/[A-Z]/.test(val))        score++;
+    if (/[0-9]/.test(val))        score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+
+    const niveles = [
+      { color:'#ef4444', pct:'25%', txt:'Muy débil' },
+      { color:'#f97316', pct:'50%', txt:'Débil' },
+      { color:'#eab308', pct:'75%', txt:'Aceptable' },
+      { color:'var(--verde)', pct:'100%', txt:'Fuerte' },
+    ];
+    const n = niveles[Math.max(0, score-1)] || niveles[0];
+    if (val.length === 0) {
+      bar.style.width = '0%';
+      label.textContent = '';
+    } else {
+      bar.style.width      = n.pct;
+      bar.style.background = n.color;
+      label.textContent    = n.txt;
+      label.style.color    = n.color;
+    }
+  });
+
+  document.getElementById('btnCambiarPass').addEventListener('click', async () => {
+    const nueva     = document.getElementById('nuevaPass').value;
+    const confirmar = document.getElementById('confirmarPass').value;
+    const errDiv    = document.getElementById('cambioPassError');
+
+    errDiv.style.display = 'none';
+
+    if (nueva.length < 8) {
+      errDiv.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+      errDiv.style.display = '';
+      return;
+    }
+    if (nueva === 'upgvirtual') {
+      errDiv.textContent = 'No podés usar la contraseña por defecto como nueva contraseña.';
+      errDiv.style.display = '';
+      return;
+    }
+    if (nueva !== confirmar) {
+      errDiv.textContent = 'Las contraseñas no coinciden.';
+      errDiv.style.display = '';
+      return;
+    }
+
+    const btn = document.getElementById('btnCambiarPass');
+    btn.disabled = true;
+    document.getElementById('btnCambiarPassTxt').style.display = 'none';
+    document.getElementById('spinnerCambio').style.display = 'inline-block';
+
+    try {
+      const { error } = await supabase.rpc('fn_cambiar_password', {
+        p_nombre:      _sesionPendiente.ci,
+        p_password_nueva: nueva,
+      });
+      if (error) throw error;
+
+      // Ahora sí guardar la sesión y redirigir
+      sessionStorage.setItem('upgSesion', JSON.stringify(_sesionPendiente));
+      redirigir(_sesionPendiente.rol);
+
+    } catch(e) {
+      errDiv.textContent = 'Error al cambiar contraseña: ' + (e.message || e);
+      errDiv.style.display = '';
+      btn.disabled = false;
+      document.getElementById('btnCambiarPassTxt').style.display = '';
+      document.getElementById('spinnerCambio').style.display = 'none';
+    }
+  });
+
+  // Enter en los campos del modal
+  ['nuevaPass','confirmarPass'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btnCambiarPass').click();
+    });
+  });
 </script>
 </body>
 </html>

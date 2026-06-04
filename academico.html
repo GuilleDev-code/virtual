@@ -1,616 +1,1014 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Académico — Sistema UPG</title>
   <link rel="stylesheet" href="assets/styles.css">
   <style>
-    .ac-wrap    { display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h)); overflow:hidden; }
-    .ac-tabs    { display:flex; padding:0 24px; background:var(--surface); border-bottom:2px solid var(--border); flex-shrink:0; overflow-x:auto; }
-    .ac-tab     { padding:12px 18px; font-size:.86rem; font-weight:500; color:var(--txt-secondary); border-bottom:2px solid transparent; margin-bottom:-2px; transition:all var(--transition); white-space:nowrap; display:flex; align-items:center; gap:7px; }
-    .ac-tab:hover  { color:var(--verde); }
-    .ac-tab.active { color:var(--verde); border-bottom-color:var(--verde); font-weight:600; }
-    .ac-tab .tc    { background:var(--naranja); color:#fff; font-size:.62rem; font-weight:700; padding:1px 6px; border-radius:999px; }
+    .ac-wrap {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - var(--topbar-h));
+      overflow: hidden;
+    }
 
-    .ac-content { flex:1; overflow-y:auto; padding:20px 24px; }
-    .tab-section { display:none; }
-    .tab-section.active { display:block; }
+    .ac-tabs {
+      display: flex;
+      padding: 0 24px;
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+
+    .ac-tab {
+      padding: 12px 18px;
+      font-size: .86rem;
+      font-weight: 500;
+      color: var(--txt-secondary);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all var(--transition);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .ac-tab:hover {
+      color: var(--verde);
+    }
+
+    .ac-tab.active {
+      color: var(--verde);
+      border-bottom-color: var(--verde);
+      font-weight: 600;
+    }
+
+    .ac-tab .tc {
+      background: var(--naranja);
+      color: #fff;
+      font-size: .62rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 999px;
+    }
+
+    .ac-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+    }
+
+    .tab-section {
+      display: none;
+    }
+
+    .tab-section.active {
+      display: block;
+    }
 
     /* Toolbar */
-    .toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
-    .search-wrap { position:relative; }
-    .search-wrap svg { position:absolute; left:9px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--txt-muted); pointer-events:none; }
-    .search-wrap input { padding-left:32px; width:220px; }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .search-wrap {
+      position: relative;
+    }
+
+    .search-wrap svg {
+      position: absolute;
+      left: 9px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 15px;
+      height: 15px;
+      color: var(--txt-muted);
+      pointer-events: none;
+    }
+
+    .search-wrap input {
+      padding-left: 32px;
+      width: 220px;
+    }
 
     /* Drawer */
-    .drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:150; opacity:0; pointer-events:none; transition:opacity var(--transition); }
-    .drawer-overlay.open { opacity:1; pointer-events:all; }
-    .drawer { position:fixed; top:0; right:0; width:560px; height:100vh; background:var(--surface); z-index:160; box-shadow:-8px 0 30px rgba(0,0,0,.15); display:flex; flex-direction:column; transform:translateX(100%); transition:transform .25s ease; }
-    .drawer-overlay.open .drawer { transform:translateX(0); }
-    .drawer-header { padding:18px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-shrink:0; }
-    .drawer-title  { font-size:1rem; font-weight:700; flex:1; }
-    .drawer-body   { flex:1; overflow-y:auto; padding:18px 20px; display:flex; flex-direction:column; gap:14px; }
-    .drawer-footer { padding:14px 20px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; flex-shrink:0; }
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .3);
+      z-index: 150;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition);
+    }
+
+    .drawer-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 560px;
+      height: 100vh;
+      background: var(--surface);
+      z-index: 160;
+      box-shadow: -8px 0 30px rgba(0, 0, 0, .15);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform .25s ease;
+    }
+
+    .drawer-overlay.open .drawer {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .drawer-title {
+      font-size: 1rem;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .drawer-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-shrink: 0;
+    }
 
     /* Grilla materias por año */
-    .curricula-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
-    .anho-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
-    .anho-card-header { padding:10px 14px; background:var(--verde); color:#fff; font-size:.82rem; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
-    .anho-card-body { padding:10px 14px; display:flex; flex-direction:column; gap:6px; }
-    .materia-row { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:var(--radius-sm); font-size:.8rem; transition:background var(--transition); cursor:pointer; }
-    .materia-row:hover { background:var(--verde-light); }
-    .materia-nombre { flex:1; color:var(--txt-secondary); font-weight:500; }
-    .materia-codigo { font-family:var(--font-mono); font-size:.7rem; color:var(--txt-muted); }
+    .curricula-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .anho-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .anho-card-header {
+      padding: 10px 14px;
+      background: var(--verde);
+      color: #fff;
+      font-size: .82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .anho-card-body {
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .materia-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: var(--radius-sm);
+      font-size: .8rem;
+      transition: background var(--transition);
+      cursor: pointer;
+    }
+
+    .materia-row:hover {
+      background: var(--verde-light);
+    }
+
+    .materia-nombre {
+      flex: 1;
+      color: var(--txt-secondary);
+      font-weight: 500;
+    }
+
+    .materia-codigo {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      color: var(--txt-muted);
+    }
 
     /* Notas input inline */
-    .nota-input { width:52px; padding:3px 6px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:.8rem; text-align:center; font-family:var(--font-mono); }
-    .nota-input:focus { border-color:var(--verde); outline:none; }
+    .nota-input {
+      width: 52px;
+      padding: 3px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: .8rem;
+      text-align: center;
+      font-family: var(--font-mono);
+    }
+
+    .nota-input:focus {
+      border-color: var(--verde);
+      outline: none;
+    }
 
     /* Actas corroboración */
-    .acta-toolbar { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
-    .acta-estado-bar { display:flex; gap:8px; align-items:center; padding:10px 14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); font-size:.82rem; margin-bottom:14px; }
-    .acta-dot { width:8px; height:8px; border-radius:50%; }
+    .acta-toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .acta-estado-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .82rem;
+      margin-bottom: 14px;
+    }
+
+    .acta-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
 
     /* Tabla actas con colores por estado */
-    .acta-ok   { background:var(--success-bg) !important; }
-    .acta-miss { background:var(--danger-bg)  !important; }
-    .acta-warn { background:var(--warning-bg) !important; }
+    .acta-ok {
+      background: var(--success-bg) !important;
+    }
+
+    .acta-miss {
+      background: var(--danger-bg) !important;
+    }
+
+    .acta-warn {
+      background: var(--warning-bg) !important;
+    }
 
     /* Calendario exámenes */
-    .cal-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
-    .cal-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-lg); padding:14px; transition:all var(--transition); }
-    .cal-card:hover { border-color:var(--verde); box-shadow:var(--shadow-sm); }
-    .cal-card-materia { font-weight:700; font-size:.88rem; margin-bottom:6px; }
-    .cal-card-dates   { font-size:.78rem; color:var(--txt-secondary); margin-bottom:8px; }
-    .cal-card-footer  { display:flex; align-items:center; justify-content:space-between; }
-    .cal-vigente { border-color:var(--verde); }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+    }
+
+    .cal-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      transition: all var(--transition);
+    }
+
+    .cal-card:hover {
+      border-color: var(--verde);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .cal-card-materia {
+      font-weight: 700;
+      font-size: .88rem;
+      margin-bottom: 6px;
+    }
+
+    .cal-card-dates {
+      font-size: .78rem;
+      color: var(--txt-secondary);
+      margin-bottom: 8px;
+    }
+
+    .cal-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .cal-vigente {
+      border-color: var(--verde);
+    }
   </style>
 </head>
+
 <body>
-<div class="app-layout">
-  <aside id="sidebar" class="sidebar"></aside>
-  <div class="main">
-    <header class="topbar">
-      <div class="topbar-title">Académico <span id="fechaHoy"></span></div>
-      <div class="topbar-actions" id="topbarActions"></div>
-    </header>
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-title">Académico <span id="fechaHoy"></span></div>
+        <div class="topbar-actions" id="topbarActions"></div>
+      </header>
 
-    <div class="ac-wrap">
-      <div class="ac-tabs">
-        <button class="ac-tab active" data-tab="alumnos">Alumnos</button>
-        <button class="ac-tab" data-tab="materias" data-requiere-rol="Admin,Academico">Materias y currículas</button>
-        <button class="ac-tab" data-tab="examenes">Calendario de exámenes</button>
-        <button class="ac-tab" data-tab="habilitados">Habilitados académicos</button>
-        <button class="ac-tab" data-tab="actas" data-requiere-rol="Admin,Academico">Corroboración de actas</button>
-        <button class="ac-tab" data-tab="docentes" data-requiere-rol="Admin,Academico">Docentes</button>
+      <div class="ac-wrap">
+        <div class="ac-tabs">
+          <button class="ac-tab active" data-tab="alumnos">Alumnos</button>
+          <button class="ac-tab" data-tab="materias" data-requiere-rol="Admin,Academico">Materias y currículas</button>
+          <button class="ac-tab" data-tab="examenes">Calendario de exámenes</button>
+          <button class="ac-tab" data-tab="habilitados">Habilitados académicos</button>
+          <button class="ac-tab" data-tab="actas" data-requiere-rol="Admin,Academico">Corroboración de actas</button>
+          <button class="ac-tab" data-tab="docentes" data-requiere-rol="Admin,Academico">Docentes</button>
+        </div>
+
+        <div class="ac-content">
+
+          <!-- ── ALUMNOS ─────────────────────────────────────── -->
+          <div class="tab-section active" id="tab-alumnos">
+            <div class="toolbar">
+              <select class="form-control" id="filtroCarreraAlumnos" style="width:auto">
+                <option value="">— Seleccioná una carrera —</option>
+              </select>
+              <select class="form-control" id="filtroCohorteAlumnos" style="width:auto" disabled>
+                <option value="">— Cohorte —</option>
+              </select>
+              <select class="form-control" id="filtroAnhoAlumnos" style="width:auto" disabled>
+                <option value="">— Año / Curso —</option>
+              </select>
+              <div class="search-wrap" id="searchWrapAlumnos" style="display:none">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                </svg>
+                <input type="text" class="form-control" id="searchAlumnos" placeholder="Nombre, CI...">
+              </div>
+              <span id="alumnosTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
+            </div>
+            <div id="alumnosEmptyState" style="text-align:center;padding:60px;color:var(--txt-muted)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 12px">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              <p style="font-size:.88rem">Seleccioná carrera, cohorte y año para ver los alumnos</p>
+            </div>
+            <div class="table-wrapper" id="alumnosTableWrap" style="display:none">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Alumno</th>
+                    <th>CI</th>
+                    <th>Carrera</th>
+                    <th>Año</th>
+                    <th>Cohorte</th>
+                    <th>Año lectivo</th>
+                    <th>Cuota base</th>
+                    <th>Beca</th>
+                    <th>Estado</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyAlumnos"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ── MATERIAS ───────────────────────────────────── -->
+          <div class="tab-section" id="tab-materias">
+            <div class="toolbar">
+              <select class="form-control" id="filtroCarreraMat" style="width:auto">
+                <option value="">Seleccionar carrera...</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" id="btnRefMat">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+                Actualizar
+              </button>
+              <button class="btn btn-primary btn-sm" id="btnNuevaMateria" data-requiere-rol="Admin,Academico">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Nueva materia
+              </button>
+            </div>
+            <div class="curricula-grid" id="curriculaGrid">
+              <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt-muted)">Seleccioná una carrera
+                para ver su currícula</div>
+            </div>
+          </div>
+
+          <!-- ── CALENDARIO EXÁMENES ────────────────────────── -->
+          <div class="tab-section" id="tab-examenes">
+            <div class="toolbar">
+              <select class="form-control" id="filtroCarreraCal" style="width:auto">
+                <option value="">Todas las carreras</option>
+              </select>
+              <select class="form-control" id="filtroEstadoCal" style="width:auto">
+                <option value="">Todos</option>
+                <option value="VIGENTE">Vigentes</option>
+                <option value="PENDIENTE">Pendientes</option>
+                <option value="CERRADO">Cerrados</option>
+              </select>
+              <button class="btn btn-primary btn-sm" id="btnNuevoCalendario"
+                data-requiere-rol="Admin,Academico,Docente">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Nuevo período
+              </button>
+              <span id="calTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
+            </div>
+            <div class="cal-grid" id="calGrid">
+              <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt-muted)">Cargando...</div>
+            </div>
+          </div>
+
+          <!-- ── ACTAS ──────────────────────────────────────── -->
+          <div class="tab-section" id="tab-actas">
+            <div class="acta-toolbar">
+              <select class="form-control" id="filtroCarreraActas" style="width:auto">
+                <option value="">Seleccionar carrera...</option>
+              </select>
+              <select class="form-control" id="filtroAnhoActas" style="width:auto">
+                <option value="">— Año / Curso —</option>
+              </select>
+              <select class="form-control" id="filtroLectivoActas" style="width:auto">
+                <option value="">Año lectivo...</option>
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+              </select>
+              <button class="btn btn-primary" id="btnCorroborar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <polyline points="9 11 12 14 22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+                Corroborar
+              </button>
+              <button class="btn btn-ghost btn-sm" id="btnExportarActas" style="display:none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Exportar
+              </button>
+            </div>
+
+            <div id="actasEstadoBar" style="display:none" class="acta-estado-bar">
+              <div class="acta-dot" style="background:var(--success)"></div><span id="actasOkCount"
+                style="color:var(--success);font-weight:600">0</span>&nbsp;en actas
+              <div class="acta-dot" style="background:var(--danger);margin-left:12px"></div><span id="actasMissCount"
+                style="color:var(--danger);font-weight:600">0</span>&nbsp;faltantes
+              <div class="acta-dot" style="background:var(--warning);margin-left:12px"></div><span id="actasWarnCount"
+                style="color:var(--warning);font-weight:600">0</span>&nbsp;inconsistentes
+              <span style="margin-left:auto;color:var(--txt-muted)">Total: <strong id="actasTotalCount">0</strong>
+                alumnos</span>
+            </div>
+
+            <div class="table-wrapper" id="actasTableWrap" style="display:none">
+              <table>
+                <thead id="actasHead"></thead>
+                <tbody id="actasBody"></tbody>
+              </table>
+            </div>
+
+            <div id="actasEmpty" style="text-align:center;padding:48px;color:var(--txt-muted)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 12px">
+                <path d="M9 11l3 3L22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+              <p style="font-size:.88rem">Seleccioná carrera, año y lectivo, luego presioná Corroborar</p>
+            </div>
+          </div>
+
+          <!-- ── HABILITADOS ACADÉMICOS ──────────────────────── -->
+          <div class="tab-section" id="tab-habilitados">
+            <div class="toolbar" id="habToolbar">
+              <select class="form-control" id="filtroCarreraHab" style="width:auto">
+                <option value="">— Seleccioná una carrera —</option>
+              </select>
+              <select class="form-control" id="filtroCohorteHab" style="width:auto" disabled>
+                <option value="">— Cohorte —</option>
+              </select>
+              <select class="form-control" id="filtroAnhoHab" style="width:auto" disabled>
+                <option value="">— Año / Curso —</option>
+              </select>
+              <select class="form-control" id="filtroMateriaHab" style="width:auto" disabled>
+                <option value="">— Materia —</option>
+              </select>
+              <select class="form-control" id="habOportunidad" style="width:auto">
+                <option value="1">1ª Oportunidad</option>
+                <option value="2">2ª Oportunidad</option>
+                <option value="3">3ª Oportunidad</option>
+                <option value="4">Extraordinaria</option>
+              </select>
+              <button class="btn btn-primary btn-sm" id="btnCargarHab" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+                Cargar planilla
+              </button>
+              <button class="btn btn-ghost btn-sm" id="btnSyncMoodle" style="display:none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
+                Sincronizar Moodle
+              </button>
+              <button class="btn btn-success btn-sm" id="btnGuardarHab" style="display:none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Guardar cambios
+              </button>
+              <span id="habTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
+            </div>
+
+            <!-- Banner de período vigente / id_moodle -->
+            <div id="habCalendarioBanner" style="display:none;margin-bottom:14px"></div>
+
+            <!-- Info bar resumen -->
+            <div id="habMateriaInfo"
+              style="display:none;background:var(--verde-light);border:1px solid rgba(26,107,60,.2);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;font-size:.82rem;align-items:center;gap:20px;flex-wrap:wrap">
+              <div><span style="color:var(--txt-muted)">Materia:</span> <strong id="habMateriaNombre">—</strong></div>
+              <div><span style="color:var(--txt-muted)">Período:</span> <strong id="habPeriodoLabel">—</strong></div>
+              <div><span style="color:var(--txt-muted)">Oportunidad:</span> <strong id="habOportunidadLabel">—</strong>
+              </div>
+              <div><span style="color:var(--txt-muted)">Habilitados:</span>
+                <strong id="habCountHab" style="color:var(--verde)">0</strong> / <span id="habCountTotal">0</span>
+              </div>
+            </div>
+
+            <div id="habEmptyState" style="text-align:center;padding:60px;color:var(--txt-muted)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 12px">
+                <path d="M9 11l3 3L22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+              <p style="font-size:.88rem" id="habEmptyMsg">Seleccioná carrera, cohorte, año y materia, luego presioná
+                Cargar planilla</p>
+            </div>
+
+            <div class="table-wrapper" id="habTableWrap" style="display:none">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Alumno</th>
+                    <th>CI</th>
+                    <th style="text-align:center;min-width:100px">
+                      Calif. proceso<br><span style="font-weight:400;font-size:.65rem;color:var(--txt-muted)">(Moodle /
+                        manual)</span>
+                    </th>
+                    <th style="text-align:center;min-width:100px">
+                      Examen final<br><span
+                        style="font-weight:400;font-size:.65rem;color:var(--txt-muted)">(0–10)</span>
+                    </th>
+                    <th style="text-align:center">Nota final</th>
+                    <th style="text-align:center">Hab. admin.</th>
+                    <th style="text-align:center">Hab. académico</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyHab"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ── DOCENTES ───────────────────────────────────── -->
+          <div class="tab-section" id="tab-docentes">
+            <div class="toolbar">
+              <div class="search-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                </svg>
+                <input type="text" class="form-control" id="searchDocentes" placeholder="Nombre, CI...">
+              </div>
+              <select class="form-control" id="filtroEstDocentes" style="width:auto">
+                <option value="">Todos</option>
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+              <span id="docentesTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
+              <button class="btn btn-primary btn-sm" id="btnNuevoDocente">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Nuevo docente
+              </button>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Docente</th>
+                    <th>CI</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Estado</th>
+                    <th>Usuario sistema</th>
+                    <th>Programas asignados</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyDocentes">
+                  <tr>
+                    <td colspan="9" class="text-center" style="padding:40px;color:var(--txt-muted)">Cargando...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div><!-- /ac-content -->
       </div>
-
-      <div class="ac-content">
-
-        <!-- ── ALUMNOS ─────────────────────────────────────── -->
-        <div class="tab-section active" id="tab-alumnos">
-          <div class="toolbar">
-            <select class="form-control" id="filtroCarreraAlumnos" style="width:auto"><option value="">— Seleccioná una carrera —</option></select>
-            <select class="form-control" id="filtroCohorteAlumnos" style="width:auto" disabled><option value="">— Cohorte —</option></select>
-            <select class="form-control" id="filtroAnhoAlumnos" style="width:auto" disabled><option value="">— Año / Curso —</option></select>
-            <div class="search-wrap" id="searchWrapAlumnos" style="display:none">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input type="text" class="form-control" id="searchAlumnos" placeholder="Nombre, CI...">
-            </div>
-            <span id="alumnosTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
-          </div>
-          <div id="alumnosEmptyState" style="text-align:center;padding:60px;color:var(--txt-muted)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 12px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <p style="font-size:.88rem">Seleccioná carrera, cohorte y año para ver los alumnos</p>
-          </div>
-          <div class="table-wrapper" id="alumnosTableWrap" style="display:none">
-            <table>
-              <thead><tr><th>#</th><th>Alumno</th><th>CI</th><th>Carrera</th><th>Año</th><th>Cohorte</th><th>Año lectivo</th><th>Cuota base</th><th>Beca</th><th>Estado</th><th></th></tr></thead>
-              <tbody id="tbodyAlumnos"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ── MATERIAS ───────────────────────────────────── -->
-        <div class="tab-section" id="tab-materias">
-          <div class="toolbar">
-            <select class="form-control" id="filtroCarreraMat" style="width:auto"><option value="">Seleccionar carrera...</option></select>
-            <button class="btn btn-ghost btn-sm" id="btnRefMat">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-              Actualizar
-            </button>
-            <button class="btn btn-primary btn-sm" id="btnNuevaMateria" data-requiere-rol="Admin,Academico">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Nueva materia
-            </button>
-          </div>
-          <div class="curricula-grid" id="curriculaGrid">
-            <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt-muted)">Seleccioná una carrera para ver su currícula</div>
-          </div>
-        </div>
-
-        <!-- ── CALENDARIO EXÁMENES ────────────────────────── -->
-        <div class="tab-section" id="tab-examenes">
-          <div class="toolbar">
-            <select class="form-control" id="filtroCarreraCal" style="width:auto"><option value="">Todas las carreras</option></select>
-            <select class="form-control" id="filtroEstadoCal" style="width:auto">
-              <option value="">Todos</option>
-              <option value="VIGENTE">Vigentes</option>
-              <option value="PENDIENTE">Pendientes</option>
-              <option value="CERRADO">Cerrados</option>
-            </select>
-            <button class="btn btn-primary btn-sm" id="btnNuevoCalendario" data-requiere-rol="Admin,Academico">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Nuevo período
-            </button>
-            <span id="calTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
-          </div>
-          <div class="cal-grid" id="calGrid">
-            <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt-muted)">Cargando...</div>
-          </div>
-        </div>
-
-        <!-- ── ACTAS ──────────────────────────────────────── -->
-        <div class="tab-section" id="tab-actas">
-          <div class="acta-toolbar">
-            <select class="form-control" id="filtroCarreraActas" style="width:auto"><option value="">Seleccionar carrera...</option></select>
-            <select class="form-control" id="filtroAnhoActas" style="width:auto">
-              <option value="">— Año / Curso —</option>
-            </select>
-            <select class="form-control" id="filtroLectivoActas" style="width:auto">
-              <option value="">Año lectivo...</option>
-              <option value="2026">2026</option><option value="2025">2025</option>
-              <option value="2024">2024</option><option value="2023">2023</option>
-            </select>
-            <button class="btn btn-primary" id="btnCorroborar">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-              Corroborar
-            </button>
-            <button class="btn btn-ghost btn-sm" id="btnExportarActas" style="display:none">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Exportar
-            </button>
-          </div>
-
-          <div id="actasEstadoBar" style="display:none" class="acta-estado-bar">
-            <div class="acta-dot" style="background:var(--success)"></div><span id="actasOkCount" style="color:var(--success);font-weight:600">0</span>&nbsp;en actas
-            <div class="acta-dot" style="background:var(--danger);margin-left:12px"></div><span id="actasMissCount" style="color:var(--danger);font-weight:600">0</span>&nbsp;faltantes
-            <div class="acta-dot" style="background:var(--warning);margin-left:12px"></div><span id="actasWarnCount" style="color:var(--warning);font-weight:600">0</span>&nbsp;inconsistentes
-            <span style="margin-left:auto;color:var(--txt-muted)">Total: <strong id="actasTotalCount">0</strong> alumnos</span>
-          </div>
-
-          <div class="table-wrapper" id="actasTableWrap" style="display:none">
-            <table>
-              <thead id="actasHead"></thead>
-              <tbody id="actasBody"></tbody>
-            </table>
-          </div>
-
-          <div id="actasEmpty" style="text-align:center;padding:48px;color:var(--txt-muted)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 12px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            <p style="font-size:.88rem">Seleccioná carrera, año y lectivo, luego presioná Corroborar</p>
-          </div>
-        </div>
-
-        <!-- ── HABILITADOS ACADÉMICOS ──────────────────────── -->
-        <div class="tab-section" id="tab-habilitados">
-          <div class="toolbar" id="habToolbar">
-            <select class="form-control" id="filtroCarreraHab" style="width:auto"><option value="">— Seleccioná una carrera —</option></select>
-            <select class="form-control" id="filtroCohorteHab" style="width:auto" disabled><option value="">— Cohorte —</option></select>
-            <select class="form-control" id="filtroAnhoHab" style="width:auto" disabled><option value="">— Año / Curso —</option></select>
-            <select class="form-control" id="filtroMateriaHab" style="width:auto" disabled><option value="">— Materia —</option></select>
-            <select class="form-control" id="habOportunidad" style="width:auto">
-              <option value="1">1ª Oportunidad</option>
-              <option value="2">2ª Oportunidad</option>
-              <option value="3">3ª Oportunidad</option>
-              <option value="4">Extraordinaria</option>
-            </select>
-            <button class="btn btn-primary btn-sm" id="btnCargarHab" disabled>
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-              Cargar planilla
-            </button>
-            <button class="btn btn-ghost btn-sm" id="btnSyncMoodle" style="display:none">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-              Sincronizar Moodle
-            </button>
-            <button class="btn btn-success btn-sm" id="btnGuardarHab" style="display:none">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-              Guardar cambios
-            </button>
-            <span id="habTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
-          </div>
-
-          <!-- Banner de período vigente / id_moodle -->
-          <div id="habCalendarioBanner" style="display:none;margin-bottom:14px"></div>
-
-          <!-- Info bar resumen -->
-          <div id="habMateriaInfo" style="display:none;background:var(--verde-light);border:1px solid rgba(26,107,60,.2);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;font-size:.82rem;align-items:center;gap:20px;flex-wrap:wrap">
-            <div><span style="color:var(--txt-muted)">Materia:</span> <strong id="habMateriaNombre">—</strong></div>
-            <div><span style="color:var(--txt-muted)">Período:</span> <strong id="habPeriodoLabel">—</strong></div>
-            <div><span style="color:var(--txt-muted)">Oportunidad:</span> <strong id="habOportunidadLabel">—</strong></div>
-            <div><span style="color:var(--txt-muted)">Habilitados:</span>
-              <strong id="habCountHab" style="color:var(--verde)">0</strong> / <span id="habCountTotal">0</span>
-            </div>
-          </div>
-
-          <div id="habEmptyState" style="text-align:center;padding:60px;color:var(--txt-muted)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 12px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            <p style="font-size:.88rem" id="habEmptyMsg">Seleccioná carrera, cohorte, año y materia, luego presioná Cargar planilla</p>
-          </div>
-
-          <div class="table-wrapper" id="habTableWrap" style="display:none">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Alumno</th>
-                  <th>CI</th>
-                  <th style="text-align:center;min-width:100px">
-                    Calif. proceso<br><span style="font-weight:400;font-size:.65rem;color:var(--txt-muted)">(Moodle / manual)</span>
-                  </th>
-                  <th style="text-align:center;min-width:100px">
-                    Examen final<br><span style="font-weight:400;font-size:.65rem;color:var(--txt-muted)">(0–10)</span>
-                  </th>
-                  <th style="text-align:center">Nota final</th>
-                  <th style="text-align:center">Hab. admin.</th>
-                  <th style="text-align:center">Hab. académico</th>
-                </tr>
-              </thead>
-              <tbody id="tbodyHab"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ── DOCENTES ───────────────────────────────────── -->
-        <div class="tab-section" id="tab-docentes">
-          <div class="toolbar">
-            <div class="search-wrap">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input type="text" class="form-control" id="searchDocentes" placeholder="Nombre, CI...">
-            </div>
-            <select class="form-control" id="filtroEstDocentes" style="width:auto">
-              <option value="">Todos</option>
-              <option value="Activo">Activo</option>
-              <option value="Inactivo">Inactivo</option>
-            </select>
-            <span id="docentesTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
-          </div>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>#</th><th>Docente</th><th>CI</th><th>Email</th><th>Teléfono</th><th>Estado</th><th>Materias asignadas</th><th></th></tr></thead>
-              <tbody id="tbodyDocentes"><tr><td colspan="8" class="text-center" style="padding:40px;color:var(--txt-muted)">Cargando...</td></tr></tbody>
-            </table>
-          </div>
-        </div>
-
-      </div><!-- /ac-content -->
     </div>
   </div>
-</div>
 
-<!-- ── Drawer alumno ─────────────────────────────────────────── -->
-<div class="drawer-overlay" id="drawerOverlay">
-  <div class="drawer">
-    <div class="drawer-header">
-      <div><div class="drawer-title" id="drawerTitle">—</div><div style="font-size:.75rem;color:var(--txt-muted)" id="drawerSub"></div></div>
-      <span class="badge" id="drawerBadge">—</span>
-      <button class="modal-close" onclick="cerrarDrawer()">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <div class="drawer-body" id="drawerBody"></div>
-    <div class="drawer-footer" id="drawerFooter"></div>
-  </div>
-</div>
-
-<!-- ── Modal nueva materia / calendario ─────────────────────── -->
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal" id="modalGenerico">
-    <div class="modal-header">
-      <span class="modal-title" id="modalTitle">—</span>
-      <button class="modal-close" onclick="cerrarModal()">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <div class="modal-body" id="modalBody"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn btn-primary" id="btnModalGuardar">Guardar</button>
+  <!-- ── Drawer alumno ─────────────────────────────────────────── -->
+  <div class="drawer-overlay" id="drawerOverlay">
+    <div class="drawer">
+      <div class="drawer-header">
+        <div>
+          <div class="drawer-title" id="drawerTitle">—</div>
+          <div style="font-size:.75rem;color:var(--txt-muted)" id="drawerSub"></div>
+        </div>
+        <span class="badge" id="drawerBadge">—</span>
+        <button class="modal-close" onclick="cerrarDrawer()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div class="drawer-body" id="drawerBody"></div>
+      <div class="drawer-footer" id="drawerFooter"></div>
     </div>
   </div>
-</div>
 
-<div id="toast-container"></div>
+  <!-- ── Modal nueva materia / calendario ─────────────────────── -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modalGenerico">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle">—</span>
+        <button class="modal-close" onclick="cerrarModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btnModalGuardar">Guardar</button>
+      </div>
+    </div>
+  </div>
 
-<script type="module">
-import { supabase, formatGs, formatFechaHora, toast } from './assets/supabase.js';
-import { requireAuth, aplicarPermisosNav } from './assets/auth.js';
-import { initSidebar } from './assets/sidebar.js';
+  <div id="toast-container"></div>
 
-const sesion = requireAuth('academico');
-if (!sesion) throw new Error('Sin sesión');
-initSidebar('academico');
-aplicarPermisosNav();
+  <script type="module">
+    import { supabase, formatGs, formatFechaHora, toast } from './assets/supabase.js';
+    import { requireAuth, aplicarPermisosNav } from './assets/auth.js';
+    import { initSidebar } from './assets/sidebar.js';
+    import { MOODLE } from './config.js';
 
-document.getElementById('fechaHoy').textContent =
-  new Date().toLocaleDateString('es-PY',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    const sesion = requireAuth('academico');
+    if (!sesion) throw new Error('Sin sesión');
+    initSidebar('academico');
+    aplicarPermisosNav();
 
-// ── Estado ────────────────────────────────────────────────────
-let inscripciones = [], materias = [], carreras = [], docentes = [], calendarios = [];
-let modalGuardarFn = null;
-let docenteActual = null; // Si rol=Docente, se carga su registro
-let carrerasDocente = []; // IDs de carreras del docente
+    document.getElementById('fechaHoy').textContent =
+      new Date().toLocaleDateString('es-PY', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 
-// ── Init ──────────────────────────────────────────────────────
-// Si es Docente, primero buscamos su registro en la tabla docentes por CI
-if (sesion.rol === 'Docente') {
-  // Obtener CI del usuario_sistema
-  const { data: usrData } = await supabase
-    .from('usuarios_sistema')
-    .select('ci')
-    .eq('id', sesion.id)
-    .single();
+    // ── Estado ────────────────────────────────────────────────────
+    let inscripciones = [], materias = [], carreras = [], docentes = [], calendarios = [];
+    let modalGuardarFn = null;
+    let docenteActual = null; // Si rol=Docente, se carga su registro
+    let carrerasDocente = []; // IDs de carreras del docente
+    let cohortesDocente = []; // IDs de carreras del docente
 
-  if (usrData?.ci) {
-    const { data: docData } = await supabase
-      .from('docentes')
-      .select('id, nombres, apellidos, ci')
-      .eq('ci', usrData.ci)
-      .single();
-    docenteActual = docData || null;
-  }
+    // ── Init ──────────────────────────────────────────────────────
+    // Si es Docente, primero buscamos su registro en la tabla docentes por CI
+    if (sesion.rol === 'Docente') {
+      // Obtener CI del usuario_sistema
+      const { data: usrData } = await supabase
+        .from('usuarios_sistema')
+        .select('ci')
+        .eq('id', sesion.id)
+        .single();
 
-  if (!docenteActual) {
-    // Docente sin registro vinculado — mostrar aviso y bloquear
-    document.querySelector('.ac-content').innerHTML = `
+      if (usrData?.ci) {
+        const { data: docData } = await supabase
+          .from('docentes')
+          .select('id, nombres, apellidos, ci')
+          .eq('ci', usrData.ci)
+          .single();
+        docenteActual = docData || null;
+      }
+
+      if (!docenteActual) {
+        // Docente sin registro vinculado — mostrar aviso y bloquear
+        document.querySelector('.ac-content').innerHTML = `
       <div style="text-align:center;padding:80px 40px;color:var(--txt-muted)">
         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 16px;color:var(--warning)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <p style="font-weight:600;color:var(--txt-secondary)">Tu usuario no está vinculado a un docente</p>
         <p style="font-size:.85rem;margin-top:6px">Contactá al administrador para que vincule tu CI con un registro de docente.</p>
       </div>`;
-    throw new Error('Docente no vinculado');
-  }
+        throw new Error('Docente no vinculado');
+      }
 
-  // Cargar carreras del docente (por sus materias asignadas activas)
-  const { data: dm } = await supabase
-    .from('docentes_materias')
-    .select('materias(carrera_id)')
-    .eq('docente_id', docenteActual.id)
-    .eq('activo', true);
-  carrerasDocente = [...new Set((dm||[]).map(x=>x.materias?.carrera_id).filter(Boolean))];
-}
-
-await Promise.all([cargarCarreras(), cargarDocentes(), cargarCalendarios()]);
-
-// ── Tabs ──────────────────────────────────────────────────────
-document.querySelectorAll('.ac-tab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.ac-tab').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.tab-section').forEach(s=>s.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
-  });
-});
-
-// ── Carreras ──────────────────────────────────────────────────
-async function cargarCarreras() {
-  let q = supabase.from('carreras').select('id,nombre,duracion_anhos').eq('estado','Activa').order('nombre');
-  const { data } = await q;
-  carreras = data || [];
-
-  // Si docente, filtrar solo sus carreras
-  const carrerasFiltradas = sesion.rol === 'Docente'
-    ? carreras.filter(c => carrerasDocente.includes(c.id))
-    : carreras;
-
-  const optsPlain = carrerasFiltradas.map(c=>`<option value="${c.id}" data-duracion="${c.duracion_anhos}">${c.nombre}</option>`).join('');
-
-  // Tab alumnos — carrera → cohorte → año (en cascada, ver listeners abajo)
-  document.getElementById('filtroCarreraAlumnos').innerHTML =
-    `<option value="">— Seleccioná una carrera —</option>${optsPlain}`;
-
-  // Tab materias
-  const elMat = document.getElementById('filtroCarreraMat');
-  if (elMat) elMat.innerHTML = `<option value="">Seleccionar carrera...</option>${optsPlain}`;
-
-  // Tab calendario
-  const elCal = document.getElementById('filtroCarreraCal');
-  if (elCal) elCal.innerHTML = `<option value="">Todas las carreras</option>${optsPlain}`;
-
-  // Tab actas
-  const elAct = document.getElementById('filtroCarreraActas');
-  if (elAct) elAct.innerHTML = `<option value="">Seleccionar carrera...</option>${optsPlain}`;
-
-  // Tab habilitados
-  const elHab = document.getElementById('filtroCarreraHab');
-  if (elHab) elHab.innerHTML = `<option value="">— Seleccioná una carrera —</option>${optsPlain}`;
-}
-
-// ── Alumnos: filtros en cascada ───────────────────────────────
-// Carrera → poblar Cohortes
-document.getElementById('filtroCarreraAlumnos').addEventListener('change', async function() {
-  const carreraId = this.value;
-  const selCohorte = document.getElementById('filtroCohorteAlumnos');
-  const selAnho    = document.getElementById('filtroAnhoAlumnos');
-  const search     = document.getElementById('searchWrapAlumnos');
-
-  // Reset downstream
-  selCohorte.innerHTML = '<option value="">— Cohorte —</option>';
-  selCohorte.disabled  = true;
-  selAnho.innerHTML    = '<option value="">— Año / Curso —</option>';
-  selAnho.disabled     = true;
-  search.style.display = 'none';
-  document.getElementById('alumnosEmptyState').style.display = '';
-  document.getElementById('alumnosTableWrap').style.display  = 'none';
-  document.getElementById('alumnosTotal').textContent = '';
-
-  if (!carreraId) return;
-
-  const { data: cohs } = await supabase
-    .from('cohortes')
-    .select('id,nro_cohorte,anho_inicio')
-    .eq('carrera_id', carreraId)
-    .order('anho_inicio', { ascending: false });
-
-  if (cohs?.length) {
-    selCohorte.innerHTML = '<option value="">— Todos los cohortes —</option>' +
-      cohs.map(c=>`<option value="${c.id}">${c.nro_cohorte}ª Cohorte — ${c.anho_inicio}</option>`).join('');
-    selCohorte.disabled = false;
-  }
-
-  // Poblar años desde duracion_anhos de la carrera seleccionada
-  const carreraData = carreras.find(c=>String(c.id)===String(carreraId));
-  const duracion = carreraData?.duracion_anhos || 4;
-  let optsAnho = '<option value="">— Todos los años —</option>';
-  for (let y=1; y<=duracion; y++) optsAnho += `<option value="${y}">${y}º año</option>`;
-  selAnho.innerHTML = optsAnho;
-  selAnho.disabled  = false;
-});
-
-// Cohorte o Año → recargar tabla
-async function cargarAlumnosFiltrados() {
-  const carreraId = document.getElementById('filtroCarreraAlumnos').value;
-  const cohorteId = document.getElementById('filtroCohorteAlumnos').value;
-  const anho      = document.getElementById('filtroAnhoAlumnos').value;
-
-  if (!carreraId) return;
-
-  document.getElementById('alumnosEmptyState').style.display = 'none';
-  document.getElementById('alumnosTableWrap').style.display  = 'none';
-  document.getElementById('alumnosTotal').textContent        = '…';
-
-  // Query inscripciones filtrando por cohorte (que ya implica carrera) o carrera
-  let q = supabase
-    .from('inscripciones_anuales')
-    .select('*, alumnos(nombres,apellidos,ci,telefono), cohortes(id,nro_cohorte,anho_inicio,carrera_id,carreras(id,nombre))')
-    .eq('estado','Activo')
-    .order('alumnos(apellidos)');
-
-  if (cohorteId) {
-    q = q.eq('cohorte_id', cohorteId);
-  } else {
-    // Sin cohorte específico: filtrar por cohortes de esa carrera
-    const { data: cIds } = await supabase.from('cohortes').select('id').eq('carrera_id', carreraId);
-    if (!cIds?.length) {
-      document.getElementById('alumnosTotal').textContent = '0 inscripciones';
-      document.getElementById('alumnosTableWrap').style.display = 'block';
-      document.getElementById('tbodyAlumnos').innerHTML = `<tr><td colspan="11" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin inscripciones para esta carrera</td></tr>`;
-      return;
+      const { data: dm } = await supabase
+        .from('docentes_carreras')
+        .select('cohortes(carrera_id), cohorte_id')
+        .eq('docente_id', docenteActual.id)
+        .eq('activo', true);
+      carrerasDocente = [...new Set((dm || []).map(x => x.cohortes?.carrera_id).filter(Boolean))];
+      cohortesDocente = [...new Set((dm || []).map(x => x.cohorte_id).filter(Boolean))];
     }
-    q = q.in('cohorte_id', cIds.map(c=>c.id));
-  }
-  if (anho) q = q.eq('anho_cursada', Number(anho));
 
-  const { data } = await q;
-  inscripciones = data || [];
-  document.getElementById('searchWrapAlumnos').style.display = '';
-  document.getElementById('alumnosTableWrap').style.display  = 'block';
-  renderAlumnos();
-}
 
-['filtroCohorteAlumnos','filtroAnhoAlumnos'].forEach(id => {
-  document.getElementById(id)?.addEventListener('change', cargarAlumnosFiltrados);
-});
+    await Promise.all([cargarCarreras(), cargarDocentes(), cargarCalendarios()]);
 
-document.getElementById('searchAlumnos')?.addEventListener('input', renderAlumnos);
+    // ── Tabs ──────────────────────────────────────────────────────
+    document.querySelectorAll('.ac-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.ac-tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
 
-function renderAlumnos() {
-  const q = (document.getElementById('searchAlumnos')?.value||'').toLowerCase();
-  let items = inscripciones;
-  if (q) items = items.filter(i=>`${i.alumnos?.nombres} ${i.alumnos?.apellidos} ${i.alumnos?.ci||''}`.toLowerCase().includes(q));
+    // ── Carreras ──────────────────────────────────────────────────
+    async function cargarCarreras() {
+      let q = supabase.from('carreras').select('id,nombre,duracion_anhos').eq('estado', 'Activa').order('nombre');
+      const { data } = await q;
+      carreras = data || [];
 
-  document.getElementById('alumnosTotal').textContent = `${items.length} inscripciones`;
-  const EST = {Activo:'badge-success',Finalizado:'badge-verde',Suspendido:'badge-warning',Baja:'badge-danger'};
+      // Si docente, filtrar solo sus carreras
+      const carrerasFiltradas = sesion.rol === 'Docente'
+        ? carreras.filter(c => carrerasDocente.includes(c.id))
+        : carreras;
 
-  document.getElementById('tbodyAlumnos').innerHTML = items.map((i,idx)=>{
-    const al = i.alumnos;
-    const co = i.cohortes;
-    return `<tr style="cursor:pointer" onclick="abrirAlumno(${i.alumno_id},${i.id})">
-      <td class="td-mono">${idx+1}</td>
-      <td class="td-bold">${al?.apellidos||''}, ${al?.nombres||''} </td>
-      <td class="td-mono">${al?.ci||'—'}</td>
-      <td>${co?.carreras?.nombre||'—'}</td>
+      const optsPlain = carrerasFiltradas.map(c => `<option value="${c.id}" data-duracion="${c.duracion_anhos}">${c.nombre}</option>`).join('');
+
+      // Tab alumnos — carrera → cohorte → año (en cascada, ver listeners abajo)
+      document.getElementById('filtroCarreraAlumnos').innerHTML =
+        `<option value="">— Seleccioná una carrera —</option>${optsPlain}`;
+
+      // Tab materias
+      const elMat = document.getElementById('filtroCarreraMat');
+      if (elMat) elMat.innerHTML = `<option value="">Seleccionar carrera...</option>${optsPlain}`;
+
+      // Tab calendario
+      const elCal = document.getElementById('filtroCarreraCal');
+      if (elCal) elCal.innerHTML = `<option value="">Todas las carreras</option>${optsPlain}`;
+
+      // Tab actas
+      const elAct = document.getElementById('filtroCarreraActas');
+      if (elAct) elAct.innerHTML = `<option value="">Seleccionar carrera...</option>${optsPlain}`;
+
+      // Tab habilitados
+      const elHab = document.getElementById('filtroCarreraHab');
+      if (elHab) elHab.innerHTML = `<option value="">— Seleccioná una carrera —</option>${optsPlain}`;
+    }
+
+    // ── Alumnos: filtros en cascada ───────────────────────────────
+    // Carrera → poblar Cohortes
+    document.getElementById('filtroCarreraAlumnos').addEventListener('change', async function () {
+      const carreraId = this.value;
+      const selCohorte = document.getElementById('filtroCohorteAlumnos');
+      const selAnho = document.getElementById('filtroAnhoAlumnos');
+      const search = document.getElementById('searchWrapAlumnos');
+
+      // Reset downstream
+      selCohorte.innerHTML = '<option value="">— Cohorte —</option>';
+      selCohorte.disabled = true;
+      selAnho.innerHTML = '<option value="">— Año / Curso —</option>';
+      selAnho.disabled = true;
+      search.style.display = 'none';
+      document.getElementById('alumnosEmptyState').style.display = '';
+      document.getElementById('alumnosTableWrap').style.display = 'none';
+      document.getElementById('alumnosTotal').textContent = '';
+
+      if (!carreraId) return;
+
+      const { data: cohs } = await supabase
+        .from('cohortes')
+        .select('id,nro_cohorte,anho_inicio')
+        .eq('carrera_id', carreraId)
+        .order('anho_inicio', { ascending: false });
+
+      if (cohs?.length) {
+        const cohortesFiltrados = sesion.rol === 'Docente' ? cohs.filter(ch => cohortesDocente.includes(ch.id)) : cohs;
+        selCohorte.innerHTML = '<option value="">— Todos los cohortes —</option>' +
+          cohortesFiltrados.map(c => `<option value="${c.id}">${c.nro_cohorte}ª Cohorte — ${c.anho_inicio}</option>`).join('');
+        selCohorte.disabled = false;
+      }
+
+      // Poblar años desde duracion_anhos de la carrera seleccionada
+      const carreraData = carreras.find(c => String(c.id) === String(carreraId));
+      const duracion = carreraData?.duracion_anhos || 4;
+      let optsAnho = '<option value="">— Todos los años —</option>';
+      for (let y = 1; y <= duracion; y++) optsAnho += `<option value="${y}">${y}º año</option>`;
+      selAnho.innerHTML = optsAnho;
+      selAnho.disabled = false;
+    });
+
+    // Cohorte o Año → recargar tabla
+    async function cargarAlumnosFiltrados() {
+      const carreraId = document.getElementById('filtroCarreraAlumnos').value;
+      const cohorteId = document.getElementById('filtroCohorteAlumnos').value;
+      const anho = document.getElementById('filtroAnhoAlumnos').value;
+
+      if (!carreraId) return;
+
+      document.getElementById('alumnosEmptyState').style.display = 'none';
+      document.getElementById('alumnosTableWrap').style.display = 'none';
+      document.getElementById('alumnosTotal').textContent = '…';
+
+      // Query inscripciones filtrando por cohorte (que ya implica carrera) o carrera
+      let q = supabase
+        .from('inscripciones_anuales')
+        .select('*, alumnos(nombres,apellidos,ci,telefono), cohortes(id,nro_cohorte,anho_inicio,carrera_id,carreras(id,nombre))')
+        .eq('estado', 'Activo')
+        .order('anho_lectivo', { ascending: false });
+
+      if (cohorteId) {
+        q = q.eq('cohorte_id', cohorteId);
+      } else {
+        // Sin cohorte específico: filtrar por cohortes de esa carrera
+        const { data: cIds } = await supabase.from('cohortes').select('id').eq('carrera_id', carreraId);
+        if (!cIds?.length) {
+          document.getElementById('alumnosTotal').textContent = '0 inscripciones';
+          document.getElementById('alumnosTableWrap').style.display = 'block';
+          document.getElementById('tbodyAlumnos').innerHTML = `<tr><td colspan="11" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin inscripciones para esta carrera</td></tr>`;
+          return;
+        }
+        q = q.in('cohorte_id', cIds.map(c => c.id));
+      }
+      if (anho) q = q.eq('anho_cursada', Number(anho));
+
+      const { data } = await q;
+      inscripciones = data || [];
+      document.getElementById('searchWrapAlumnos').style.display = '';
+      document.getElementById('alumnosTableWrap').style.display = 'block';
+      renderAlumnos();
+    }
+
+    ['filtroCohorteAlumnos', 'filtroAnhoAlumnos'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', cargarAlumnosFiltrados);
+    });
+
+    document.getElementById('searchAlumnos')?.addEventListener('input', renderAlumnos);
+
+    function renderAlumnos() {
+      const q = (document.getElementById('searchAlumnos')?.value || '').toLowerCase();
+      let items = inscripciones;
+      if (q) items = items.filter(i => `${i.alumnos?.nombres} ${i.alumnos?.apellidos} ${i.alumnos?.ci || ''}`.toLowerCase().includes(q));
+
+      document.getElementById('alumnosTotal').textContent = `${items.length} inscripciones`;
+      const EST = { Activo: 'badge-success', Finalizado: 'badge-verde', Suspendido: 'badge-warning', Baja: 'badge-danger' };
+
+      document.getElementById('tbodyAlumnos').innerHTML = items.map((i, idx) => {
+        const al = i.alumnos;
+        const co = i.cohortes;
+        return `<tr style="cursor:pointer" onclick="abrirAlumno(${i.alumno_id},${i.id})">
+      <td class="td-mono">${idx + 1}</td>
+      <td class="td-bold">${al?.nombres || ''} ${al?.apellidos || ''}</td>
+      <td class="td-mono">${al?.ci || '—'}</td>
+      <td>${co?.carreras?.nombre || '—'}</td>
       <td>${i.anho_cursada}º</td>
-      <td>${co?`${co.nro_cohorte}ª Cohorte ${co.anho_inicio}`:'—'}</td>
+      <td>${co ? `${co.nro_cohorte}ª Cohorte ${co.anho_inicio}` : '—'}</td>
       <td class="td-mono">${i.anho_lectivo}</td>
       <td class="td-mono">${formatGs(i.monto_cuota_base)}</td>
-      <td>${i.porcentaje_beca ? i.porcentaje_beca+'%' : '—'}</td>
-      <td><span class="badge ${EST[i.estado]||'badge-muted'}">${i.estado}</span></td>
+      <td>${i.porcentaje_beca ? i.porcentaje_beca + '%' : '—'}</td>
+      <td><span class="badge ${EST[i.estado] || 'badge-muted'}">${i.estado}</span></td>
       <td><button class="btn btn-icon" onclick="event.stopPropagation();abrirAlumno(${i.alumno_id},${i.id})">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </button></td>
     </tr>`;
-  }).join('') || `<tr><td colspan="11" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin registros</td></tr>`;
-}
+      }).join('') || `<tr><td colspan="11" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin registros</td></tr>`;
+    }
 
-// ── Drawer alumno: historial de exámenes ──────────────────────
-window.abrirAlumno = async (alumnoId, inscId) => {
-  const insc = inscripciones.find(i=>i.id===inscId);
-  const al   = insc?.alumnos;
-  if (!al) return;
+    // ── Drawer alumno: historial de exámenes ──────────────────────
+    window.abrirAlumno = async (alumnoId, inscId) => {
+      const insc = inscripciones.find(i => i.id === inscId);
+      const al = insc?.alumnos;
+      if (!al) return;
 
-  document.getElementById('drawerTitle').textContent = `${al.nombres} ${al.apellidos}`;
-  document.getElementById('drawerSub').textContent   = `CI: ${al.ci} · ${insc.anho_cursada}º año ${insc.anho_lectivo}`;
-  const bdg = document.getElementById('drawerBadge');
-  const EST = {Activo:'badge-success',Finalizado:'badge-verde',Suspendido:'badge-warning',Baja:'badge-danger'};
-  bdg.className = 'badge '+(EST[insc.estado]||'badge-muted');
-  bdg.textContent = insc.estado;
+      document.getElementById('drawerTitle').textContent = `${al.nombres} ${al.apellidos}`;
+      document.getElementById('drawerSub').textContent = `CI: ${al.ci} · ${insc.anho_cursada}º año ${insc.anho_lectivo}`;
+      const bdg = document.getElementById('drawerBadge');
+      const EST = { Activo: 'badge-success', Finalizado: 'badge-verde', Suspendido: 'badge-warning', Baja: 'badge-danger' };
+      bdg.className = 'badge ' + (EST[insc.estado] || 'badge-muted');
+      bdg.textContent = insc.estado;
 
-  // Historial exámenes
-  const { data: hist } = await supabase
-    .from('historial_examenes')
-    .select('*, materias(nombre,codigo,anho_curricula)')
-    .eq('inscripcion_id', inscId)
-    .order('fecha_registro',{ascending:false});
+      // Historial exámenes
+      const { data: hist } = await supabase
+        .from('historial_examenes')
+        .select('*, materias(nombre,codigo,anho_curricula)')
+        .eq('inscripcion_id', inscId)
+        .order('fecha_registro', { ascending: false });
 
-  // Cuotas
-  const { data: cuotas } = await supabase
-    .from('cuotas_pagos')
-    .select('nro_cuota,monto_final,estado_pago,fecha_vencimiento,fecha_pago')
-    .eq('inscripcion_id', inscId)
-    .order('nro_cuota');
+      // Cuotas
+      const { data: cuotas } = await supabase
+        .from('cuotas_pagos')
+        .select('nro_cuota,monto_final,estado_pago,fecha_vencimiento,fecha_pago')
+        .eq('inscripcion_id', inscId)
+        .order('nro_cuota');
 
-  const EST_CUOTA = {Pendiente:'badge-warning',Pagado:'badge-success',Vencido:'badge-danger',Perdonado:'badge-muted'};
-  const EST_MAT   = {Cursando:'badge-info',Aprobado:'badge-success',Reprobado:'badge-danger',Ausente:'badge-muted'};
+      const EST_CUOTA = { Pendiente: 'badge-warning', Pagado: 'badge-success', Vencido: 'badge-danger', Perdonado: 'badge-muted' };
+      const EST_MAT = { Cursando: 'badge-info', Aprobado: 'badge-success', Reprobado: 'badge-danger', Ausente: 'badge-muted' };
 
-  document.getElementById('drawerBody').innerHTML = `
+      document.getElementById('drawerBody').innerHTML = `
     <!-- Info inscripción -->
     <div style="background:var(--verde-light);border:1px solid rgba(26,107,60,.15);border-radius:var(--radius);padding:12px 14px;font-size:.82rem">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div><span style="color:var(--txt-muted)">Carrera:</span> <strong>${insc.cohortes?.carreras?.nombre||'—'}</strong></div>
-        <div><span style="color:var(--txt-muted)">Cohorte:</span> <strong>${insc.cohortes?.nro_cohorte||''}ª ${insc.cohortes?.anho_inicio||''}</strong></div>
+        <div><span style="color:var(--txt-muted)">Carrera:</span> <strong>${insc.cohortes?.carreras?.nombre || '—'}</strong></div>
+        <div><span style="color:var(--txt-muted)">Cohorte:</span> <strong>${insc.cohortes?.nro_cohorte || ''}ª ${insc.cohortes?.anho_inicio || ''}</strong></div>
         <div><span style="color:var(--txt-muted)">Cuota base:</span> <strong>${formatGs(insc.monto_cuota_base)}</strong></div>
-        <div><span style="color:var(--txt-muted)">Beca:</span> <strong>${insc.porcentaje_beca||0}%</strong></div>
+        <div><span style="color:var(--txt-muted)">Beca:</span> <strong>${insc.porcentaje_beca || 0}%</strong></div>
       </div>
     </div>
 
     <!-- Cuotas resumen -->
     <div>
-      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Cuotas (${cuotas?.length||0})</div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Cuotas (${cuotas?.length || 0})</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${cuotas?.map(c=>`<span class="badge ${EST_CUOTA[c.estado_pago]||'badge-muted'}" title="Cuota ${c.nro_cuota} — ${c.estado_pago}">C${c.nro_cuota}</span>`).join('')||'—'}
+        ${cuotas?.map(c => `<span class="badge ${EST_CUOTA[c.estado_pago] || 'badge-muted'}" title="Cuota ${c.nro_cuota} — ${c.estado_pago}">C${c.nro_cuota}</span>`).join('') || '—'}
       </div>
     </div>
 
     <!-- Historial exámenes -->
     <div>
-      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Historial de exámenes (${hist?.length||0})</div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Historial de exámenes (${hist?.length || 0})</div>
       ${hist?.length ? `<div class="table-wrapper"><table>
         <thead><tr><th>Materia</th><th>Año</th><th>Oportunidad</th><th>Estado</th><th>Nota</th><th>Fecha</th></tr></thead>
-        <tbody>${hist.map(h=>`<tr>
-          <td>${h.materias?.nombre||'—'}</td>
-          <td>${h.materias?.anho_curricula||'—'}</td>
+        <tbody>${hist.map(h => `<tr>
+          <td>${h.materias?.nombre || '—'}</td>
+          <td>${h.materias?.anho_curricula || '—'}</td>
           <td>${h.oportunidad_nro}ª</td>
-          <td><span class="badge ${EST_MAT[h.estado_materia]||'badge-muted'}" style="font-size:.65rem">${h.estado_materia}</span></td>
-          <td class="td-mono">${h.nota_obtenida!=null?h.nota_obtenida:'—'}</td>
+          <td><span class="badge ${EST_MAT[h.estado_materia] || 'badge-muted'}" style="font-size:.65rem">${h.estado_materia}</span></td>
+          <td class="td-mono">${h.nota_obtenida != null ? h.nota_obtenida : '—'}</td>
           <td class="td-mono" style="font-size:.72rem">${formatFechaHora(h.fecha_registro)}</td>
         </tr>`).join('')}</tbody>
       </table></div>` : '<div style="color:var(--txt-muted);font-size:.82rem;text-align:center;padding:16px">Sin historial de exámenes</div>'}
     </div>
 
     <!-- Cargar nota -->
-    ${sesion.rol!=='Cajero'?`<div>
+    ${sesion.rol !== 'Cajero' ? `<div>
       <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Registrar resultado de examen</div>
       <div class="form-row" style="gap:10px">
         <div class="form-group" style="margin:0">
@@ -640,135 +1038,135 @@ window.abrirAlumno = async (alumnoId, inscId) => {
         </div>
       </div>
       <button class="btn btn-primary btn-sm" style="margin-top:10px;width:100%" onclick="registrarNota(${inscId})">Registrar</button>
-    </div>`:''}`;
+    </div>`: ''}`;
 
-  // Cargar materias en el select
-  if (sesion.rol !== 'Cajero') {
-    const cohorte  = insc.cohortes;
-    const carreraId = cohorte ? await getCarreraIdFromCohorte(insc.cohorte_id) : null;
-    if (carreraId) {
-      const { data: mats } = await supabase.from('materias').select('id,nombre,anho_curricula').eq('carrera_id',carreraId).eq('activa',true).order('anho_curricula').order('nombre');
-      const sel = document.getElementById('drwMateria');
-      if (sel) sel.innerHTML = mats?.map(m=>`<option value="${m.id}">${m.nombre} (${m.anho_curricula}º)</option>`).join('')||'';
+      // Cargar materias en el select
+      if (sesion.rol !== 'Cajero') {
+        const cohorte = insc.cohortes;
+        const carreraId = cohorte ? await getCarreraIdFromCohorte(insc.cohorte_id) : null;
+        if (carreraId) {
+          const { data: mats } = await supabase.from('materias').select('id,nombre,anho_curricula').eq('carrera_id', carreraId).eq('activa', true).order('anho_curricula').order('nombre');
+          const sel = document.getElementById('drwMateria');
+          if (sel) sel.innerHTML = mats?.map(m => `<option value="${m.id}">${m.nombre} (${m.anho_curricula}º)</option>`).join('') || '';
+        }
+      }
+
+      document.getElementById('drawerFooter').innerHTML = `<button class="btn btn-ghost btn-sm" onclick="cerrarDrawer()">Cerrar</button>`;
+      document.getElementById('drawerOverlay').classList.add('open');
+    };
+
+    async function getCarreraIdFromCohorte(cohorteId) {
+      const { data } = await supabase.from('cohortes').select('carrera_id').eq('id', cohorteId).single();
+      return data?.carrera_id || null;
     }
-  }
 
-  document.getElementById('drawerFooter').innerHTML = `<button class="btn btn-ghost btn-sm" onclick="cerrarDrawer()">Cerrar</button>`;
-  document.getElementById('drawerOverlay').classList.add('open');
-};
+    window.registrarNota = async (inscId) => {
+      const materiaId = Number(document.getElementById('drwMateria').value);
+      const op = Number(document.getElementById('drwOp').value);
+      const estado = document.getElementById('drwEstMat').value;
+      const nota = document.getElementById('drwNota').value;
+      if (!materiaId) { toast('Seleccioná una materia', 'warning'); return; }
 
-async function getCarreraIdFromCohorte(cohorteId) {
-  const { data } = await supabase.from('cohortes').select('carrera_id').eq('id',cohorteId).single();
-  return data?.carrera_id || null;
-}
+      await supabase.from('historial_examenes').insert({
+        inscripcion_id: inscId, materia_id: materiaId,
+        oportunidad_nro: op, estado_materia: estado,
+        nota_obtenida: nota ? Number(nota) : null,
+        registrado_por: sesion.id
+      });
+      toast('Resultado registrado', 'success');
+      await abrirAlumno(null, inscId);
+    };
 
-window.registrarNota = async (inscId) => {
-  const materiaId = Number(document.getElementById('drwMateria').value);
-  const op        = Number(document.getElementById('drwOp').value);
-  const estado    = document.getElementById('drwEstMat').value;
-  const nota      = document.getElementById('drwNota').value;
-  if (!materiaId) { toast('Seleccioná una materia','warning'); return; }
+    // ── Currícula / Materias ──────────────────────────────────────
+    document.getElementById('filtroCarreraMat').addEventListener('change', cargarCurricula);
+    document.getElementById('btnRefMat').addEventListener('click', cargarCurricula);
 
-  await supabase.from('historial_examenes').insert({
-    inscripcion_id: inscId, materia_id: materiaId,
-    oportunidad_nro: op, estado_materia: estado,
-    nota_obtenida: nota ? Number(nota) : null,
-    registrado_por: sesion.id
-  });
-  toast('Resultado registrado','success');
-  await abrirAlumno(null, inscId);
-};
+    async function cargarCurricula() {
+      const carreraId = document.getElementById('filtroCarreraMat').value;
+      if (!carreraId) return;
 
-// ── Currícula / Materias ──────────────────────────────────────
-document.getElementById('filtroCarreraMat').addEventListener('change', cargarCurricula);
-document.getElementById('btnRefMat').addEventListener('click', cargarCurricula);
+      const { data } = await supabase
+        .from('materias')
+        .select('*')
+        .eq('carrera_id', carreraId)
+        .order('anho_curricula')
+        .order('modulo_nro');
 
-async function cargarCurricula() {
-  const carreraId = document.getElementById('filtroCarreraMat').value;
-  if (!carreraId) return;
+      materias = data || [];
+      const grid = document.getElementById('curriculaGrid');
 
-  const { data } = await supabase
-    .from('materias')
-    .select('*')
-    .eq('carrera_id', carreraId)
-    .order('anho_curricula')
-    .order('modulo_nro');
+      if (!materias.length) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt-muted)">Sin materias cargadas para esta carrera</div>`;
+        return;
+      }
 
-  materias = data || [];
-  const grid = document.getElementById('curriculaGrid');
+      const porAnho = {};
+      materias.forEach(m => {
+        if (!porAnho[m.anho_curricula]) porAnho[m.anho_curricula] = [];
+        porAnho[m.anho_curricula].push(m);
+      });
 
-  if (!materias.length) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt-muted)">Sin materias cargadas para esta carrera</div>`;
-    return;
-  }
-
-  const porAnho = {};
-  materias.forEach(m => {
-    if (!porAnho[m.anho_curricula]) porAnho[m.anho_curricula] = [];
-    porAnho[m.anho_curricula].push(m);
-  });
-
-  grid.innerHTML = Object.entries(porAnho).map(([anho, mats])=>`
+      grid.innerHTML = Object.entries(porAnho).map(([anho, mats]) => `
     <div class="anho-card">
       <div class="anho-card-header">
         <span>${anho}º año</span>
         <span style="opacity:.7;font-weight:400">${mats.length} materias</span>
       </div>
       <div class="anho-card-body">
-        ${mats.map(m=>`
+        ${mats.map(m => `
           <div class="materia-row" onclick="abrirMateria(${m.id})">
             <div class="materia-nombre">${m.nombre}</div>
             <div class="materia-codigo">${m.codigo}</div>
-            <span class="badge ${m.activa?'badge-verde':'badge-muted'}" style="font-size:.6rem">${m.activa?'Activa':'Inactiva'}</span>
+            <span class="badge ${m.activa ? 'badge-verde' : 'badge-muted'}" style="font-size:.6rem">${m.activa ? 'Activa' : 'Inactiva'}</span>
           </div>`).join('')}
       </div>
     </div>`).join('');
-}
+    }
 
-window.abrirMateria = async (id) => {
-  const m = materias.find(x=>x.id===id);
-  if (!m) return;
+    window.abrirMateria = async (id) => {
+      const m = materias.find(x => x.id === id);
+      if (!m) return;
 
-  // Docentes asignados
-  const { data: docs } = await supabase
-    .from('docentes_materias')
-    .select('*, docentes(nombres,apellidos,ci)')
-    .eq('materia_id', id)
-    .eq('activo', true);
+      // Docentes asignados
+      const { data: docs } = await supabase
+        .from('docentes_materias')
+        .select('*, docentes(nombres,apellidos,ci)')
+        .eq('materia_id', id)
+        .eq('activo', true);
 
-  document.getElementById('drawerTitle').textContent = m.nombre;
-  document.getElementById('drawerSub').textContent   = `Código: ${m.codigo} · ${m.anho_curricula}º año`;
-  const bdg = document.getElementById('drawerBadge');
-  bdg.className = 'badge '+(m.activa?'badge-verde':'badge-muted');
-  bdg.textContent = m.activa?'Activa':'Inactiva';
+      document.getElementById('drawerTitle').textContent = m.nombre;
+      document.getElementById('drawerSub').textContent = `Código: ${m.codigo} · ${m.anho_curricula}º año`;
+      const bdg = document.getElementById('drawerBadge');
+      bdg.className = 'badge ' + (m.activa ? 'badge-verde' : 'badge-muted');
+      bdg.textContent = m.activa ? 'Activa' : 'Inactiva';
 
-  document.getElementById('drawerBody').innerHTML = `
+      document.getElementById('drawerBody').innerHTML = `
     <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;font-size:.82rem">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div><span style="color:var(--txt-muted)">Código:</span> <strong class="td-mono">${m.codigo}</strong></div>
         <div><span style="color:var(--txt-muted)">Año:</span> <strong>${m.anho_curricula}º</strong></div>
-        <div><span style="color:var(--txt-muted)">Módulo:</span> <strong>${m.modulo_nro||'—'}</strong></div>
+        <div><span style="color:var(--txt-muted)">Módulo:</span> <strong>${m.modulo_nro || '—'}</strong></div>
         <div><span style="color:var(--txt-muted)">Cuota req. examen:</span> <strong>${m.cuota_requerida_examen}</strong></div>
       </div>
     </div>
     <div>
-      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Docentes asignados (${docs?.length||0})</div>
-      ${docs?.length ? docs.map(d=>`
+      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Docentes asignados (${docs?.length || 0})</div>
+      ${docs?.length ? docs.map(d => `
         <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:.83rem">
-          <div style="width:30px;height:30px;border-radius:50%;background:var(--verde);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0">${d.docentes?.nombres?.charAt(0)||'?'}</div>
-          <div style="flex:1"><div style="font-weight:600">${d.docentes?.nombres||''} ${d.docentes?.apellidos||''}</div><div style="font-size:.72rem;color:var(--txt-muted)">Año lectivo ${d.anho_lectivo}</div></div>
+          <div style="width:30px;height:30px;border-radius:50%;background:var(--verde);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0">${d.docentes?.nombres?.charAt(0) || '?'}</div>
+          <div style="flex:1"><div style="font-weight:600">${d.docentes?.nombres || ''} ${d.docentes?.apellidos || ''}</div><div style="font-size:.72rem;color:var(--txt-muted)">Año lectivo ${d.anho_lectivo}</div></div>
         </div>`).join('') : '<div style="color:var(--txt-muted);font-size:.8rem;text-align:center;padding:12px">Sin docentes asignados</div>'}
     </div>`;
 
-  document.getElementById('drawerFooter').innerHTML = `<button class="btn btn-ghost btn-sm" onclick="cerrarDrawer()">Cerrar</button>`;
-  document.getElementById('drawerOverlay').classList.add('open');
-};
+      document.getElementById('drawerFooter').innerHTML = `<button class="btn btn-ghost btn-sm" onclick="cerrarDrawer()">Cerrar</button>`;
+      document.getElementById('drawerOverlay').classList.add('open');
+    };
 
-// Nueva materia
-document.getElementById('btnNuevaMateria')?.addEventListener('click', () => {
-  const carreraId = document.getElementById('filtroCarreraMat').value;
-  document.getElementById('modalTitle').textContent = 'Nueva materia';
-  document.getElementById('modalBody').innerHTML = `
+    // Nueva materia
+    document.getElementById('btnNuevaMateria')?.addEventListener('click', () => {
+      const carreraId = document.getElementById('filtroCarreraMat').value;
+      document.getElementById('modalTitle').textContent = 'Nueva materia';
+      document.getElementById('modalBody').innerHTML = `
     <div class="form-row">
       <div class="form-group"><label class="form-label">Código <span class="required">*</span></label><input type="text" class="form-control" id="mCodigo" placeholder="Ej: DU-101"></div>
       <div class="form-group"><label class="form-label">Nombre <span class="required">*</span></label><input type="text" class="form-control" id="mNombre"></div>
@@ -780,94 +1178,94 @@ document.getElementById('btnNuevaMateria')?.addEventListener('click', () => {
     </div>
     <div class="form-group"><label class="form-label">Cuota requerida para examen</label><input type="number" class="form-control" id="mCuotaReq" value="1" min="1"></div>`;
 
-  modalGuardarFn = async () => {
-    const codigo  = document.getElementById('mCodigo').value.trim();
-    const nombre  = document.getElementById('mNombre').value.trim();
-    const anho    = Number(document.getElementById('mAnho').value);
-    if (!codigo||!nombre||!carreraId) { toast('Completá los campos requeridos','warning'); return; }
-    const { error } = await supabase.from('materias').insert({
-      codigo, nombre, carrera_id: Number(carreraId), anho_curricula: anho,
-      modulo_nro: Number(document.getElementById('mModulo').value)||null,
-      cuota_requerida_examen: Number(document.getElementById('mCuotaReq').value)||1,
-      created_by: sesion.id
+      modalGuardarFn = async () => {
+        const codigo = document.getElementById('mCodigo').value.trim();
+        const nombre = document.getElementById('mNombre').value.trim();
+        const anho = Number(document.getElementById('mAnho').value);
+        if (!codigo || !nombre || !carreraId) { toast('Completá los campos requeridos', 'warning'); return; }
+        const { error } = await supabase.from('materias').insert({
+          codigo, nombre, carrera_id: Number(carreraId), anho_curricula: anho,
+          modulo_nro: Number(document.getElementById('mModulo').value) || null,
+          cuota_requerida_examen: Number(document.getElementById('mCuotaReq').value) || 1,
+          created_by: sesion.id
+        });
+        if (error) { toast('Error: ' + error.message, 'error'); return; }
+        toast('Materia creada', 'success');
+        cerrarModal();
+        await cargarCurricula();
+      };
+      document.getElementById('modalOverlay').classList.add('open');
     });
-    if (error) { toast('Error: '+error.message,'error'); return; }
-    toast('Materia creada','success');
-    cerrarModal();
-    await cargarCurricula();
-  };
-  document.getElementById('modalOverlay').classList.add('open');
-});
 
-// ── Calendario de exámenes ────────────────────────────────────
-async function cargarCalendarios() {
-  const { data } = await supabase
-    .from('calendario_examenes')
-    .select(`id, anho_lectivo, oportunidad_nro, fecha_desde, fecha_hasta, estado,
+    // ── Calendario de exámenes ────────────────────────────────────
+    async function cargarCalendarios() {
+      const { data } = await supabase
+        .from('calendario_examenes')
+        .select(`id, anho_lectivo, oportunidad_nro, fecha_desde, fecha_hasta, estado,
       materias ( id, nombre ),
       cohortes ( id, nro_cohorte, anho_inicio, carreras ( id, nombre ) )`)
-    .order('fecha_desde', { ascending: false });
+        .order('fecha_desde', { ascending: false });
 
-  let all = data || [];
+      let all = data || [];
 
-  // Si docente, filtrar solo sus materias asignadas activas
-  if (sesion.rol === 'Docente' && docenteActual) {
-    const { data: dm } = await supabase
-      .from('docentes_materias')
-      .select('materia_id')
-      .eq('docente_id', docenteActual.id)
-      .eq('activo', true);
-    const misMatIds = (dm||[]).map(x=>x.materia_id);
-    all = all.filter(c => misMatIds.includes(c.materias?.id));
-  }
+      // Si docente, filtrar solo sus materias asignadas activas
+      if (sesion.rol === 'Docente' && docenteActual) {
+        const { data: dm } = await supabase
+          .from('docentes_carreras')
+          .select('cohorte_id')
+          .eq('docente_id', docenteActual.id)
+          .eq('activo', true);
+        const misCohsIds = (dm || []).map(x => x.cohorte_id);
+        all = all.filter(c => misCohsIds.includes(c.cohortes?.id));
+      }
 
-  calendarios = all;
-  renderCalendarios();
-}
+      calendarios = all;
+      renderCalendarios();
+    }
 
-function renderCalendarios() {
-  const carrera = document.getElementById('filtroCarreraCal').value;
-  const estado  = document.getElementById('filtroEstadoCal').value;
+    function renderCalendarios() {
+      const carrera = document.getElementById('filtroCarreraCal').value;
+      const estado = document.getElementById('filtroEstadoCal').value;
 
-  let items = calendarios;
-  if (carrera) items = items.filter(c=>String(c.cohortes?.carreras?.id)===carrera);
-  if (estado)  items = items.filter(c=>c.estado===estado);
+      let items = calendarios;
+      if (carrera) items = items.filter(c => String(c.cohortes?.carreras?.id) === carrera);
+      if (estado) items = items.filter(c => c.estado === estado);
 
-  document.getElementById('calTotal').textContent = `${items.length} períodos`;
-  const EST = {VIGENTE:'badge-success',PENDIENTE:'badge-warning',CERRADO:'badge-muted'};
-  const OP  = {1:'1ª oportunidad',2:'2ª oportunidad',3:'3ª oportunidad',4:'Extraordinaria'};
-  const puedeGestionar = ['Admin','Academico','Docente'].includes(sesion.rol);
+      document.getElementById('calTotal').textContent = `${items.length} períodos`;
+      const EST = { VIGENTE: 'badge-success', PENDIENTE: 'badge-warning', CERRADO: 'badge-muted' };
+      const OP = { 1: '1ª oportunidad', 2: '2ª oportunidad', 3: '3ª oportunidad', 4: 'Extraordinaria' };
+      const puedeGestionar = ['Admin', 'Academico', 'Docente'].includes(sesion.rol);
 
-  document.getElementById('calGrid').innerHTML = items.map(c=>`
-    <div class="cal-card ${c.estado==='VIGENTE'?'cal-vigente':''}">
-      <div class="cal-card-materia">${c.materias?.nombre||'—'}</div>
-      <div class="cal-card-dates">Carrera: ${c.cohortes?.carreras?.nombre||'—'}</div>
-      <div class="cal-card-dates">${c.cohortes?.nro_cohorte||'—'}ª Cohorte — ${c.cohortes?.anho_inicio||'—'}</div>
+      document.getElementById('calGrid').innerHTML = items.map(c => `
+    <div class="cal-card ${c.estado === 'VIGENTE' ? 'cal-vigente' : ''}">
+      <div class="cal-card-materia">${c.materias?.nombre || '—'}</div>
+      <div class="cal-card-dates">Carrera: ${c.cohortes?.carreras?.nombre || '—'}</div>
+      <div class="cal-card-dates">${c.cohortes?.nro_cohorte || '—'}ª Cohorte — ${c.cohortes?.anho_inicio || '—'}</div>
       <div class="cal-card-dates">
         ${new Date(c.fecha_desde).toLocaleDateString('es-PY')} — ${new Date(c.fecha_hasta).toLocaleDateString('es-PY')}
       </div>
       <div class="cal-card-footer">
-        <span class="badge badge-muted" style="font-size:.65rem">${OP[c.oportunidad_nro]||c.oportunidad_nro+'ª'}</span>
-        <span class="badge ${EST[c.estado]||'badge-muted'}" style="font-size:.65rem">${c.estado}</span>
-        ${puedeGestionar && c.estado!=='CERRADO' ? `
-          <button class="btn btn-ghost btn-sm" onclick="cambiarEstadoCal(${c.id},'${c.estado==='PENDIENTE'?'VIGENTE':'CERRADO'}')">
-            ${c.estado==='PENDIENTE'?'Activar':'Cerrar'}
+        <span class="badge badge-muted" style="font-size:.65rem">${OP[c.oportunidad_nro] || c.oportunidad_nro + 'ª'}</span>
+        <span class="badge ${EST[c.estado] || 'badge-muted'}" style="font-size:.65rem">${c.estado}</span>
+        ${puedeGestionar && c.estado !== 'CERRADO' ? `
+          <button class="btn btn-ghost btn-sm" onclick="cambiarEstadoCal(${c.id},'${c.estado === 'PENDIENTE' ? 'VIGENTE' : 'CERRADO'}')">
+            ${c.estado === 'PENDIENTE' ? 'Activar' : 'Cerrar'}
           </button>` : ''}
       </div>
     </div>`).join('') || `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt-muted)">Sin períodos</div>`;
-}
+    }
 
-['filtroCarreraCal','filtroEstadoCal'].forEach(id=>document.getElementById(id)?.addEventListener('change',renderCalendarios));
+    ['filtroCarreraCal', 'filtroEstadoCal'].forEach(id => document.getElementById(id)?.addEventListener('change', renderCalendarios));
 
-window.cambiarEstadoCal = async (id, nuevoEst) => {
-  await supabase.from('calendario_examenes').update({estado:nuevoEst}).eq('id',id);
-  toast(`Período ${nuevoEst==='VIGENTE'?'activado':'cerrado'}`,'success');
-  await cargarCalendarios();
-};
+    window.cambiarEstadoCal = async (id, nuevoEst) => {
+      await supabase.from('calendario_examenes').update({ estado: nuevoEst }).eq('id', id);
+      toast(`Período ${nuevoEst === 'VIGENTE' ? 'activado' : 'cerrado'}`, 'success');
+      await cargarCalendarios();
+    };
 
 
-document.getElementById('btnNuevoCalendario')?.addEventListener('click', async () => {
-  document.getElementById('modalTitle').textContent = 'Nuevo período de examen';
+    document.getElementById('btnNuevoCalendario')?.addEventListener('click', async () => {
+  document.getElementById('modalTitle').textContent = 'Nuevo periodo de exámen';
   document.getElementById('modalBody').innerHTML = `
     <div class="form-group">
       <label>Carrera</label>
@@ -884,10 +1282,18 @@ document.getElementById('btnNuevoCalendario')?.addEventListener('click', async (
     </div>
 
     <div class="form-group">
-      <label>Materia</label>
+      <label>Materia Local</label>
       <select id="calMateriaId" class="form-control" disabled>
         <option value="">-- Selecciona primero la carrera --</option>
       </select>
+    </div>
+
+    <div class="form-group">
+      <label>Aula Virtual en Moodle</label>
+      <select id="calMoodleId" class="form-control" disabled>
+        <option value="">-- Selecciona primero el cohorte --</option>
+      </select>
+      <small id="statusMoodleCourse" style="font-size: 11px; display: block; margin-top: 2px;"></small>
     </div>
 
     <div class="form-row">
@@ -896,7 +1302,7 @@ document.getElementById('btnNuevoCalendario')?.addEventListener('click', async (
         <input type="number" id="calAnhoLectivo" class="form-control" value="2026">
       </div>
       <div class="form-group">
-        <label>Oportunidad</label>
+        <label>Oportunidad Local</label>
         <select id="calOportunidadNro" class="form-control">
           <option value="1">1° Oportunidad</option>
           <option value="2">2° Oportunidad</option>
@@ -904,6 +1310,14 @@ document.getElementById('btnNuevoCalendario')?.addEventListener('click', async (
           <option value="4">Extraordinario (4°)</option>
         </select>
       </div>
+    </div>
+
+    <div class="form-group">
+      <label>Grupo en Moodle</label>
+      <select id="calMoodleGrupoId" class="form-control" disabled>
+        <option value="">-- Selecciona primero el aula virtual --</option>
+      </select>
+      <small id="statusMoodleGrupo" style="font-size: 11px; display: block; margin-top: 2px;"></small>
     </div>
 
     <div class="form-row">
@@ -917,73 +1331,182 @@ document.getElementById('btnNuevoCalendario')?.addEventListener('click', async (
       </div>
     </div>`;
 
-  // --- LÓGICA DE DETECCIÓN DE CAMBIOS (CASCADA) INDEPENDIENTE ---
   const selectCarrera = document.getElementById('calCarreraId');
   const selectCohorte = document.getElementById('calCohorteId');
   const selectMateria = document.getElementById('calMateriaId');
+  const selectOportunidad = document.getElementById('calOportunidadNro');
+  const selectMoodleCourse = document.getElementById('calMoodleId');
+  const selectMoodleGrupo = document.getElementById('calMoodleGrupoId');
+  
+  const statusCourse = document.getElementById('statusMoodleCourse');
+  const statusGrupo = document.getElementById('statusMoodleGrupo');
 
-  // Cargamos inmediatamente las Carreras Activas al abrir el modal
-  const { data: carreras } = await supabase
-    .from('carreras')
-    .select('id, nombre, codigo')
-    .eq('estado', 'Activa')
-    .order('nombre');
+  let coursesMoodleDisponibles = [];
+  let gruposMoodleDisponibles = [];
 
-  if (carreras) {
-    carreras.forEach(c => {
-      selectCarrera.innerHTML += `<option value="${c.id}">${c.nombre} (${c.codigo})</option>`;
-    });
+  // Función interna para estandarizar textos de oportunidades (Diccionario de Sinónimos)
+  const obtenerClaveEstandar = (texto) => {
+    const t = texto.toUpperCase();
+    if (t.includes('1') || t.includes('PRIMER')) return 'OP1';
+    if (t.includes('2') || t.includes('SEGUND')) return 'OP2';
+    if (t.includes('3') || t.includes('TERCER')) return 'OP3';
+    if (t.includes('4') || t.includes('EXTRAORDINARIO')) return 'OP4';
+    return t;
+  };
+
+  // Carga inicial de Carreras
+  const { data: carreras } = await supabase.from('carreras').select('id, nombre, codigo').eq('estado', 'Activa').order('nombre');
+  const carrExFiltradas = sesion.rol === 'Docente' ? carreras.filter(c => carrerasDocente.includes(c.id)) : carreras;
+  if (carrExFiltradas) {
+    carrExFiltradas.forEach(c => { selectCarrera.innerHTML += `<option value="${c.id}">${c.nombre} (${c.codigo})</option>`; });
   }
 
-  // Listener nativo en lugar de usar onchange="" en el HTML inyectado
+  // 1. Cambio de Carrera
   selectCarrera.addEventListener('change', async () => {
     const carreraId = selectCarrera.value;
-
     if (!carreraId) {
-      selectCohorte.disabled = true;
-      selectMateria.disabled = true;
-      selectCohorte.innerHTML = '<option value="">-- Selecciona primero la carrera --</option>';
-      selectMateria.innerHTML = '<option value="">-- Selecciona primero la carrera --</option>';
+      selectCohorte.disabled = true; selectMateria.disabled = true; selectMoodleCourse.disabled = true; selectMoodleGrupo.disabled = true;
       return;
     }
 
-    // Consultamos cohortes y materias de esa carrera en paralelo
     const [resCohortes, resMaterias] = await Promise.all([
-      supabase.from('cohortes').select('id, nro_cohorte, anho_inicio').eq('carrera_id', carreraId).eq('estado', 'Activo').order('anho_inicio', { ascending: false }),
-      supabase.from('materias').select('id, nombre, codigo').eq('carrera_id', carreraId).eq('activa', true).order('codigo')
+      supabase.from('cohortes').select('id, nro_cohorte, anho_inicio, moodle_id').eq('carrera_id', carreraId).eq('estado', 'Activo').order('anho_inicio', { ascending: false }),
+      supabase.from('materias').select('id, nombre, codigo').eq('carrera_id', carreraId).eq('activa', true).order('modulo_nro')
     ]);
 
-    // Renderizar los Cohortes activos de la carrera
     selectCohorte.innerHTML = '<option value="">-- Selecciona el Cohorte --</option>';
-    if (resCohortes.data && resCohortes.data.length > 0) {
-      resCohortes.data.forEach(coh => {
-        selectCohorte.innerHTML += `<option value="${coh.id}">${coh.nro_cohorte}ª Cohorte - ${coh.anho_inicio}</option>`;
-      });
+    const chExFiltrados = sesion.rol === 'Docente' ? resCohortes.data.filter(ch => cohortesDocente.includes(ch.id)) : resCohortes.data;
+    if (chExFiltrados && chExFiltrados.length > 0) {
+      chExFiltrados.forEach(coh => { selectCohorte.innerHTML += `<option value="${coh.id}" data-moodle-id="${coh.moodle_id || ''}">${coh.nro_cohorte}ª Cohorte - ${coh.anho_inicio}</option>`; });
       selectCohorte.disabled = false;
-    } else {
-      selectCohorte.innerHTML = '<option value="">⚠️ Sin cohortes activos</option>';
-      selectCohorte.disabled = true;
     }
 
-    // Renderizar las Materias fijas de la carrera
     selectMateria.innerHTML = '<option value="">-- Selecciona la Materia --</option>';
     if (resMaterias.data && resMaterias.data.length > 0) {
-      resMaterias.data.forEach(mat => {
-        selectMateria.innerHTML += `<option value="${mat.id}">${mat.nombre} [${mat.codigo}]</option>`;
-      });
+      resMaterias.data.forEach(mat => { selectMateria.innerHTML += `<option value="${mat.id}">${mat.nombre} [${mat.codigo}]</option>`; });
       selectMateria.disabled = false;
-    } else {
-      selectMateria.innerHTML = '<option value="">⚠️ Sin materias cargadas</option>';
-      selectMateria.disabled = true;
     }
   });
-  // -------------------------------------------------------------
 
+  // 2. Al seleccionar Cohorte -> Descargamos los cursos de Moodle
+  selectCohorte.addEventListener('change', async () => {
+    const cohorteOption = selectCohorte.selectedOptions[0];
+    const moodleIdCategoria = cohorteOption?.getAttribute('data-moodle-id');
+    coursesMoodleDisponibles = [];
+    selectMoodleCourse.innerHTML = '<option value="">-- Selecciona el Aula Virtual --</option>';
+    selectMoodleCourse.disabled = true;
+
+    if (!selectCohorte.value || !moodleIdCategoria) {
+      statusCourse.innerHTML = '⚠️ Cohorte sin vinculación base con Moodle.';
+      return;
+    }
+
+    statusCourse.textContent = 'Cargando aulas de Moodle...';
+
+    try {
+      const url = `${MOODLE.URL}/webservice/rest/server.php?wstoken=${MOODLE.TOKEN}&wsfunction=core_course_get_courses_by_field&moodlewsrestformat=json&field=category&value=${moodleIdCategoria}`;
+      const res = await fetch(url);
+      const dataMoodle = await res.json();
+      
+      if (dataMoodle.courses) {
+        coursesMoodleDisponibles = dataMoodle.courses.filter(c => c.id !== 1);
+        coursesMoodleDisponibles.forEach(course => {
+          selectMoodleCourse.innerHTML += `<option value="${course.id}">${course.fullname}</option>`;
+        });
+        selectMoodleCourse.disabled = false;
+        statusCourse.innerHTML = '✅ Aulas virtuales de Moodle listas.';
+      }
+    } catch (err) {
+      console.error(err);
+      statusCourse.textContent = '❌ Error al conectar con Moodle.';
+    }
+  });
+
+  // 3. Al cambiar Materia Local -> Intentamos preseleccionar el curso de Moodle
+  selectMateria.addEventListener('change', async () => {
+    if (!selectMateria.value) return;
+
+    const nombreMateriaLocal = selectMateria.selectedOptions[0].text.split('[')[0].trim().toUpperCase();
+    const cursoMacho = coursesMoodleDisponibles.find(c => c.fullname.toUpperCase().includes(nombreMateriaLocal));
+
+    if (cursoMacho) {
+      selectMoodleCourse.value = cursoMacho.id; // Sincroniza el select visualmente
+      statusCourse.innerHTML = `✅ <span style="color: green">Sincronizado automáticamente.</span>`;
+    } else {
+      selectMoodleCourse.value = "";
+      statusCourse.innerHTML = `ℹ️ <span style="color: #b76e00">No se halló coincidencia exacta. Por favor, seleccionalo a mano.</span>`;
+    }
+    
+    // De cualquier forma, gatillamos el cambio del curso para traer sus grupos
+    selectMoodleCourse.dispatchEvent(new Event('change'));
+  });
+
+  // 4. Al cambiar el Aula Virtual de Moodle (ya sea manual o por trigger automático)
+  selectMoodleCourse.addEventListener('change', async () => {
+    const courseId = selectMoodleCourse.value;
+    gruposMoodleDisponibles = [];
+    selectMoodleGrupo.innerHTML = '<option value="">-- Selecciona el Grupo / Oportunidad --</option>';
+    selectMoodleGrupo.disabled = true;
+    statusGrupo.textContent = '';
+
+    if (!courseId) return;
+
+    statusGrupo.textContent = 'Cargando grupos de Moodle...';
+
+    try {
+      const url = `${MOODLE.URL}/webservice/rest/server.php?wstoken=${MOODLE.TOKEN}&wsfunction=core_group_get_course_groups&moodlewsrestformat=json&courseid=${courseId}`;
+      const res = await fetch(url);
+      gruposMoodleDisponibles = await res.json();
+
+      if (!gruposMoodleDisponibles || gruposMoodleDisponibles.exception || gruposMoodleDisponibles.length === 0) {
+        statusGrupo.textContent = '⚠️ Este curso no tiene grupos creados en Moodle.';
+        return;
+      }
+
+      gruposMoodleDisponibles.forEach(g => {
+        selectMoodleGrupo.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+      });
+      selectMoodleGrupo.disabled = false;
+
+      // Intentamos el macheo automático del grupo al terminar de cargar
+      machearGrupoMoodle();
+
+    } catch (err) {
+      console.error(err);
+      statusGrupo.textContent = '❌ Error al traer grupos.';
+    }
+  });
+
+  // 5. Al cambiar la Oportunidad Local -> Buscamos y preseleccionamos el grupo de Moodle
+  selectOportunidad.addEventListener('change', () => {
+    machearGrupoMoodle();
+  });
+
+  function machearGrupoMoodle() {
+    if (!selectMoodleCourse.value || gruposMoodleDisponibles.length === 0 || gruposMoodleDisponibles.exception) return;
+
+    const textoOportunidadLocal = selectOportunidad.selectedOptions[0].text; 
+    const claveLocal = obtenerClaveEstandar(textoOportunidadLocal);
+
+    const grupoMacho = gruposMoodleDisponibles.find(g => obtenerClaveEstandar(g.name) === claveLocal);
+
+    if (grupoMacho) {
+      selectMoodleGrupo.value = grupoMacho.id; // Sincroniza el select de grupos visualmente
+      statusGrupo.innerHTML = `✅ <span style="color: green">Sincronizado automáticamente.</span>`;
+    } else {
+      selectMoodleGrupo.value = "";
+      statusGrupo.innerHTML = `ℹ️ <span style="color: #b76e00">No se halló coincidencia. Selecciona el grupo a mano.</span>`;
+    }
+  }
+
+  // Guardar datos
   modalGuardarFn = async () => {
     const cohorteId = selectCohorte.value;
     const materiaId = selectMateria.value;
+    const moodleCourseId = selectMoodleCourse.value;
+    const moodleGrupoId = selectMoodleGrupo.value;
     const anhoLectivo = document.getElementById('calAnhoLectivo').value;
-    const opNro = document.getElementById('calOportunidadNro').value;
+    const opNro = selectOportunidad.value;
     const desde = document.getElementById('calFechaDesde').value;
     const hasta = document.getElementById('calFechaHasta').value;
 
@@ -992,309 +1515,303 @@ document.getElementById('btnNuevoCalendario')?.addEventListener('click', async (
       return;
     }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('calendario_examenes')
       .insert({
         materia_id: parseInt(materiaId),
-        cohorte_id: parseInt(cohorteId), // Tu nuevo campo clave
+        cohorte_id: parseInt(cohorteId),
         anho_lectivo: parseInt(anhoLectivo),
         oportunidad_nro: parseInt(opNro),
         fecha_desde: desde,
         fecha_hasta: hasta,
-        estado: 'PENDIENTE'
+        estado: 'PENDIENTE',
+        id_moodle: moodleCourseId || null,     // Se guarda lo seleccionado en el combo (sea auto o manual)
+        id_grupo_moodle: moodleGrupoId || null // Se guarda lo seleccionado en el combo (sea auto o manual)
       });
 
     if (error) {
       if (error.code === '23505') {
-        toast('Error: Ya existe una ventana de examen para esta materia, cohorte y oportunidad.', 'danger');
+        toast('Error: Ya existe un examen para esta materia, cohorte y oportunidad.', 'danger');
       } else {
         toast('Error al guardar: ' + error.message, 'danger');
       }
       return;
     }
 
-    toast('Período creado', 'success');
-    cerrarModal();
-    await cargarCalendarios();
+    toast('Período creado con éxito', 'success');
+    cerrarModal(); await cargarCalendarios();
   };
 
   document.getElementById('modalOverlay').classList.add('open');
 });
 
-// ── Corroboración de actas ────────────────────────────────────
-// Años dinámicos según carrera seleccionada
-document.getElementById('filtroCarreraActas').addEventListener('change', function() {
-  const carreraData = carreras.find(c=>String(c.id)===this.value);
-  const duracion = carreraData?.duracion_anhos || 4;
-  let opts = '<option value="">— Año / Curso —</option>';
-  for (let y=1;y<=duracion;y++) opts+=`<option value="${y}">${y}º año</option>`;
-  document.getElementById('filtroAnhoActas').innerHTML = opts;
-});
-
-document.getElementById('btnCorroborar').addEventListener('click', async () => {
-  const carreraId = document.getElementById('filtroCarreraActas').value;
-  const anho      = document.getElementById('filtroAnhoActas').value;
-  const lectivo   = document.getElementById('filtroLectivoActas').value;
-
-  if (!carreraId || !anho || !lectivo) { toast('Seleccioná carrera, año y lectivo','warning'); return; }
-
-  const btn = document.getElementById('btnCorroborar');
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner" style="width:14px;height:14px;border-width:2px"></span> Procesando...`;
-
-  try {
-    // 1. Inscripciones del año/carrera/lectivo
-    const { data: inscs } = await supabase
-      .from('inscripciones_anuales')
-      .select('id, alumno_id, alumnos(nombres,apellidos,ci)')
-      .eq('anho_cursada', Number(anho))
-      .eq('anho_lectivo', Number(lectivo));
-
-    if (!inscs?.length) { toast('Sin alumnos para esos filtros','warning'); return; }
-
-    // 2. Materias del año/carrera
-    const { data: mats } = await supabase
-      .from('materias')
-      .select('id,nombre,codigo')
-      .eq('carrera_id', Number(carreraId))
-      .eq('anho_curricula', Number(anho))
-      .eq('activa', true)
-      .order('nombre');
-
-    if (!mats?.length) { toast('Sin materias para esa carrera y año','warning'); return; }
-
-    // 3. Historial de exámenes
-    const inscIds = inscs.map(i=>i.id);
-    const { data: hist } = await supabase
-      .from('historial_examenes')
-      .select('inscripcion_id,materia_id,estado_materia,nota_obtenida,oportunidad_nro')
-      .in('inscripcion_id', inscIds)
-      .in('materia_id', mats.map(m=>m.id));
-
-    // 4. Construir tabla de corroboración
-    // Filas: alumnos | Columnas: materias
-    let okCount=0, missCount=0, warnCount=0;
-
-    const rows = inscs.map(insc => {
-      const al = insc.alumnos;
-      const fila = { nombre: `${al?.nombres||''} ${al?.apellidos||''}`, ci: al?.ci||'—', materias:{} };
-
-      mats.forEach(m => {
-        const registros = hist?.filter(h=>h.inscripcion_id===insc.id && h.materia_id===m.id) || [];
-        const aprobado  = registros.find(h=>h.estado_materia==='Aprobado');
-        if (aprobado)         { fila.materias[m.id] = {est:'ok',  nota:aprobado.nota_obtenida}; okCount++; }
-        else if (registros.length) { fila.materias[m.id] = {est:'warn',nota:null}; warnCount++; }
-        else                  { fila.materias[m.id] = {est:'miss',nota:null}; missCount++; }
-      });
-      return fila;
+    // ── Corroboración de actas ────────────────────────────────────
+    // Años dinámicos según carrera seleccionada
+    document.getElementById('filtroCarreraActas').addEventListener('change', function () {
+      const carreraData = carreras.find(c => String(c.id) === this.value);
+      const duracion = carreraData?.duracion_anhos || 4;
+      let opts = '<option value="">— Año / Curso —</option>';
+      for (let y = 1; y <= duracion; y++) opts += `<option value="${y}">${y}º año</option>`;
+      document.getElementById('filtroAnhoActas').innerHTML = opts;
     });
 
-    // Renderizar
-    document.getElementById('actasEmpty').style.display       = 'none';
-    document.getElementById('actasTableWrap').style.display   = 'block';
-    document.getElementById('actasEstadoBar').style.display   = 'flex';
-    document.getElementById('btnExportarActas').style.display = 'inline-flex';
+    document.getElementById('btnCorroborar').addEventListener('click', async () => {
+      const carreraId = document.getElementById('filtroCarreraActas').value;
+      const anho = document.getElementById('filtroAnhoActas').value;
+      const lectivo = document.getElementById('filtroLectivoActas').value;
 
-    document.getElementById('actasOkCount').textContent    = okCount;
-    document.getElementById('actasMissCount').textContent  = missCount;
-    document.getElementById('actasWarnCount').textContent  = warnCount;
-    document.getElementById('actasTotalCount').textContent = inscs.length;
+      if (!carreraId || !anho || !lectivo) { toast('Seleccioná carrera, año y lectivo', 'warning'); return; }
 
-    // Head
-    document.getElementById('actasHead').innerHTML = `<tr>
+      const btn = document.getElementById('btnCorroborar');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner" style="width:14px;height:14px;border-width:2px"></span> Procesando...`;
+
+      try {
+        // 1. Inscripciones del año/carrera/lectivo
+        const { data: inscs } = await supabase
+          .from('inscripciones_anuales')
+          .select('id, alumno_id, alumnos(nombres,apellidos,ci)')
+          .eq('anho_cursada', Number(anho))
+          .eq('anho_lectivo', Number(lectivo));
+
+        if (!inscs?.length) { toast('Sin alumnos para esos filtros', 'warning'); return; }
+
+        // 2. Materias del año/carrera
+        const { data: mats } = await supabase
+          .from('materias')
+          .select('id,nombre,codigo')
+          .eq('carrera_id', Number(carreraId))
+          .eq('anho_curricula', Number(anho))
+          .eq('activa', true)
+          .order('nombre');
+
+        if (!mats?.length) { toast('Sin materias para esa carrera y año', 'warning'); return; }
+
+        // 3. Historial de exámenes
+        const inscIds = inscs.map(i => i.id);
+        const { data: hist } = await supabase
+          .from('historial_examenes')
+          .select('inscripcion_id,materia_id,estado_materia,nota_obtenida,oportunidad_nro')
+          .in('inscripcion_id', inscIds)
+          .in('materia_id', mats.map(m => m.id));
+
+        // 4. Construir tabla de corroboración
+        // Filas: alumnos | Columnas: materias
+        let okCount = 0, missCount = 0, warnCount = 0;
+
+        const rows = inscs.map(insc => {
+          const al = insc.alumnos;
+          const fila = { nombre: `${al?.nombres || ''} ${al?.apellidos || ''}`, ci: al?.ci || '—', materias: {} };
+
+          mats.forEach(m => {
+            const registros = hist?.filter(h => h.inscripcion_id === insc.id && h.materia_id === m.id) || [];
+            const aprobado = registros.find(h => h.estado_materia === 'Aprobado');
+            if (aprobado) { fila.materias[m.id] = { est: 'ok', nota: aprobado.nota_obtenida }; okCount++; }
+            else if (registros.length) { fila.materias[m.id] = { est: 'warn', nota: null }; warnCount++; }
+            else { fila.materias[m.id] = { est: 'miss', nota: null }; missCount++; }
+          });
+          return fila;
+        });
+
+        // Renderizar
+        document.getElementById('actasEmpty').style.display = 'none';
+        document.getElementById('actasTableWrap').style.display = 'block';
+        document.getElementById('actasEstadoBar').style.display = 'flex';
+        document.getElementById('btnExportarActas').style.display = 'inline-flex';
+
+        document.getElementById('actasOkCount').textContent = okCount;
+        document.getElementById('actasMissCount').textContent = missCount;
+        document.getElementById('actasWarnCount').textContent = warnCount;
+        document.getElementById('actasTotalCount').textContent = inscs.length;
+
+        // Head
+        document.getElementById('actasHead').innerHTML = `<tr>
       <th>#</th><th>Alumno</th><th>CI</th>
-      ${mats.map(m=>`<th title="${m.nombre}" style="max-width:80px;white-space:normal;font-size:.65rem;line-height:1.2">${m.codigo||m.nombre.slice(0,12)}</th>`).join('')}
+      ${mats.map(m => `<th title="${m.nombre}" style="max-width:80px;white-space:normal;font-size:.65rem;line-height:1.2">${m.codigo || m.nombre.slice(0, 12)}</th>`).join('')}
     </tr>`;
 
-    // Body
-    document.getElementById('actasBody').innerHTML = rows.map((r,i)=>`<tr>
-      <td class="td-mono">${i+1}</td>
+        // Body
+        document.getElementById('actasBody').innerHTML = rows.map((r, i) => `<tr>
+      <td class="td-mono">${i + 1}</td>
       <td class="td-bold" style="white-space:nowrap">${r.nombre}</td>
       <td class="td-mono">${r.ci}</td>
-      ${mats.map(m=>{
-        const cel = r.materias[m.id];
-        const cls = {ok:'acta-ok',miss:'acta-miss',warn:'acta-warn'}[cel.est];
-        const sym = {ok:'✓',miss:'✕',warn:'~'}[cel.est];
-        return `<td class="${cls}" style="text-align:center;font-weight:700;font-size:.8rem" title="${cel.nota!=null?'Nota: '+cel.nota:''}">${cel.nota!=null?cel.nota:sym}</td>`;
-      }).join('')}
+      ${mats.map(m => {
+          const cel = r.materias[m.id];
+          const cls = { ok: 'acta-ok', miss: 'acta-miss', warn: 'acta-warn' }[cel.est];
+          const sym = { ok: '✓', miss: '✕', warn: '~' }[cel.est];
+          return `<td class="${cls}" style="text-align:center;font-weight:700;font-size:.8rem" title="${cel.nota != null ? 'Nota: ' + cel.nota : ''}">${cel.nota != null ? cel.nota : sym}</td>`;
+        }).join('')}
     </tr>`).join('');
 
-    // Guardar para exportar
-    window._actasData = { rows, mats, inscs };
+        // Guardar para exportar
+        window._actasData = { rows, mats, inscs };
 
-  } catch(err) {
-    toast('Error: '+err.message,'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Corroborar`;
-  }
-});
+      } catch (err) {
+        toast('Error: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Corroborar`;
+      }
+    });
 
-document.getElementById('btnExportarActas').addEventListener('click', () => {
-  if (!window._actasData) return;
-  const { rows, mats } = window._actasData;
-  const csv = [
-    ['Alumno','CI',...mats.map(m=>m.nombre)].join(';'),
-    ...rows.map(r=>[r.nombre,r.ci,...mats.map(m=>{
-      const c = r.materias[m.id];
-      return c.nota!=null ? c.nota : ({ok:'Aprobado',miss:'Sin registro',warn:'Reprobado'}[c.est]);
-    })].join(';'))
-  ].join('\n');
-  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `actas_corroboracion_${new Date().toLocaleDateString('es-PY').replace(/\//g,'')}.csv`;
-  a.click();
-});
+    document.getElementById('btnExportarActas').addEventListener('click', () => {
+      if (!window._actasData) return;
+      const { rows, mats } = window._actasData;
+      const csv = [
+        ['Alumno', 'CI', ...mats.map(m => m.nombre)].join(';'),
+        ...rows.map(r => [r.nombre, r.ci, ...mats.map(m => {
+          const c = r.materias[m.id];
+          return c.nota != null ? c.nota : ({ ok: 'Aprobado', miss: 'Sin registro', warn: 'Reprobado' }[c.est]);
+        })].join(';'))
+      ].join('\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `actas_corroboracion_${new Date().toLocaleDateString('es-PY').replace(/\//g, '')}.csv`;
+      a.click();
+    });
 
-// ── HABILITADOS ACADÉMICOS ────────────────────────────────────
-import { MOODLE } from './config.js';
+    // ── HABILITADOS ACADÉMICOS ────────────────────────────────────
 
-let habPlanilla   = [];   // filas de la planilla en memoria
-let habCalendario = null; // registro de calendario_examenes vigente actual
+    let habPlanilla = [];   // filas de la planilla en memoria
+    let habCalendario = null; // registro de calendario_examenes vigente actual
 
-// ── helpers de UI ──────────────────────────────────────────────
-const ICONO_CARGAR = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
-const ICONO_BOLT   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
-const ICONO_CHECK  = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
-const OP_LABEL     = {1:'1ª Oportunidad', 2:'2ª Oportunidad', 3:'3ª Oportunidad', 4:'Extraordinaria'};
+    // ── helpers de UI ──────────────────────────────────────────────
+    const ICONO_CARGAR = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+    const ICONO_BOLT = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
+    const ICONO_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const OP_LABEL = { 1: '1ª Oportunidad', 2: '2ª Oportunidad', 3: '3ª Oportunidad', 4: 'Extraordinaria' };
 
-function habResetUI() {
-  habPlanilla   = [];
-  habCalendario = null;
-  document.getElementById('habCalendarioBanner').style.display = 'none';
-  document.getElementById('habCalendarioBanner').innerHTML     = '';
-  document.getElementById('habMateriaInfo').style.display      = 'none';
-  document.getElementById('habEmptyState').style.display       = '';
-  document.getElementById('habTableWrap').style.display        = 'none';
-  document.getElementById('btnSyncMoodle').style.display       = 'none';
-  document.getElementById('btnGuardarHab').style.display       = 'none';
-  document.getElementById('habTotal').textContent              = '';
-}
+    function habResetUI() {
+      habPlanilla = [];
+      habCalendario = null;
+      document.getElementById('habCalendarioBanner').style.display = 'none';
+      document.getElementById('habCalendarioBanner').innerHTML = '';
+      document.getElementById('habMateriaInfo').style.display = 'none';
+      document.getElementById('habEmptyState').style.display = '';
+      document.getElementById('habTableWrap').style.display = 'none';
+      document.getElementById('btnSyncMoodle').style.display = 'none';
+      document.getElementById('btnGuardarHab').style.display = 'none';
+      document.getElementById('habTotal').textContent = '';
+    }
 
-// ── Cascada: Carrera → Cohorte + Año ──────────────────────────
-document.getElementById('filtroCarreraHab').addEventListener('change', async function() {
-  const carreraId = this.value;
-  const selCoh  = document.getElementById('filtroCohorteHab');
-  const selAnho = document.getElementById('filtroAnhoHab');
-  const selMat  = document.getElementById('filtroMateriaHab');
+    // ── Cascada: Carrera → Cohorte + Año ──────────────────────────
+    document.getElementById('filtroCarreraHab').addEventListener('change', async function () {
+      const carreraId = this.value;
+      const selCoh = document.getElementById('filtroCohorteHab');
+      const selAnho = document.getElementById('filtroAnhoHab');
+      const selMat = document.getElementById('filtroMateriaHab');
 
-  selCoh.innerHTML  = '<option value="">— Cohorte —</option>';  selCoh.disabled  = true;
-  selAnho.innerHTML = '<option value="">— Año / Curso —</option>'; selAnho.disabled = true;
-  selMat.innerHTML  = '<option value="">— Materia —</option>';  selMat.disabled  = true;
-  document.getElementById('btnCargarHab').disabled = true;
-  habResetUI();
+      selCoh.innerHTML = '<option value="">— Cohorte —</option>'; selCoh.disabled = true;
+      selAnho.innerHTML = '<option value="">— Año / Curso —</option>'; selAnho.disabled = true;
+      selMat.innerHTML = '<option value="">— Materia —</option>'; selMat.disabled = true;
+      document.getElementById('btnCargarHab').disabled = true;
+      habResetUI();
 
-  if (!carreraId) return;
+      if (!carreraId) return;
 
-  const { data: cohs } = await supabase
-    .from('cohortes').select('id,nro_cohorte,anho_inicio')
-    .eq('carrera_id', carreraId).order('anho_inicio', {ascending:false});
+      const { data: cohs } = await supabase
+        .from('cohortes').select('id,nro_cohorte,anho_inicio')
+        .eq('carrera_id', carreraId).order('anho_inicio', { ascending: false });
 
-  if (cohs?.length) {
-    selCoh.innerHTML = '<option value="">— Todos los cohortes —</option>' +
-      cohs.map(c=>`<option value="${c.id}">${c.nro_cohorte}ª Cohorte — ${c.anho_inicio}</option>`).join('');
-    selCoh.disabled = false;
-  }
+      if (cohs?.length) {
+        const cohortesFiltrados = sesion.rol === 'Docente' ? cohs.filter(ch => cohortesDocente.includes(ch.id)) : cohs;
+        selCoh.innerHTML = '<option value="">— Todos los cohortes —</option>' +
+          cohortesFiltrados.map(c => `<option value="${c.id}">${c.nro_cohorte}ª Cohorte — ${c.anho_inicio}</option>`).join('');
+        selCoh.disabled = false;
+      }
 
-  const car = carreras.find(c=>String(c.id)===carreraId);
-  const dur = car?.duracion_anhos || 4;
-  let opA = '<option value="">— Año / Curso —</option>';
-  for (let y=1;y<=dur;y++) opA += `<option value="${y}">${y}º año</option>`;
-  selAnho.innerHTML = opA;
-  selAnho.disabled  = false;
-});
+      const car = carreras.find(c => String(c.id) === carreraId);
+      const dur = car?.duracion_anhos || 4;
+      let opA = '<option value="">— Año / Curso —</option>';
+      for (let y = 1; y <= dur; y++) opA += `<option value="${y}">${y}º año</option>`;
+      selAnho.innerHTML = opA;
+      selAnho.disabled = false;
+    });
 
-// ── Año → Materias (filtradas por docente si aplica) ──────────
-document.getElementById('filtroAnhoHab').addEventListener('change', async function() {
-  const carreraId = document.getElementById('filtroCarreraHab').value;
-  const anho      = this.value;
-  const selMat    = document.getElementById('filtroMateriaHab');
-  selMat.innerHTML = '<option value="">— Materia —</option>';
-  selMat.disabled  = true;
-  document.getElementById('btnCargarHab').disabled = true;
-  habResetUI();
+    // ── Año → Materias (filtradas por docente si aplica) ──────────
+    document.getElementById('filtroAnhoHab').addEventListener('change', async function () {
+      const carreraId = document.getElementById('filtroCarreraHab').value;
+      const anho = this.value;
+      const selMat = document.getElementById('filtroMateriaHab');
+      selMat.innerHTML = '<option value="">— Materia —</option>';
+      selMat.disabled = true;
+      document.getElementById('btnCargarHab').disabled = true;
+      habResetUI();
 
-  if (!carreraId || !anho) return;
+      if (!carreraId || !anho) return;
 
-  const { data: mats } = await supabase.from('materias')
-    .select('id,nombre,codigo').eq('carrera_id', carreraId)
-    .eq('anho_curricula', Number(anho)).eq('activa', true).order('nombre');
+      const { data: mats } = await supabase.from('materias')
+        .select('id,nombre,codigo').eq('carrera_id', carreraId)
+        .eq('anho_curricula', Number(anho)).eq('activa', true).order('modulo_nro');
 
-  let lista = mats || [];
+      let lista = mats || [];
 
-  // Docente: solo sus materias activas
-  if (sesion.rol === 'Docente' && docenteActual) {
-    const { data: dm } = await supabase.from('docentes_materias')
-      .select('materia_id').eq('docente_id', docenteActual.id).eq('activo', true);
-    const misIds = new Set((dm||[]).map(x=>x.materia_id));
-    lista = lista.filter(m => misIds.has(m.id));
-  }
 
-  selMat.innerHTML = '<option value="">— Materia —</option>' +
-    lista.map(m=>`<option value="${m.id}">${m.nombre} [${m.codigo}]</option>`).join('');
-  selMat.disabled  = false;
-});
+      selMat.innerHTML = '<option value="">— Materia —</option>' +
+        lista.map(m => `<option value="${m.id}">${m.nombre} [${m.codigo}]</option>`).join('');
+      selMat.disabled = false;
+    });
 
-document.getElementById('filtroMateriaHab').addEventListener('change', function() {
-  document.getElementById('btnCargarHab').disabled = !this.value;
-  habResetUI();
-});
+    document.getElementById('filtroMateriaHab').addEventListener('change', function () {
+      document.getElementById('btnCargarHab').disabled = !this.value;
+      habResetUI();
+    });
 
-// También recargar si cambia la oportunidad y ya hay planilla
-document.getElementById('habOportunidad').addEventListener('change', () => {
-  if (habPlanilla.length > 0) document.getElementById('btnCargarHab').click();
-});
+    // También recargar si cambia la oportunidad y ya hay planilla
+    document.getElementById('habOportunidad').addEventListener('change', () => {
+      if (habPlanilla.length > 0) document.getElementById('btnCargarHab').click();
+    });
 
-// ── Cargar planilla ────────────────────────────────────────────
-document.getElementById('btnCargarHab').addEventListener('click', async () => {
-  const carreraId = document.getElementById('filtroCarreraHab').value;
-  const cohorteId = document.getElementById('filtroCohorteHab').value;
-  const anho      = document.getElementById('filtroAnhoHab').value;
-  const materiaId = document.getElementById('filtroMateriaHab').value;
-  const opNro     = Number(document.getElementById('habOportunidad').value);
+    // ── Cargar planilla ────────────────────────────────────────────
+    document.getElementById('btnCargarHab').addEventListener('click', async () => {
+      const carreraId = document.getElementById('filtroCarreraHab').value;
+      const cohorteId = document.getElementById('filtroCohorteHab').value;
+      const anho = document.getElementById('filtroAnhoHab').value;
+      const materiaId = document.getElementById('filtroMateriaHab').value;
+      const opNro = Number(document.getElementById('habOportunidad').value);
 
-  if (!materiaId) { toast('Seleccioná una materia', 'warning'); return; }
+      if (!materiaId) { toast('Seleccioná una materia', 'warning'); return; }
 
-  const btn = document.getElementById('btnCargarHab');
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner" style="width:12px;height:12px;border-width:2px"></span> Cargando...`;
+      const btn = document.getElementById('btnCargarHab');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner" style="width:12px;height:12px;border-width:2px"></span> Cargando...`;
 
-  habResetUI();
+      habResetUI();
 
-  try {
-    // ── 1. Buscar período VIGENTE en calendario_examenes ──────
-    let calQ = supabase.from('calendario_examenes')
-      .select('id, oportunidad_nro, fecha_desde, fecha_hasta, estado, id_moodle')
-      .eq('materia_id', Number(materiaId))
-      .eq('oportunidad_nro', opNro)
-      .eq('estado', 'VIGENTE');
+      try {
+        // ── 1. Buscar período VIGENTE en calendario_examenes ──────
+        let calQ = supabase.from('calendario_examenes')
+          .select('id, oportunidad_nro, fecha_desde, fecha_hasta, estado, id_moodle')
+          .eq('materia_id', Number(materiaId))
+          .eq('oportunidad_nro', opNro)
+          .eq('estado', 'VIGENTE');
 
-    if (cohorteId) calQ = calQ.eq('cohorte_id', cohorteId);
+        if (cohorteId) calQ = calQ.eq('cohorte_id', cohorteId);
 
-    const { data: cals } = await calQ.limit(1);
-    const cal = cals?.[0] || null;
+        const { data: cals } = await calQ.limit(1);
+        const cal = cals?.[0] || null;
 
-    // Mostrar banner según si hay período vigente
-    const banner = document.getElementById('habCalendarioBanner');
-    if (!cal) {
-      banner.innerHTML = `
+        // Mostrar banner según si hay período vigente
+        const banner = document.getElementById('habCalendarioBanner');
+        if (!cal) {
+          banner.innerHTML = `
         <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:var(--radius);padding:10px 16px;font-size:.82rem;display:flex;align-items:center;gap:10px">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span style="color:#92400e">No hay un período <strong>VIGENTE</strong> para esta materia y oportunidad en el calendario de exámenes. Activá el período en la tab <em>Calendario de exámenes</em> para poder cargar la planilla.</span>
         </div>`;
-      banner.style.display = '';
-      document.getElementById('habEmptyMsg').textContent = 'Sin período vigente para esta materia.';
-      return;
-    }
+          banner.style.display = '';
+          document.getElementById('habEmptyMsg').textContent = 'Sin período vigente para esta materia.';
+          return;
+        }
 
-    habCalendario = cal;
+        habCalendario = cal;
 
-    // Banner verde con info del período + campo id_moodle editable
-    const desde  = new Date(cal.fecha_desde).toLocaleDateString('es-PY');
-    const hasta  = new Date(cal.fecha_hasta).toLocaleDateString('es-PY');
-    const canEdit= ['Admin','Academico'].includes(sesion.rol);
-    banner.innerHTML = `
+        // Banner verde con info del período + campo id_moodle editable
+        const desde = new Date(cal.fecha_desde).toLocaleDateString('es-PY');
+        const hasta = new Date(cal.fecha_hasta).toLocaleDateString('es-PY');
+        const canEdit = ['Admin', 'Academico'].includes(sesion.rol);
+        banner.innerHTML = `
       <div style="background:var(--verde-light);border:1px solid rgba(26,107,60,.2);border-radius:var(--radius);padding:10px 16px;font-size:.82rem;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--verde)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         <span style="color:var(--verde);font-weight:600">Período VIGENTE</span>
@@ -1303,207 +1820,211 @@ document.getElementById('btnCargarHab').addEventListener('click', async () => {
         <span style="color:var(--txt-muted)">ID Moodle (course):</span>
         <div style="display:flex;align-items:center;gap:6px">
           <input id="habIdMoodle" type="text" class="form-control" style="width:140px;font-family:var(--font-mono);font-size:.8rem"
-            value="${cal.id_moodle||''}" placeholder="ej: 42" ${canEdit?'':'readonly'}>
+            value="${cal.id_moodle || ''}" placeholder="ej: 42" ${canEdit ? '' : 'readonly'}>
           ${canEdit ? `<button class="btn btn-ghost btn-sm" onclick="habGuardarIdMoodle()" title="Guardar ID Moodle">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           </button>` : ''}
         </div>
         ${!cal.id_moodle && !canEdit ? `<span style="color:#d97706;font-size:.75rem">⚠ Sin ID Moodle — pedí al administrador que lo configure</span>` : ''}
       </div>`;
-    banner.style.display = '';
+        banner.style.display = '';
 
-    // ── 2. Inscripciones ACTIVAS del cohorte/año ──────────────
-    let q = supabase.from('inscripciones_anuales')
-      .select('id, alumno_id, anho_cursada, alumnos(nombres,apellidos,ci)')
-      .eq('estado', 'Activo')  // solo inscripciones activas
-      .order('alumnos(apellidos)');
+        // ── 2. Inscripciones ACTIVAS del cohorte/año ──────────────
+        let q = supabase.from('inscripciones_anuales')
+          .select('id, alumno_id, anho_cursada, alumnos(nombres,apellidos,ci)')
+          .eq('estado', 'Activo')  // solo inscripciones activas
+          .order('alumnos(apellidos)');
 
-    if (anho) q = q.eq('anho_cursada', Number(anho));
+        if (anho) q = q.eq('anho_cursada', Number(anho));
 
-    if (cohorteId) {
-      q = q.eq('cohorte_id', cohorteId);
-    } else {
-      const { data: cIds } = await supabase.from('cohortes').select('id').eq('carrera_id', carreraId);
-      if (!cIds?.length) { toast('Sin cohortes para esta carrera', 'warning'); return; }
-      q = q.in('cohorte_id', cIds.map(c=>c.id));
-    }
+        if (cohorteId) {
+          q = q.eq('cohorte_id', cohorteId);
+        } else {
+          const { data: cIds } = await supabase.from('cohortes').select('id').eq('carrera_id', carreraId);
+          if (!cIds?.length) { toast('Sin cohortes para esta carrera', 'warning'); return; }
+          q = q.in('cohorte_id', cIds.map(c => c.id));
+        }
 
-    const { data: inscs } = await q;
-    if (!inscs?.length) {
-      document.getElementById('habEmptyMsg').textContent = 'No hay alumnos activos para los filtros seleccionados.';
-      return;
-    }
+        const { data: inscs } = await q;
+        if (!inscs?.length) {
+          document.getElementById('habEmptyMsg').textContent = 'No hay alumnos activos para los filtros seleccionados.';
+          return;
+        }
 
-    // ── 3. Historial existente para esta materia/oportunidad ──
-    const inscIds = inscs.map(i=>i.id);
-    const { data: hist } = await supabase.from('historial_examenes')
-      .select('id,inscripcion_id,estado_materia,nota_obtenida,hab_academico,hab_administrativo,calif_proceso,calif_examen_final')
-      .in('inscripcion_id', inscIds)
-      .eq('materia_id', Number(materiaId))
-      .eq('oportunidad_nro', opNro);
+        // ── 3. Historial existente para esta materia/oportunidad ──
+        const inscIds = inscs.map(i => i.id);
+        const { data: hist } = await supabase.from('historial_examenes')
+          .select('id,inscripcion_id,estado_materia,nota_obtenida,hab_academico,hab_administrativo,calif_proceso,calif_examen_final')
+          .in('inscripcion_id', inscIds)
+          .eq('materia_id', Number(materiaId))
+          .eq('oportunidad_nro', opNro);
 
-    const histMap = {};
-    (hist||[]).forEach(h => { histMap[h.inscripcion_id] = h; });
+        const histMap = {};
+        (hist || []).forEach(h => { histMap[h.inscripcion_id] = h; });
 
-    // ── 4. Construir planilla ─────────────────────────────────
-    habPlanilla = inscs.map(i => ({
-      inscripcion_id:     i.id,
-      alumno_id:          i.alumno_id,
-      alumno:             i.alumnos,
-      materia_id:         Number(materiaId),
-      oportunidad_nro:    opNro,
-      historial_id:       histMap[i.id]?.id            || null,
-      hab_administrativo: histMap[i.id]?.hab_administrativo || false,
-      hab_academico:      histMap[i.id]?.hab_academico  || false,
-      calif_proceso:      histMap[i.id]?.calif_proceso  ?? '',
-      calif_examen_final: histMap[i.id]?.calif_examen_final ?? '',
-      nota_obtenida:      histMap[i.id]?.nota_obtenida  ?? null,
-      estado_materia:     histMap[i.id]?.estado_materia || null,
-      _dirty: false,
-      _moodle: false,  // marcador de que vino de Moodle
-    }));
+        // ── 4. Construir planilla ─────────────────────────────────
+        habPlanilla = inscs.map(i => ({
+          inscripcion_id: i.id,
+          alumno_id: i.alumno_id,
+          alumno: i.alumnos,
+          materia_id: Number(materiaId),
+          oportunidad_nro: opNro,
+          historial_id: histMap[i.id]?.id || null,
+          hab_administrativo: histMap[i.id]?.hab_administrativo || false,
+          hab_academico: histMap[i.id]?.hab_academico || false,
+          calif_proceso: histMap[i.id]?.calif_proceso ?? '',
+          calif_examen_final: histMap[i.id]?.calif_examen_final ?? '',
+          nota_obtenida: histMap[i.id]?.nota_obtenida ?? null,
+          estado_materia: histMap[i.id]?.estado_materia || null,
+          _dirty: false,
+          _moodle: false,  // marcador de que vino de Moodle
+        }));
 
-    // Info bar
-    const matNombre = document.getElementById('filtroMateriaHab').selectedOptions[0]?.textContent || '—';
-    document.getElementById('habMateriaNombre').textContent   = matNombre;
-    document.getElementById('habPeriodoLabel').textContent    = `${desde} → ${hasta}`;
-    document.getElementById('habOportunidadLabel').textContent= OP_LABEL[opNro];
-    document.getElementById('habMateriaInfo').style.display   = 'flex';
+        // Info bar
+        const matNombre = document.getElementById('filtroMateriaHab').selectedOptions[0]?.textContent || '—';
+        document.getElementById('habMateriaNombre').textContent = matNombre;
+        document.getElementById('habPeriodoLabel').textContent = `${desde} → ${hasta}`;
+        document.getElementById('habOportunidadLabel').textContent = OP_LABEL[opNro];
+        document.getElementById('habMateriaInfo').style.display = 'flex';
 
-    // Botón Moodle: solo si hay id_moodle
-    const btnSync = document.getElementById('btnSyncMoodle');
-    btnSync.style.display = cal.id_moodle ? 'inline-flex' : 'none';
+        // Botón Moodle: solo si hay id_moodle
+        const btnSync = document.getElementById('btnSyncMoodle');
+        btnSync.style.display = cal.id_moodle ? 'inline-flex' : 'none';
 
-    renderPlanillaHab();
-    document.getElementById('habEmptyState').style.display  = 'none';
-    document.getElementById('habTableWrap').style.display   = 'block';
-    document.getElementById('btnGuardarHab').style.display  = 'inline-flex';
+        renderPlanillaHab();
+        document.getElementById('habEmptyState').style.display = 'none';
+        document.getElementById('habTableWrap').style.display = 'block';
+        document.getElementById('btnGuardarHab').style.display = 'inline-flex';
 
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `${ICONO_CARGAR} Cargar planilla`;
-  }
-});
-
-// ── Guardar id_moodle en calendario_examenes ──────────────────
-window.habGuardarIdMoodle = async function() {
-  const val = document.getElementById('habIdMoodle')?.value?.trim();
-  if (!habCalendario) return;
-  await supabase.from('calendario_examenes')
-    .update({ id_moodle: val || null })
-    .eq('id', habCalendario.id);
-  habCalendario.id_moodle = val || null;
-  // Mostrar/ocultar botón Moodle
-  document.getElementById('btnSyncMoodle').style.display = val ? 'inline-flex' : 'none';
-  toast('ID Moodle guardado', 'success');
-  // Recargar calendarios también para que se vea actualizado en esa tab
-  await cargarCalendarios();
-};
-
-// ── Sincronizar con Moodle ────────────────────────────────────
-document.getElementById('btnSyncMoodle').addEventListener('click', async () => {
-  if (!habCalendario?.id_moodle) {
-    toast('Cargá el ID de Moodle primero', 'warning'); return;
-  }
-  if (!habPlanilla.length) {
-    toast('Cargá la planilla primero', 'warning'); return;
-  }
-
-  const btn = document.getElementById('btnSyncMoodle');
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner" style="width:12px;height:12px;border-width:2px"></span> Conectando...`;
-
-  try {
-    const courseId = habCalendario.id_moodle;
-    const base = `${MOODLE.URL}/webservice/rest/server.php?wstoken=${MOODLE.TOKEN}&moodlewsrestformat=json`;
-
-    // ── Llamada 1: notas del curso ────────────────────────────
-    const resNotas = await fetch(`${base}&wsfunction=gradereport_user_get_grade_items&courseid=${courseId}`);
-    if (!resNotas.ok) throw new Error(`HTTP ${resNotas.status}`);
-    const dataNotas = await resNotas.json();
-    if (dataNotas.exception) throw new Error(dataNotas.message);
-
-    const usergrades = dataNotas.usergrades || [];
-    if (!usergrades.length) { toast('Moodle no devolvió alumnos para este curso', 'warning'); return; }
-
-    // Mapa moodleUserId → puntaje total del curso
-    const userIdToNota = {};
-    usergrades.forEach(u => {
-      const total = u.gradeitems?.find(g => g.itemtype === 'course');
-      if (total?.graderaw !== null && total?.graderaw !== undefined) {
-        userIdToNota[u.userid] = Number(total.graderaw);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `${ICONO_CARGAR} Cargar planilla`;
       }
     });
 
-    // ── Llamada 2: buscar usuarios por CI (username en Moodle) ─
-    const cis = habPlanilla.map(f => f.alumno?.ci).filter(Boolean);
-    if (!cis.length) { toast('Sin CIs en la planilla', 'warning'); return; }
+    // ── Guardar id_moodle en calendario_examenes ──────────────────
+    window.habGuardarIdMoodle = async function () {
+      const val = document.getElementById('habIdMoodle')?.value?.trim();
+      if (!habCalendario) return;
+      await supabase.from('calendario_examenes')
+        .update({ id_moodle: val || null })
+        .eq('id', habCalendario.id);
+      habCalendario.id_moodle = val || null;
+      // Mostrar/ocultar botón Moodle
+      document.getElementById('btnSyncMoodle').style.display = val ? 'inline-flex' : 'none';
+      toast('ID Moodle guardado', 'success');
+      // Recargar calendarios también para que se vea actualizado en esa tab
+      await cargarCalendarios();
+    };
 
-    const paramsCIs = cis.map((ci,i) => `values[${i}]=${encodeURIComponent(ci)}`).join('&');
-    const resUsers = await fetch(`${base}&wsfunction=core_user_get_users_by_field&field=username&${paramsCIs}`);
-    if (!resUsers.ok) throw new Error(`HTTP ${resUsers.status}`);
-    const usuarios = await resUsers.json();
-    if (usuarios.exception) throw new Error(usuarios.message);
+    // ── Sincronizar con Moodle ────────────────────────────────────
+    document.getElementById('btnSyncMoodle').addEventListener('click', async () => {
+      if (!habCalendario?.id_moodle) {
+        toast('Cargá el ID de Moodle primero', 'warning'); return;
+      }
+      if (!habPlanilla.length) {
+        toast('Cargá la planilla primero', 'warning'); return;
+      }
 
-    // Mapa CI → moodleUserId
-    const ciToUserId = {};
-    (usuarios||[]).forEach(u => { ciToUserId[u.username] = u.id; });
+      const btn = document.getElementById('btnSyncMoodle');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner" style="width:12px;height:12px;border-width:2px"></span> Conectando...`;
 
-    // ── Cruzar CI → moodleUserId → nota ──────────────────────
-    let actualizados = 0;
-    habPlanilla.forEach((f, i) => {
-      const uid  = ciToUserId[f.alumno?.ci];
-      if (!uid) return;
-      const nota = userIdToNota[uid];
-      if (nota === undefined) return;
-      habPlanilla[i].calif_proceso = nota;
-      habPlanilla[i].hab_academico = nota >= MOODLE.MINIMO_PROCESO;
-      habPlanilla[i]._dirty  = true;
-      habPlanilla[i]._moodle = true;
-      actualizados++;
+      try {
+        const courseId = habCalendario.id_moodle;
+        const base = `${MOODLE.URL}/webservice/rest/server.php?wstoken=${MOODLE.TOKEN}&moodlewsrestformat=json`;
+
+        // ── Llamada 1: notas del curso ────────────────────────────
+        const resNotas = await fetch(`${base}&wsfunction=gradereport_user_get_grade_items&courseid=${courseId}`);
+        if (!resNotas.ok) throw new Error(`HTTP ${resNotas.status}`);
+        const dataNotas = await resNotas.json();
+        if (dataNotas.exception) throw new Error(dataNotas.message);
+
+
+
+        const usergrades = dataNotas.usergrades || [];
+        if (!usergrades.length) { toast('Moodle no devolvió alumnos para este curso', 'warning'); return; }
+
+        // Mapa moodleUserId → puntaje total del curso
+        const userIdToNota = {};
+        usergrades.forEach(u => {
+          const total = u.gradeitems?.find(g => g.itemtype === 'course');
+          if (total?.graderaw !== null && total?.graderaw !== undefined) {
+            userIdToNota[u.userid] = Number(total.graderaw);
+          }
+        });
+
+
+        // ── Llamada 2: buscar usuarios por CI (username en Moodle) ─
+        const cis = habPlanilla.map(f => f.alumno?.ci).filter(Boolean);
+        if (!cis.length) { toast('Sin CIs en la planilla', 'warning'); return; }
+
+        const paramsCIs = cis.map((ci, i) => `values[${i}]=${encodeURIComponent(ci)}`).join('&');
+        const resUsers = await fetch(`${base}&wsfunction=core_user_get_users_by_field&field=username&${paramsCIs}`);
+        if (!resUsers.ok) throw new Error(`HTTP ${resUsers.status}`);
+        const usuarios = await resUsers.json();
+        if (usuarios.exception) throw new Error(usuarios.message);
+
+        // Mapa CI → moodleUserId
+        const ciToUserId = {};
+        (usuarios || []).forEach(u => { ciToUserId[u.username] = u.id; });
+        // ── Cruzar CI → moodleUserId → nota ──────────────────────
+        let actualizados = 0;
+        habPlanilla.forEach((f, i) => {
+          const uid = ciToUserId[f.alumno?.ci];
+          if (!uid) return;
+          const nota = userIdToNota[uid];
+          if (nota === undefined) return;
+          
+          const notaEscala = Math.round(nota);
+          habPlanilla[i].calif_proceso = notaEscala;
+          habPlanilla[i].hab_academico = nota >= MOODLE.MINIMO_PROCESO;
+          habPlanilla[i]._dirty = true;
+          habPlanilla[i]._moodle = true;
+          actualizados++;
+        });
+
+        const sinCuenta = cis.length - Object.keys(ciToUserId).length;
+        if (actualizados === 0) {
+          toast('Sin coincidencias. Verificá que los usernames en Moodle sean los CIs.', 'warning');
+        } else {
+          toast(`${actualizados} alumno${actualizados > 1 ? 's' : ''} sincronizado${actualizados > 1 ? 's' : ''}${sinCuenta > 0 ? ` · ${sinCuenta} sin cuenta en Moodle` : ''}`, 'success');
+        }
+        renderPlanillaHab();
+
+      } catch (e) {
+        toast('Error Moodle: ' + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `${ICONO_BOLT} Sincronizar Moodle`;
+      }
     });
 
-    const sinCuenta = cis.length - Object.keys(ciToUserId).length;
-    if (actualizados === 0) {
-      toast('Sin coincidencias. Verificá que los usernames en Moodle sean los CIs.', 'warning');
-    } else {
-      toast(`${actualizados} alumno${actualizados>1?'s':''} sincronizado${actualizados>1?'s':''}${sinCuenta > 0 ? ` · ${sinCuenta} sin cuenta en Moodle` : ''}`, 'success');
-    }
-    renderPlanillaHab();
+    // ── Render planilla ────────────────────────────────────────────
+    function renderPlanillaHab() {
+      const habCount = habPlanilla.filter(r => r.hab_academico).length;
+      document.getElementById('habCountHab').textContent = habCount;
+      document.getElementById('habCountTotal').textContent = habPlanilla.length;
+      document.getElementById('habTotal').textContent = `${habPlanilla.length} alumnos`;
 
-  } catch(e) {
-    toast('Error Moodle: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `${ICONO_BOLT} Sincronizar Moodle`;
-  }
-});
+      document.getElementById('tbodyHab').innerHTML = habPlanilla.map((r, idx) => {
+        const cp = r.calif_proceso !== '' ? Number(r.calif_proceso) : null;
+        const ce = r.calif_examen_final !== '' ? Number(r.calif_examen_final) : null;
+        const notaFinal = (cp !== null && ce !== null)
+          ? ((cp + ce) / 2).toFixed(1)
+          : (r.nota_obtenida !== null ? r.nota_obtenida : '');
 
-// ── Render planilla ────────────────────────────────────────────
-function renderPlanillaHab() {
-  const habCount = habPlanilla.filter(r => r.hab_academico).length;
-  document.getElementById('habCountHab').textContent   = habCount;
-  document.getElementById('habCountTotal').textContent = habPlanilla.length;
-  document.getElementById('habTotal').textContent      = `${habPlanilla.length} alumnos`;
+        const aprobado = notaFinal !== '' && Number(notaFinal) >= 6;
+        const puedeAcad = r.hab_administrativo;
+        const rowBg = r._moodle ? 'background:rgba(26,107,60,.05)' : r._dirty ? 'background:rgba(255,193,7,.06)' : '';
+        const moodleBadge = r._moodle
+          ? `<span style="font-size:.6rem;background:#dcfce7;color:#16a34a;border-radius:3px;padding:1px 5px;margin-left:4px">Moodle</span>`
+          : '';
 
-  document.getElementById('tbodyHab').innerHTML = habPlanilla.map((r, idx) => {
-    const cp = r.calif_proceso !== '' ? Number(r.calif_proceso) : null;
-    const ce = r.calif_examen_final !== '' ? Number(r.calif_examen_final) : null;
-    const notaFinal = (cp !== null && ce !== null)
-      ? ((cp + ce) / 2).toFixed(1)
-      : (r.nota_obtenida !== null ? r.nota_obtenida : '');
-
-    const aprobado    = notaFinal !== '' && Number(notaFinal) >= 6;
-    const puedeAcad   = r.hab_administrativo;
-    const rowBg       = r._moodle ? 'background:rgba(26,107,60,.05)' : r._dirty ? 'background:rgba(255,193,7,.06)' : '';
-    const moodleBadge = r._moodle
-      ? `<span style="font-size:.6rem;background:#dcfce7;color:#16a34a;border-radius:3px;padding:1px 5px;margin-left:4px">Moodle</span>`
-      : '';
-
-    return `<tr id="habRow${idx}" style="transition:background .2s;${rowBg}">
-      <td class="td-mono">${idx+1}</td>
-      <td class="td-bold">${r.alumno?.nombres||''} ${r.alumno?.apellidos||''}</td>
-      <td class="td-mono">${r.alumno?.ci||'—'}</td>
+        return `<tr id="habRow${idx}" style="transition:background .2s;${rowBg}">
+      <td class="td-mono">${idx + 1}</td>
+      <td class="td-bold">${r.alumno?.nombres || ''} ${r.alumno?.apellidos || ''}</td>
+      <td class="td-mono">${r.alumno?.ci || '—'}</td>
       <td style="text-align:center">
         <div style="display:flex;align-items:center;justify-content:center;gap:4px">
           <input type="number" class="nota-input" min="0" max="10" step="0.1"
@@ -1519,59 +2040,63 @@ function renderPlanillaHab() {
           oninput="habCambiarCalif(${idx},'calif_examen_final',this.value)"
           style="width:62px;text-align:center">
       </td>
-      <td style="text-align:center;font-weight:700;font-family:var(--font-mono);color:${notaFinal!==''?(aprobado?'var(--verde)':'var(--danger)'):'var(--txt-muted)'}" id="habNota${idx}">
+      <td style="text-align:center;font-weight:700;font-family:var(--font-mono);color:${notaFinal !== '' ? (aprobado ? 'var(--verde)' : 'var(--danger)') : 'var(--txt-muted)'}" id="habNota${idx}">
         ${notaFinal !== '' ? notaFinal : '—'}
       </td>
       <td style="text-align:center">
-        <span class="badge ${r.hab_administrativo?'badge-success':'badge-danger'}" style="font-size:.65rem">
+        <span class="badge ${r.hab_administrativo ? 'badge-success' : 'badge-danger'}" style="font-size:.65rem">
           ${r.hab_administrativo ? 'Habilitado' : 'No hab.'}
         </span>
       </td>
       <td style="text-align:center">
-        <label style="display:inline-flex;align-items:center;gap:5px;cursor:${puedeAcad?'pointer':'not-allowed'};opacity:${puedeAcad?1:.45}">
-          <input type="checkbox" ${r.hab_academico?'checked':''} ${puedeAcad?'':'disabled'}
-            onchange="habToggleAcad(${idx},this.checked)"
-            style="accent-color:var(--verde);width:15px;height:15px">
-          <span style="font-size:.78rem;color:${r.hab_academico?'var(--verde)':'var(--txt-muted)'}">
-            ${r.hab_academico ? 'Sí' : 'No'}
-          </span>
-        </label>
-      </td>
+  <label style="display:inline-flex; align-items:center; gap:5px; cursor:${puedeAcad ? 'pointer' : 'not-allowed'}; opacity:${puedeAcad ? 1 : .65}">
+    
+    <input type="checkbox" 
+      ${r.hab_academico ? 'checked' : ''} 
+      onchange="habToggleAcad(${idx},this.checked)"
+      style="accent-color:var(--verde); width:16px; height:16px; ${puedeAcad ? '' : 'pointer-events: none;'}">
+    
+    <span style="font-size:.78rem; font-weight: 600; color:${r.hab_academico ? 'var(--verde)' : 'var(--txt-muted)'}">
+      ${r.hab_academico ? 'Sí' : 'No'}
+    </span>
+
+  </label>
+</td>
     </tr>`;
-  }).join('');
-}
+      }).join('');
+    }
 
-window.habCambiarCalif = function(idx, campo, valor) {
-  habPlanilla[idx][campo]  = valor !== '' ? Number(valor) : '';
-  habPlanilla[idx]._dirty  = true;
-  habPlanilla[idx]._moodle = false; // editado manualmente, quitar badge Moodle
+    window.habCambiarCalif = function (idx, campo, valor) {
+      habPlanilla[idx][campo] = valor !== '' ? Number(valor) : '';
+      habPlanilla[idx]._dirty = true;
+      habPlanilla[idx]._moodle = false; // editado manualmente, quitar badge Moodle
 
-  const cp = habPlanilla[idx].calif_proceso      !== '' ? Number(habPlanilla[idx].calif_proceso)      : null;
-  const ce = habPlanilla[idx].calif_examen_final !== '' ? Number(habPlanilla[idx].calif_examen_final) : null;
-  const notaFinal = (cp !== null && ce !== null) ? ((cp + ce) / 2).toFixed(1) : '';
+      const cp = habPlanilla[idx].calif_proceso !== '' ? Number(habPlanilla[idx].calif_proceso) : null;
+      const ce = habPlanilla[idx].calif_examen_final !== '' ? Number(habPlanilla[idx].calif_examen_final) : null;
+      const notaFinal = (cp !== null && ce !== null) ? ((cp + ce) / 2).toFixed(1) : '';
 
-  habPlanilla[idx].nota_obtenida = notaFinal !== '' ? Number(notaFinal) : null;
+      habPlanilla[idx].nota_obtenida = notaFinal !== '' ? Number(notaFinal) : null;
 
-  const td = document.getElementById('habNota'+idx);
-  if (td) {
-    const ap = notaFinal !== '' && Number(notaFinal) >= 6;
-    td.textContent = notaFinal !== '' ? notaFinal : '—';
-    td.style.color = notaFinal !== '' ? (ap ? 'var(--verde)' : 'var(--danger)') : 'var(--txt-muted)';
-  }
+      const td = document.getElementById('habNota' + idx);
+      if (td) {
+        const ap = notaFinal !== '' && Number(notaFinal) >= 6;
+        td.textContent = notaFinal !== '' ? notaFinal : '—';
+        td.style.color = notaFinal !== '' ? (ap ? 'var(--verde)' : 'var(--danger)') : 'var(--txt-muted)';
+      }
 
-  // Auto-habilitar académicamente si nota >= 6 y tiene hab administrativa
-  if (notaFinal !== '' && habPlanilla[idx].hab_administrativo) {
-    habPlanilla[idx].hab_academico = Number(notaFinal) >= 6;
-  }
-};
+      // Auto-habilitar académicamente si nota >= 6 y tiene hab administrativa
+      if (notaFinal !== '' && habPlanilla[idx].hab_administrativo) {
+        habPlanilla[idx].hab_academico = Number(notaFinal) >= 6;
+      }
+    };
 
-window.habToggleAcad = function(idx, checked) {
-  habPlanilla[idx].hab_academico = checked;
-  habPlanilla[idx]._dirty = true;
-  renderPlanillaHab();
-};
+    window.habToggleAcad = function (idx, checked) {
+      habPlanilla[idx].hab_academico = checked;
+      habPlanilla[idx]._dirty = true;
+      renderPlanillaHab();
+    };
 
-// ── Guardar planilla (upsert historial_examenes) ──────────────
+    // ── Guardar planilla (upsert historial_examenes) ──────────────
 document.getElementById('btnGuardarHab').addEventListener('click', async () => {
   const sucios = habPlanilla.filter(r => r._dirty);
   if (!sucios.length) { toast('Sin cambios para guardar', 'info'); return; }
@@ -1581,37 +2106,72 @@ document.getElementById('btnGuardarHab').addEventListener('click', async () => {
   btn.innerHTML = `<span class="spinner" style="width:12px;height:12px;border-width:2px"></span> Guardando...`;
 
   try {
-    for (const r of sucios) {
-      const cp   = r.calif_proceso      !== '' ? Number(r.calif_proceso)      : null;
-      const ce   = r.calif_examen_final !== '' ? Number(r.calif_examen_final) : null;
-      const nota = (cp !== null && ce !== null) ? (cp + ce) / 2 : r.nota_obtenida;
-      const est  = nota !== null ? (nota >= 6 ? 'Aprobado' : 'Reprobado') : (r.estado_materia || 'Cursando');
+    // 1. Mapeamos y preparamos el array de objetos para el Upsert masivo
+    const payloads = sucios.map(r => {
+      const cp = r.calif_proceso !== '' && r.calif_proceso !== null ? Number(r.calif_proceso) : null;
+      const ce = r.calif_examen_final !== '' && r.calif_examen_final !== null ? Number(r.calif_examen_final) : null;
+      
+      // Cálculo de nota basándonos en tus reglas
+      const nota = (cp !== null && ce !== null) ? (cp + ce) / 2 : (r.nota_obtenida !== undefined ? r.nota_obtenida : null);
+      const est = nota !== null ? (nota >= 6 ? 'Aprobado' : 'Reprobado') : (r.estado_materia || 'Cursando');
 
-      const payload = {
-        inscripcion_id:    r.inscripcion_id,
-        materia_id:        r.materia_id,
-        oportunidad_nro:   r.oportunidad_nro,
-        calif_proceso:     cp,
+      const item = {
+        inscripcion_id: parseInt(r.inscripcion_id),
+        materia_id: parseInt(r.materia_id),
+        oportunidad_nro: parseInt(r.oportunidad_nro),
+        calif_proceso: cp,
         calif_examen_final: ce,
-        nota_obtenida:     nota,
-        hab_academico:     r.hab_academico,
-        estado_materia:    est,
-        registrado_por:    sesion.id,
-        fecha_registro:    new Date().toISOString(),
+        nota_obtenida: nota,
+        hab_academico: r.hab_academico,
+        estado_materia: est,
+        registrado_por: sesion.id
+        // Omitimos fecha_registro para que use el CURRENT_TIMESTAMP por defecto de tu BD
       };
 
+      // Si ya conocemos el ID primario, se lo incluimos para asegurar el matching rápido
       if (r.historial_id) {
-        await supabase.from('historial_examenes').update(payload).eq('id', r.historial_id);
-      } else {
-        const { data: ins } = await supabase.from('historial_examenes').insert(payload).select('id').single();
-        r.historial_id = ins?.id || null;
+        item.id = r.historial_id;
       }
-      r._dirty  = false;
-      r._moodle = false;
+
+      return item;
+    });
+
+    // 2. EJECUTAMOS EL UPSERT MASIVO EN UNA SOLA OPERACIÓN
+    // 'onConflict' le dice a Supabase qué campos componen la clave única para decidir si actualiza o inserta
+    const { data: insertados, error } = await supabase
+      .from('historial_examenes')
+      .upsert(payloads, { 
+        onConflict: 'inscripcion_id,materia_id,oportunidad_nro' 
+      })
+      .select('id, inscripcion_id, materia_id, oportunidad_nro');
+
+    if (error) throw error;
+
+    // 3. Sincronizamos los IDs devueltos con tu estructura en memoria (habPlanilla)
+    if (insertados) {
+      insertados.forEach(ins => {
+        const registroLocal = habPlanilla.find(r => 
+          r.inscripcion_id === ins.inscripcion_id && 
+          r.materia_id === ins.materia_id && 
+          r.oportunidad_nro === ins.oportunidad_nro
+        );
+        if (registroLocal) {
+          registroLocal.historial_id = ins.id; // Guardamos el ID autogenerado
+        }
+      });
     }
-    toast(`${sucios.length} registro${sucios.length>1?'s':''} guardado${sucios.length>1?'s':''}`, 'success');
+
+    // Limpiamos las banderas de cambio de los registros procesados
+    sucios.forEach(r => {
+      r._dirty = false;
+      r._moodle = false;
+    });
+
+    toast(`${sucios.length} registro${sucios.length > 1 ? 's' : ''} guardado${sucios.length > 1 ? 's' : ''} con éxito`, 'success');
     renderPlanillaHab();
-  } catch(err) {
+
+  } catch (err) {
+    console.error(err);
     toast('Error al guardar: ' + err.message, 'error');
   } finally {
     btn.disabled = false;
@@ -1619,126 +2179,304 @@ document.getElementById('btnGuardarHab').addEventListener('click', async () => {
   }
 });
 
-// ── Docentes ──────────────────────────────────────────────────
-async function cargarDocentes() {
-  const { data } = await supabase
-    .from('docentes')
-    .select('*, docentes_materias(id,materia_id,anho_lectivo,activo,materias(nombre))')
-    .order('apellidos');
-  docentes = data || [];
-  renderDocentes();
-}
+    // ── Docentes ──────────────────────────────────────────────────
+    async function cargarDocentes() {
+      const { data } = await supabase
+        .from('docentes')
+        .select('*, docentes_carreras(id,cohorte_id,activo,cohortes(nro_cohorte, anho_inicio, carreras(nombre)))')
+        .order('apellidos');
+      docentes = data || [];
 
-function renderDocentes() {
-  const q   = document.getElementById('searchDocentes').value.toLowerCase();
-  const est = document.getElementById('filtroEstDocentes').value;
-  let items = docentes;
-  if (q)   items = items.filter(d=>`${d.nombres} ${d.apellidos} ${d.ci}`.toLowerCase().includes(q));
-  if (est) items = items.filter(d=>d.estado===est);
-  document.getElementById('docentesTotal').textContent = `${items.length} docentes`;
+      // Cruzar con usuarios_sistema para ver cuáles tienen usuario vinculado por CI
+      const cis = docentes.map(d => d.ci).filter(Boolean);
+      let usuariosMap = {};
+      if (cis.length) {
+        const { data: usrs } = await supabase
+          .from('usuarios_sistema')
+          .select('id,nombre,ci,activo')
+          .eq('rol', 'Docente')
+          .in('ci', cis);
+        (usrs || []).forEach(u => { usuariosMap[u.ci] = u; });
+      }
+      docentes.forEach(d => { d._usuario = usuariosMap[d.ci] || null; });
 
-  document.getElementById('tbodyDocentes').innerHTML = items.map((d,i)=>{
-    const asignaciones = d.docentes_materias?.filter(dm=>dm.activo) || [];
-    return `<tr>
-      <td class="td-mono">${i+1}</td>
+      renderDocentes();
+    }
+
+    function renderDocentes() {
+      const q = document.getElementById('searchDocentes').value.toLowerCase();
+      const est = document.getElementById('filtroEstDocentes').value;
+      let items = docentes;
+      if (q) items = items.filter(d => `${d.nombres} ${d.apellidos} ${d.ci}`.toLowerCase().includes(q));
+      if (est) items = items.filter(d => d.estado === est);
+      document.getElementById('docentesTotal').textContent = `${items.length} docentes`;
+
+      document.getElementById('tbodyDocentes').innerHTML = items.map((d, i) => {
+        const asig = d.docentes_carreras?.filter(dm => dm.activo) || [];
+        const usr = d._usuario;
+        const usrBadge = usr
+          ? `<span class="badge badge-success" style="font-size:.65rem">
+           <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;margin-right:2px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+           ${usr.nombre}</span>`
+          : `<span class="badge badge-muted" style="font-size:.65rem;opacity:.7">Sin usuario</span>`;
+        return `<tr style="cursor:pointer" onclick="abrirDocente(${d.id})">
+      <td class="td-mono">${i + 1}</td>
       <td class="td-bold">${d.nombres} ${d.apellidos}</td>
       <td class="td-mono">${d.ci}</td>
-      <td>${d.email||'—'}</td>
-      <td>${d.telefono||'—'}</td>
-      <td><span class="badge ${d.estado==='Activo'?'badge-success':'badge-muted'}">${d.estado}</span></td>
+      <td>${d.email || '—'}</td>
+      <td>${d.telefono || '—'}</td>
+      <td><span class="badge ${d.estado === 'Activo' ? 'badge-success' : 'badge-muted'}">${d.estado}</span></td>
+      <td>${usrBadge}</td>
       <td style="font-size:.78rem;color:var(--txt-secondary)">
-        ${asignaciones.slice(0,3).map(a=>`<span class="badge badge-muted" style="margin-right:4px">${a.materias?.nombre||'—'}</span>`).join('')}
-        ${asignaciones.length>3?`<span style="color:var(--txt-muted)">+${asignaciones.length-3} más</span>`:''}
+        ${asig.slice(0, 3).map(a => `<span class="badge badge-muted" style="margin-right:4px">${a.cohortes?.nro_cohorte || '—'}ª - ${a.cohortes?.anho_inicio || '—'} - ${a.cohortes?.carreras?.nombre || '—'}</span>`).join('')}
+        ${asig.length > 3 ? `<span style="color:var(--txt-muted)">+${asig.length - 3} más</span>` : ''}
       </td>
-      <td><button class="btn btn-icon" onclick="abrirDocente(${d.id})">
+      <td><button class="btn btn-icon" onclick="event.stopPropagation();abrirDocente(${d.id})">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </button></td>
     </tr>`;
-  }).join('') || `<tr><td colspan="8" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin docentes</td></tr>`;
-}
+      }).join('') || `<tr><td colspan="9" class="text-center" style="padding:40px;color:var(--txt-muted)">Sin docentes</td></tr>`;
+    }
 
-['searchDocentes','filtroEstDocentes'].forEach(id=>{
-  document.getElementById(id)?.addEventListener('input',renderDocentes);
-  document.getElementById(id)?.addEventListener('change',renderDocentes);
-});
+    ['searchDocentes', 'filtroEstDocentes'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', renderDocentes);
+      document.getElementById(id)?.addEventListener('change', renderDocentes);
+    });
 
-window.abrirDocente = async (id) => {
-  const d = docentes.find(x=>x.id===id);
-  if (!d) return;
-  const asign = d.docentes_materias || [];
+    // ── Nuevo docente ─────────────────────────────────────────────
+    document.getElementById('btnNuevoDocente').addEventListener('click', () => {
+      document.getElementById('modalTitle').textContent = 'Nuevo docente';
+      document.getElementById('modalBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group">
+        <label class="form-label">Nombres <span style="color:var(--danger)">*</span></label>
+        <input class="form-control" id="ndNombres" placeholder="Ej: Juan Carlos">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Apellidos <span style="color:var(--danger)">*</span></label>
+        <input class="form-control" id="ndApellidos" placeholder="Ej: González Pérez">
+      </div>
+      <div class="form-group">
+        <label class="form-label">CI <span style="color:var(--danger)">*</span></label>
+        <input class="form-control" id="ndCI" placeholder="Sin puntos ni guiones">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Teléfono</label>
+        <input class="form-control" id="ndTelefono" placeholder="Ej: 0981000000">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label">Email</label>
+        <input class="form-control" id="ndEmail" type="email" placeholder="docente@ejemplo.com">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label" style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="ndCrearUsuario" checked style="accent-color:var(--verde);width:14px;height:14px">
+          Crear usuario de sistema &nbsp;(usuario: CI &nbsp;·&nbsp; contraseña: <code style="background:var(--surface-2);padding:1px 6px;border-radius:3px;font-size:.8rem">upgvirtual</code>)
+        </label>
+        <p style="font-size:.75rem;color:var(--txt-muted);margin-top:4px;margin-left:22px">El docente deberá cambiar la contraseña en el primer inicio de sesión.</p>
+      </div>
+    </div>`;
+      modalGuardarFn = guardarNuevoDocente;
+      document.getElementById('modalOverlay').classList.add('open');
+      setTimeout(() => document.getElementById('ndNombres')?.focus(), 100);
+    });
 
-  document.getElementById('drawerTitle').textContent = `${d.nombres} ${d.apellidos}`;
-  document.getElementById('drawerSub').textContent   = `CI: ${d.ci}`;
-  const bdg = document.getElementById('drawerBadge');
-  bdg.className = 'badge '+(d.estado==='Activo'?'badge-success':'badge-muted');
-  bdg.textContent = d.estado;
+    async function guardarNuevoDocente() {
+      const nombres = document.getElementById('ndNombres').value.trim();
+      const apellidos = document.getElementById('ndApellidos').value.trim();
+      const ci = document.getElementById('ndCI').value.trim();
+      const telefono = document.getElementById('ndTelefono').value.trim();
+      const email = document.getElementById('ndEmail').value.trim();
+      const crearUsr = document.getElementById('ndCrearUsuario').checked;
 
-  document.getElementById('drawerBody').innerHTML = `
+      if (!nombres || !apellidos || !ci) { toast('Nombres, apellidos y CI son obligatorios', 'warning'); return; }
+
+      const btn = document.getElementById('btnModalGuardar');
+      btn.disabled = true; btn.textContent = 'Guardando...';
+
+      try {
+        // 1. CI único
+        const { data: exist } = await supabase.from('docentes').select('id').eq('ci', ci).maybeSingle();
+        if (exist) { toast('Ya existe un docente con ese CI', 'warning'); return; }
+
+        // 2. Insertar docente
+        const { data: nuevo, error: errDoc } = await supabase.from('docentes').insert({
+          nombres, apellidos, ci,
+          telefono: telefono || null,
+          email: email || null,
+          estado: 'Activo',
+          created_by: sesion.id,
+        }).select('id').single();
+        if (errDoc) throw errDoc;
+
+        // 3. Crear usuario si está marcado
+        if (crearUsr) {
+          const { data: usrExist } = await supabase.from('usuarios_sistema')
+            .select('id').eq('ci', ci).maybeSingle();
+          if (usrExist) {
+            toast('Docente creado. Ya existía un usuario con ese CI.', 'warning');
+          } else {
+            const { error: errUsr } = await supabase.rpc('fn_crear_usuario_docente', {
+              p_nombre: nombres + " " + apellidos, p_ci: ci, p_password_default: 'upgvirtual',
+            });
+            if (errUsr) throw errUsr;
+            toast(`Docente y usuario creados. Usuario: ${ci} · Contraseña: upgvirtual`, 'success');
+          }
+        } else {
+          toast('Docente creado sin usuario de sistema', 'success');
+        }
+
+        cerrarModal();
+        await cargarDocentes();
+
+      } catch (e) {
+        toast('Error: ' + (e.message || e), 'error');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Guardar';
+      }
+    }
+
+    // ── Drawer docente ─────────────────────────────────────────────
+    window.abrirDocente = async (id) => {
+      const d = docentes.find(x => x.id === id);
+      if (!d) return;
+      const asign = d.docentes_carreras || [];
+      const usr = d._usuario;
+      const puedeAdmin = !['Cajero', 'Docente'].includes(sesion.rol);
+
+      document.getElementById('drawerTitle').textContent = `${d.nombres} ${d.apellidos}`;
+      document.getElementById('drawerSub').textContent = `CI: ${d.ci}`;
+      const bdg = document.getElementById('drawerBadge');
+      bdg.className = 'badge ' + (d.estado === 'Activo' ? 'badge-success' : 'badge-muted');
+      bdg.textContent = d.estado;
+
+      const bloqueUsr = puedeAdmin ? `
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;font-size:.82rem">
+      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Usuario de sistema</div>
+      ${usr ? `
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--verde)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <strong>${usr.nombre}</strong>
+          <span class="badge ${usr.activo ? 'badge-success' : 'badge-muted'}" style="font-size:.65rem">${usr.activo ? 'Activo' : 'Inactivo'}</span>
+          <button class="btn btn-ghost btn-sm" onclick="resetearPasswordDocente('${d.ci}')" style="margin-left:auto;color:var(--warning)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Resetear contraseña
+          </button>
+        </div>` : `
+        <div style="display:flex;align-items:center;gap:10px;color:var(--txt-muted);font-size:.8rem">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:.4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Sin usuario de sistema</span>
+          <button class="btn btn-primary btn-sm" onclick="crearUsuarioDocente('${d.ci}',${d.id})" style="margin-left:auto">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Crear usuario
+          </button>
+        </div>`}
+    </div>` : '';
+
+      document.getElementById('drawerBody').innerHTML = `
     <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;font-size:.82rem">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div><span style="color:var(--txt-muted)">Email:</span> <strong>${d.email||'—'}</strong></div>
-        <div><span style="color:var(--txt-muted)">Teléfono:</span> <strong>${d.telefono||'—'}</strong></div>
+        <div><span style="color:var(--txt-muted)">Email:</span> <strong>${d.email || '—'}</strong></div>
+        <div><span style="color:var(--txt-muted)">Teléfono:</span> <strong>${d.telefono || '—'}</strong></div>
       </div>
     </div>
+    ${bloqueUsr}
     <div>
-      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Materias asignadas (${asign.filter(a=>a.activo).length})</div>
-      ${asign.filter(a=>a.activo).map(a=>`
+      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Programas asignados (${asign.filter(a => a.activo).length})</div>
+      ${asign.filter(a => a.activo).map(a => `
         <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-light);font-size:.83rem">
-          <span style="flex:1">${a.materias?.nombre||'—'}</span>
-          <span class="td-mono" style="font-size:.75rem;color:var(--txt-muted)">${a.anho_lectivo}</span>
-          ${sesion.rol!=='Cajero'&&sesion.rol!=='Docente'?`<button class="btn btn-icon" onclick="desasignarDocente(${a.id})" title="Desasignar" style="color:var(--danger)">✕</button>`:''}
+          <span style="flex:1">${a.cohortes?.nro_cohorte || '—'}ª - ${a.cohortes?.anho_inicio || '—'} - ${a.cohortes?.carreras?.nombre || '—'}</span>
+          ${puedeAdmin ? `<button class="btn btn-icon" onclick="desasignarDocente(${a.id})" title="Desasignar" style="color:var(--danger)">✕</button>` : ''}
         </div>`).join('') || '<div style="color:var(--txt-muted);font-size:.8rem;text-align:center;padding:12px">Sin asignaciones activas</div>'}
     </div>
-    ${sesion.rol!=='Cajero'&&sesion.rol!=='Docente'?`<div>
-      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Asignar materia</div>
+    ${puedeAdmin ? `<div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Asignar programa</div>
       <div style="display:flex;gap:8px">
-        <select class="form-control" id="selMatAsign">
-          <option value="">Seleccionar materia...</option>
-          ${materias.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('')}
+        <select class="form-control" id="selProgAsign">
+          <option value="">Seleccionar programa...</option>
         </select>
-        <input type="number" class="form-control" id="anhoLectivoAsign" value="${new Date().getFullYear()}" style="width:90px">
         <button class="btn btn-primary btn-sm" onclick="asignarMateria(${d.id})">Asignar</button>
       </div>
-    </div>`:''}`;
+    </div>`: ''}`;
 
-  document.getElementById('drawerFooter').innerHTML = `<button class="btn btn-ghost btn-sm" onclick="cerrarDrawer()">Cerrar</button>`;
-  document.getElementById('drawerOverlay').classList.add('open');
-};
+      document.getElementById('drawerFooter').innerHTML = `<button class="btn btn-ghost btn-sm" onclick="cerrarDrawer()">Cerrar</button>`;
+      if (puedeAdmin) {
+        const { data: materias, error } = await supabase
+          .from('cohortes')
+          .select('id, nro_cohorte, anho_inicio, carreras(nombre)')
+          .order('carreras(nombre)', { ascending: true });
 
-window.asignarMateria = async (docenteId) => {
-  const materiaId = Number(document.getElementById('selMatAsign').value);
-  const anhoLect  = Number(document.getElementById('anhoLectivoAsign').value);
-  if (!materiaId) { toast('Seleccioná una materia','warning'); return; }
-  await supabase.from('docentes_materias').insert({
-    docente_id: docenteId, materia_id: materiaId,
-    anho_lectivo: anhoLect, activo: true, asignado_por: sesion.id,
-    asignado_en_fecha: new Date().toISOString()
-  });
-  toast('Materia asignada','success');
-  await cargarDocentes();
-  await abrirDocente(docenteId);
-};
+        if (!error && materias) {
+          const selectProg = document.getElementById('selProgAsign');
+          if (selectProg) {
+            materias.forEach(c => {
+              const opt = document.createElement('option');
+              opt.value = c.id;
+              opt.textContent = c.nro_cohorte + "ª - " + c.anho_inicio + " - " + c.carreras?.nombre;
+              selectProg.appendChild(opt);
+            });
+          }
+        } else {
+          console.error("Error cargando programas:", error);
+        }
+      }
+      document.getElementById('drawerOverlay').classList.add('open');
+    };
 
-window.desasignarDocente = async (dmId) => {
-  if (!confirm('¿Desasignar esta materia?')) return;
-  await supabase.from('docentes_materias').update({
-    activo: false, eliminado_por: sesion.id,
-    fecha_eliminacion: new Date().toISOString()
-  }).eq('id', dmId);
-  toast('Materia desasignada','warning');
-  await cargarDocentes();
-  cerrarDrawer();
-};
+    window.crearUsuarioDocente = async (ci, docenteId) => {
+      if (!confirm(`¿Crear usuario para CI ${ci}?\nUsuario: ${ci}  ·  Contraseña: upgvirtual`)) return;
+      const { error } = await supabase.rpc('fn_crear_usuario_docente', {
+        p_nombre: ci, p_ci: ci, p_password_default: 'upgvirtual',
+      });
+      if (error) { toast('Error: ' + error.message, 'error'); return; }
+      toast('Usuario creado. Contraseña inicial: upgvirtual', 'success');
+      await cargarDocentes();
+      abrirDocente(docenteId);
+    };
 
-// ── Modal helpers ─────────────────────────────────────────────
-document.getElementById('btnModalGuardar').addEventListener('click', () => { if (modalGuardarFn) modalGuardarFn(); });
-function cerrarModal() { document.getElementById('modalOverlay').classList.remove('open'); modalGuardarFn=null; }
-window.cerrarModal = cerrarModal;
+    window.resetearPasswordDocente = async (ci) => {
+      if (!confirm(`¿Resetear contraseña de ${ci} a "upgvirtual"?\nDeberá cambiarla en el próximo inicio de sesión.`)) return;
+      const { error } = await supabase.rpc('fn_resetear_password_docente', {
+        p_ci: ci, p_password_default: 'upgvirtual',
+      });
+      if (error) { toast('Error: ' + error.message, 'error'); return; }
+      toast('Contraseña reseteada a: upgvirtual', 'success');
+    };
 
-// ── Drawer helpers ────────────────────────────────────────────
-function cerrarDrawer() { document.getElementById('drawerOverlay').classList.remove('open'); }
-window.cerrarDrawer = cerrarDrawer;
-document.getElementById('drawerOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)cerrarDrawer();});
-</script>
+    window.asignarMateria = async (docenteId) => {
+      const cohorteId = Number(document.getElementById('selProgAsign').value);
+      if (!cohorteId) { toast('Seleccioná un programa', 'warning'); return; }
+      await supabase.from('docentes_carreras').insert({
+        docente_id: docenteId, cohorte_id: cohorteId,
+        activo: true, asignado_por: sesion.id,
+        asignado_en_fecha: new Date().toISOString()
+      });
+      toast('Materia asignada', 'success');
+      await cargarDocentes();
+      await abrirDocente(docenteId);
+    };
+
+    window.desasignarDocente = async (dmId) => {
+      if (!confirm('¿Desasignar este programa?')) return;
+      await supabase.from('docentes_carreras').update({
+        activo: false, eliminado_por: sesion.id,
+        fecha_eliminacion: new Date().toISOString()
+      }).eq('id', dmId);
+      toast('Materia desasignada', 'warning');
+      await cargarDocentes();
+      cerrarDrawer();
+    };
+
+    // ── Modal helpers ─────────────────────────────────────────────
+    document.getElementById('btnModalGuardar').addEventListener('click', () => { if (modalGuardarFn) modalGuardarFn(); });
+    function cerrarModal() { document.getElementById('modalOverlay').classList.remove('open'); modalGuardarFn = null; }
+    window.cerrarModal = cerrarModal;
+
+    // ── Drawer helpers ────────────────────────────────────────────
+    function cerrarDrawer() { document.getElementById('drawerOverlay').classList.remove('open'); }
+    window.cerrarDrawer = cerrarDrawer;
+    document.getElementById('drawerOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) cerrarDrawer(); });
+  </script>
 </body>
+
 </html>
