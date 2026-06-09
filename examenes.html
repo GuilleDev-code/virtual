@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Exámenes — Sistema UPG</title>
   <link rel="stylesheet" href="assets/styles.css">
+    <link rel="icon" type="image/png" href="assets/logo.png">
   <style>
     /* ── Layout ── */
     .ex-wrap    { display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h)); overflow:hidden; }
@@ -227,6 +228,22 @@
   </div>
 </div>
 
+<!-- ── Modal pagos ── -->
+<div class="modal-overlay" id="modalPagosOverlay">
+  <div class="modal" style="max-width:580px;width:95vw">
+    <div class="modal-header">
+      <div>
+        <span class="modal-title" id="modalPagosTitle">Pagos del alumno</span>
+        <div style="font-size:.78rem;color:var(--txt-muted);margin-top:2px" id="modalPagosSub"></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('modalPagosOverlay').classList.remove('open')">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modalPagosBody" style="overflow-y:auto;max-height:70vh;padding:0"></div>
+  </div>
+</div>
+
 <!-- ── Modal documento ── -->
 <div class="modal-overlay" id="modalDocOverlay">
   <div class="modal modal-doc">
@@ -250,6 +267,8 @@
 
 <script type="module">
 import { supabase, formatFechaHora, toast } from './assets/supabase.js';
+
+
 import { requireAuth } from './assets/auth.js';
 import { initSidebar } from './assets/sidebar.js';
 
@@ -276,9 +295,8 @@ document.querySelectorAll('.ex-tab').forEach(btn => {
 });
 
 // ── Config Moodle ─────────────────────────────────────────────
-const MOODLE_URL   = 'https://mooc.uniupg.edu.py';
-const MOODLE_TOKEN = 'f783afebb75d1529ce29dcafcfa4b427';
-const MINIMO_PROCESO = 42; // puntaje mínimo para habilitar académicamente
+
+
 
 // ── Init ──────────────────────────────────────────────────────
 await cargarCarreras();
@@ -442,7 +460,7 @@ async function cargarLista() {
 
   // 5. Historial previo (si ya se cargó esta lista antes)
   const { data: histPrev } = await supabase.from('historial_examenes')
-    .select('inscripcion_id,estado_materia,nota_obtenida')
+    .select('id,inscripcion_id,estado_materia,nota_obtenida,hab_academico,hab_administrativo,calif_proceso,calif_examen_final')
     .eq('materia_id', cal.materia_id)
     .eq('oportunidad_nro', cal.oportunidad_nro)
     .in('inscripcion_id', inscIds);
@@ -451,15 +469,19 @@ async function cargarLista() {
   (histPrev||[]).forEach(h => { histMap[h.inscripcion_id] = h; });
 
   filas = inscsFiltradas.map(ins => {
-    const al       = ins.alumnos;
-    const cq       = cuotaMap[ins.id];
-    const cuota    = cq?.pagada ?? false;
-    const derecho  = derechoSet.has(ins.id);
-    const prev     = histMap[ins.id];
+    const al      = ins.alumnos;
+    const cq      = cuotaMap[ins.id];
+    const cuota   = cq?.pagada ?? false;
+    const derecho = derechoSet.has(ins.id);
+    const prev    = histMap[ins.id];
+    // hab_administrativo = cuota pagada Y derecho pagado (o lo que ya está guardado en historial)
+    const habAdmin = cuota && derecho;
+    // Si ya hay historial guardado, respetar el valor persistido (puede haberse pagado en caja física)
+    const habAdminFinal = prev?.hab_administrativo ?? habAdmin;
     let obs = '';
     if (!cuota && !derecho) obs = 'No abonó cuota ni derecho';
-    else if (!cuota)         obs = 'No abonó cuota';
-    else if (!derecho)       obs = 'No abonó derecho';
+    else if (!cuota)        obs = 'No abonó cuota';
+    else if (!derecho)      obs = 'No abonó derecho';
     return {
       inscripcion_id: ins.id,
       alumno_id:      al?.id,
@@ -469,9 +491,11 @@ async function cargarLista() {
       cuotaPagada:    cuota,
       cuota_id:       cq?.cuota_id ?? null,
       cuota_monto:    cq?.monto ?? 0,
+      cuota_nro:      cq?.nro ?? null,
       derechoPagado:  derecho,
-      habAcad:        prev ? true : false,
-      puntaje:        prev?.nota_obtenida ?? '',
+      habAdmin:       habAdminFinal,
+      habAcad:        prev?.hab_academico ?? false,
+      puntaje:        prev?.calif_proceso ?? '',
       obs,
       excluido:       false,
       historial_id:   prev?.id ?? null,
@@ -500,10 +524,6 @@ function renderTabla() {
     <div class="table-actions">
       <button class="btn btn-ghost btn-sm" onclick="habilitarTodos()">Habilitar todos académicamente</button>
       <button class="btn btn-ghost btn-sm" onclick="limpiarHab()">Limpiar selección</button>
-      <button class="btn btn-ghost btn-sm" id="btnMoodle" onclick="sincronizarMoodle()" style="color:#5b21b6;border-color:#c4b5fd">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-        Sincronizar Moodle
-      </button>
       <button class="btn btn-primary btn-sm" id="btnGuardar" onclick="guardarHabilitaciones()">
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         Guardar
@@ -523,8 +543,7 @@ function renderTabla() {
             <th>Nombre</th>
             <th style="text-align:center;width:70px">Puntaje</th>
             <th style="text-align:center;width:80px">Hab. Acad.</th>
-            <th style="text-align:center;width:60px">Cuota</th>
-            <th style="text-align:center;width:70px">Derecho</th>
+            <th style="text-align:center;width:80px">Pagos</th>
             <th>Observaciones</th>
             <th style="width:34px"></th>
           </tr>
@@ -538,6 +557,17 @@ function renderTabla() {
 
 function renderFila(f, i) {
   const n = filas.filter((x, j) => !x.excluido && j <= i).length;
+  // Columna cuota+derecho: si alguno falta, mostrar botón que abre el modal de pagos
+  const pagosOk  = f.cuotaPagada && f.derechoPagado;
+  const pagosBadge = pagosOk
+    ? `<span class="ind si" title="Cuota y derecho abonados">✓</span>`
+    : f.excluido
+      ? `<span class="ind no">—</span>`
+      : `<button class="btn-sync" onclick="abrirModalPagos(${i})" title="Ver pagos · ${!f.cuotaPagada?'Falta cuota':''}${!f.cuotaPagada&&!f.derechoPagado?' y ':''}${!f.derechoPagado?'Falta derecho':''}">
+           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+           Pagos
+         </button>`;
+
   return `<tr id="fila_${i}" class="${f.excluido ? 'excluido' : ''}">
     <td class="td-mono" style="font-size:.7rem;color:var(--txt-muted)">${f.excluido ? '—' : n}</td>
     <td class="td-mono">${f.ci}</td>
@@ -551,24 +581,7 @@ function renderFila(f, i) {
       <input type="checkbox" class="chk-hab" ${f.habAcad ? 'checked' : ''} ${f.excluido ? 'disabled' : ''}
         onchange="filas[${i}].habAcad = this.checked; actualizarObs(${i}); refreshFila(${i})">
     </td>
-    <td style="text-align:center">
-      ${f.cuotaPagada
-        ? `<span class="ind si">Si</span>`
-        : f.excluido
-          ? `<span class="ind no">no</span>`
-          : `<button class="btn-sync" id="btnCuota_${i}" onclick="sincronizarCuota(${i})" title="Registrar pago en GoodSystem">
-               ↑ GS
-             </button>`}
-    </td>
-    <td style="text-align:center">
-      ${f.derechoPagado
-        ? `<span class="ind si">Si</span>`
-        : f.excluido
-          ? `<span class="ind no">no</span>`
-          : `<button class="btn-sync" id="btnDerecho_${i}" onclick="sincronizarDerecho(${i})" title="Registrar derecho en GoodSystem">
-               ↑ GS
-             </button>`}
-    </td>
+    <td style="text-align:center">${pagosBadge}</td>
     <td>
       <input class="inp-obs" type="text" value="${f.obs}" placeholder="—"
         onchange="filas[${i}].obs = this.value">
@@ -618,84 +631,178 @@ window.refreshFila = (i) => {
   if (tr) tr.outerHTML = renderFila(filas[i], i);
 };
 
-// ── Sincronización desde GoodSystem ───────────────────────────
-// Crea recibo con origen 'GoodSystem' y actualiza cuota/derecho
-
+// ── Helper: crear recibo de caja física ───────────────────────
 async function crearReciboGoodSystem({ inscripcionId, monto, concepto }) {
-  const nroRecibo = `GS-${inscripcionId}-${Date.now()}`;
+  const nroRecibo = `CF-${inscripcionId}-${Date.now()}`;
   const { data, error } = await supabase.from('recibos').insert({
-    nro_recibo:     nroRecibo,
-    inscripcion_id: inscripcionId,
-    monto_total:    monto,
-    concepto:       concepto,
-    tipo_pago:      'Otro',
-    referencia:     'GoodSystem - pago presencial en filial',
+    nro_recibo:      nroRecibo,
+    inscripcion_id:  inscripcionId,
+    monto_total:     monto,
+    concepto,
+    tipo_pago:       'Efectivo',
+    referencia:      'Pago presencial — caja física',
     usuario_caja_id: sesion.id,
-    fecha_emision:  new Date().toISOString(),
+    fecha_emision:   new Date().toISOString(),
   }).select('id').single();
   if (error) throw new Error('recibo: ' + error.message);
   return data.id;
 }
 
-window.sincronizarCuota = async (i) => {
-  const f = filas[i];
-  if (f.cuotaPagada || !f.cuota_id) {
-    toast('Esta cuota ya está pagada o no tiene cuota asignada', 'warning');
-    return;
-  }
-  if (!confirm(`¿Marcar cuota de ${f.nombre} como pagada (origen GoodSystem)?`)) return;
+// ── Modal de pagos ─────────────────────────────────────────────
+window.abrirModalPagos = async (idx) => {
+  const f   = filas[idx];
+  const cal = calendarioActivo;
 
-  const btn = document.getElementById(`btnCuota_${i}`);
-  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  document.getElementById('modalPagosTitle').textContent = f.nombre;
+  document.getElementById('modalPagosSub').textContent   = `CI: ${f.ci}`;
+  document.getElementById('modalPagosBody').innerHTML    =
+    `<div style="text-align:center;padding:24px;color:var(--txt-muted)">Cargando...</div>`;
+  document.getElementById('modalPagosOverlay').classList.add('open');
 
   try {
-    const reciboId = await crearReciboGoodSystem({
-      inscripcionId: f.inscripcion_id,
-      monto:         f.cuota_monto,
-      concepto:      'Cuota — pago presencial GoodSystem',
-    });
+    // Traer TODAS las cuotas de la inscripción
+    const { data: todasCuotas } = await supabase.from('cuotas_pagos')
+      .select('id,nro_cuota,fecha_vencimiento,monto_final,estado_pago,fecha_pago,recibo_id')
+      .eq('inscripcion_id', f.inscripcion_id)
+      .order('nro_cuota');
 
+    // Traer derechos de examen de esta inscripción (todas las materias/oportunidades)
+    const { data: todosDerechos } = await supabase.from('derechos_examen')
+      .select('id,materia_id,oportunidad_nro,monto_pagado,fecha_pago,estado,materias(nombre)')
+      .eq('inscripcion_id', f.inscripcion_id)
+      .order('oportunidad_nro');
+
+    const EST_COLOR = {
+      Pagado:   'badge-success',
+      Pendiente:'badge-warning',
+      Vencido:  'badge-danger',
+      Perdonado:'badge-muted',
+    };
+    const cuotaReq = cal?.materias?.cuota_requerida_examen;
+
+    const htmlCuotas = (todasCuotas||[]).map(c => {
+      const esReq  = c.nro_cuota === cuotaReq;
+      const venc   = new Date(c.fecha_vencimiento).toLocaleDateString('es-PY');
+      const pagBtn = (c.estado_pago !== 'Pagado')
+        ? `<button class="btn btn-primary btn-sm" style="font-size:.72rem;padding:3px 10px"
+             onclick="pagarCuotaModal(${idx},${c.id},'${f.nombre}',${c.monto_final},${c.nro_cuota})">
+             ↑ Marcar pagado
+           </button>`
+        : `<span style="font-size:.72rem;color:var(--txt-muted)">${c.fecha_pago ? new Date(c.fecha_pago).toLocaleDateString('es-PY') : '—'}</span>`;
+      return `
+        <tr style="${esReq?'background:rgba(234,179,8,.07)':''}">
+          <td class="td-mono" style="font-size:.78rem">Cuota ${c.nro_cuota}${esReq?' ⭐':''}</td>
+          <td style="font-size:.78rem;color:var(--txt-muted)">${venc}</td>
+          <td class="td-mono" style="font-size:.78rem">Gs. ${Number(c.monto_final).toLocaleString('es-PY')}</td>
+          <td><span class="badge ${EST_COLOR[c.estado_pago]||'badge-muted'}" style="font-size:.62rem">${c.estado_pago}</span></td>
+          <td>${pagBtn}</td>
+        </tr>`;
+    }).join('');
+
+    const derechoActual = (todosDerechos||[]).find(
+      d => d.materia_id === cal?.materia_id && d.oportunidad_nro === cal?.oportunidad_nro
+    );
+    const montoExamen = cal?._montoExamen || 0;
+    const htmlDerecho = `
+      <tr style="background:rgba(99,102,241,.05)">
+        <td class="td-mono" style="font-size:.78rem">Derecho examen<br>
+          <span style="font-size:.7rem;color:var(--txt-muted)">${cal?.materias?.nombre||''} · ${cal?.oportunidad_nro}ª op.</span>
+        </td>
+        <td style="font-size:.78rem;color:var(--txt-muted)">—</td>
+        <td class="td-mono" style="font-size:.78rem">Gs. ${montoExamen.toLocaleString('es-PY')}</td>
+        <td><span class="badge ${derechoActual?'badge-success':'badge-danger'}" style="font-size:.62rem">
+          ${derechoActual?'PAGADO':'PENDIENTE'}
+        </span></td>
+        <td>${!derechoActual
+          ? `<button class="btn btn-primary btn-sm" style="font-size:.72rem;padding:3px 10px"
+               onclick="pagarDerechoModal(${idx})">
+               ↑ Marcar pagado
+             </button>`
+          : `<span style="font-size:.72rem;color:var(--txt-muted)">${new Date(derechoActual.fecha_pago).toLocaleDateString('es-PY')}</span>`
+        }</td>
+      </tr>`;
+
+    document.getElementById('modalPagosBody').innerHTML = `
+      <div style="padding:16px 20px">
+        <p style="font-size:.75rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Cuotas</p>
+        <div style="overflow-x:auto;margin-bottom:20px">
+          <table style="width:100%;border-collapse:collapse;font-size:.83rem">
+            <thead><tr style="border-bottom:2px solid var(--border)">
+              <th style="text-align:left;padding:6px 8px;font-weight:600">Concepto</th>
+              <th style="text-align:left;padding:6px 8px;font-weight:600">Vencimiento</th>
+              <th style="text-align:left;padding:6px 8px;font-weight:600">Monto</th>
+              <th style="text-align:left;padding:6px 8px;font-weight:600">Estado</th>
+              <th style="padding:6px 8px"></th>
+            </tr></thead>
+            <tbody>${htmlCuotas || '<tr><td colspan="5" style="padding:12px;text-align:center;color:var(--txt-muted)">Sin cuotas registradas</td></tr>'}</tbody>
+          </table>
+        </div>
+        <p style="font-size:.75rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Derecho de examen — examen actual</p>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.83rem">
+            <thead><tr style="border-bottom:2px solid var(--border)">
+              <th style="text-align:left;padding:6px 8px;font-weight:600">Concepto</th>
+              <th style="padding:6px 8px"></th>
+              <th style="text-align:left;padding:6px 8px;font-weight:600">Monto</th>
+              <th style="text-align:left;padding:6px 8px;font-weight:600">Estado</th>
+              <th style="padding:6px 8px"></th>
+            </tr></thead>
+            <tbody>${htmlDerecho}</tbody>
+          </table>
+        </div>
+      </div>`;
+
+  } catch(e) {
+    document.getElementById('modalPagosBody').innerHTML =
+      `<div style="padding:24px;color:var(--danger)">Error al cargar: ${e.message}</div>`;
+  }
+};
+
+// Marcar cuota como pagada desde el modal
+window.pagarCuotaModal = async (filaIdx, cuotaId, nombre, monto, nroCuota) => {
+  if (!confirm(`¿Marcar Cuota ${nroCuota} de ${nombre} como pagada?\n(origen: caja física)`)) return;
+  try {
+    const reciboId = await crearReciboGoodSystem({
+      inscripcionId: filas[filaIdx].inscripcion_id,
+      monto,
+      concepto: `Cuota ${nroCuota} — pago presencial caja física`,
+    });
     await supabase.from('cuotas_pagos').update({
       estado_pago: 'Pagado',
       fecha_pago:  new Date().toISOString().split('T')[0],
       recibo_id:   reciboId,
-    }).eq('id', f.cuota_id);
+    }).eq('id', cuotaId);
 
-    // Actualizar estado local
-    filas[i].cuotaPagada = true;
-    // Recalcular obs
-    if (filas[i].derechoPagado) filas[i].obs = '';
-    else filas[i].obs = 'No abonó derecho';
-
-    refreshFila(i);
-    // Actualizar stats
-    renderTabla();
-    toast(`Cuota de ${f.nombre} marcada como pagada (GoodSystem)`, 'success');
+    // Si es la cuota requerida, actualizar estado local de la fila
+    if (nroCuota === calendarioActivo?.materias?.cuota_requerida_examen) {
+      filas[filaIdx].cuotaPagada = true;
+      filas[filaIdx].cuota_id    = cuotaId;
+      filas[filaIdx].habAdmin    = filas[filaIdx].derechoPagado;
+      actualizarObs(filaIdx);
+      refreshFila(filaIdx);
+      renderTabla();
+    }
+    toast(`Cuota ${nroCuota} marcada como pagada`, 'success');
+    // Reabrir modal actualizado
+    await abrirModalPagos(filaIdx);
   } catch(e) {
     toast('Error: ' + e.message, 'error');
-    if (btn) { btn.disabled = false; btn.textContent = '↑ GS'; }
   }
 };
 
-window.sincronizarDerecho = async (i) => {
-  const f   = filas[i];
+// Marcar derecho de examen como pagado desde el modal
+window.pagarDerechoModal = async (filaIdx) => {
+  const f   = filas[filaIdx];
   const cal = calendarioActivo;
-  if (f.derechoPagado) { toast('El derecho ya está registrado', 'warning'); return; }
   if (!cal) return;
-
-  if (!confirm(`¿Registrar derecho de examen de ${f.nombre} (origen GoodSystem)?`)) return;
-
-  const btn = document.getElementById(`btnDerecho_${i}`);
-  if (btn) { btn.disabled = true; btn.textContent = '...'; }
-
+  if (!confirm(`¿Registrar derecho de examen de ${f.nombre}?\n(origen: caja física)`)) return;
   try {
     const monto    = cal._montoExamen || 0;
     const reciboId = await crearReciboGoodSystem({
       inscripcionId: f.inscripcion_id,
       monto,
-      concepto: `Derecho examen ${cal.materias?.nombre} — ${cal.oportunidad_nro}ª oport. GoodSystem`,
+      concepto: `Derecho examen ${cal.materias?.nombre} — ${cal.oportunidad_nro}ª op. caja física`,
     });
-
     await supabase.from('derechos_examen').insert({
       inscripcion_id:  f.inscripcion_id,
       materia_id:      cal.materia_id,
@@ -703,100 +810,20 @@ window.sincronizarDerecho = async (i) => {
       recibo_id:       reciboId,
       monto_pagado:    monto,
       fecha_pago:      new Date().toISOString(),
+      estado:          'PAGADO',
     });
-
-    // Actualizar estado local
-    filas[i].derechoPagado = true;
-    if (filas[i].cuotaPagada) filas[i].obs = '';
-    else filas[i].obs = 'No abonó cuota';
-
-    refreshFila(i);
+    filas[filaIdx].derechoPagado = true;
+    filas[filaIdx].habAdmin      = filas[filaIdx].cuotaPagada;
+    actualizarObs(filaIdx);
+    refreshFila(filaIdx);
     renderTabla();
-    toast(`Derecho de ${f.nombre} registrado (GoodSystem)`, 'success');
+    toast(`Derecho de ${f.nombre} registrado`, 'success');
+    await abrirModalPagos(filaIdx);
   } catch(e) {
     toast('Error: ' + e.message, 'error');
-    if (btn) { btn.disabled = false; btn.textContent = '↑ GS'; }
   }
 };
 
- 
-window.sincronizarMoodle = async () => {
-  if (!calendarioActivo) { toast('Cargá la lista primero', 'warning'); return; }
-  if (!calendarioActivo.id_moodle) {
-    toast('Este examen no tiene id_moodle configurado en el calendario', 'warning');
-    return;
-  }
- 
-  const btn = document.getElementById('btnMoodle');
-  btn.disabled = true;
-  btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Conectando...`;
- 
-  try {
-    const courseId = calendarioActivo.id_moodle;
-    const base = `${MOODLE_URL}/webservice/rest/server.php?wstoken=${MOODLE_TOKEN}&moodlewsrestformat=json`;
- 
-    // ── Llamada 1: todas las notas del curso (sin userid) ──────
-    const resNotas = await fetch(`${base}&wsfunction=gradereport_user_get_grade_items&courseid=${courseId}`);
-    if (!resNotas.ok) throw new Error(`HTTP ${resNotas.status}`);
-    const dataNotas = await resNotas.json();
-    if (dataNotas.exception) throw new Error(dataNotas.message);
- 
-    // usergrades: [{userid, userfullname, useridnumber, gradeitems[]}]
-    const usergrades = dataNotas.usergrades || [];
-    if (!usergrades.length) {
-      toast('Moodle no devolvió alumnos para este curso', 'warning');
-      return;
-    }
- 
-    // Mapa userid → puntaje total del curso
-    const userIdToNota = {};
-    usergrades.forEach(u => {
-      const totalItem = u.gradeitems?.find(g => g.itemtype === 'course');
-      if (totalItem && totalItem.graderaw !== null) {
-        userIdToNota[u.userid] = Number(totalItem.graderaw);
-      }
-    });
- 
-    // ── Llamada 2: buscar userid por username=CI ───────────────
-    const cis = filas.map(f => f.ci).filter(Boolean);
-    const paramsCIs = cis.map((ci, i) => `values[${i}]=${encodeURIComponent(ci)}`).join('&');
- 
-    const resUsuarios = await fetch(`${base}&wsfunction=core_user_get_users_by_field&field=username&${paramsCIs}`);
-    if (!resUsuarios.ok) throw new Error(`HTTP ${resUsuarios.status}`);
-    const usuarios = await resUsuarios.json();
-    if (usuarios.exception) throw new Error(usuarios.message);
- 
-    // Mapa ci → userid de Moodle
-    const ciToUserId = {};
-    (usuarios || []).forEach(u => { ciToUserId[u.username] = u.id; });
- 
-    // ── Cruzar: ci → userid → nota ─────────────────────────────
-    let actualizados = 0;
-    filas.forEach((f, i) => {
-      const userId = ciToUserId[f.ci];
-      if (!userId) return;
-      const nota = userIdToNota[userId];
-      if (nota === undefined) return;
-      filas[i].puntaje = nota;
-      filas[i].habAcad = nota >= MINIMO_PROCESO;
-      actualizados++;
-    });
- 
-    const noEncontrados = cis.length - Object.keys(ciToUserId).length;
-    if (actualizados === 0) {
-      toast('No se encontraron coincidencias. Verificá que los usernames en Moodle sean los CIs.', 'warning');
-    } else {
-      toast(`${actualizados} alumnos sincronizados${noEncontrados > 0 ? ` · ${noEncontrados} sin cuenta en Moodle` : ''}`, 'success');
-    }
-    renderTabla();
- 
-  } catch(e) {
-    toast('Error Moodle: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Sincronizar Moodle`;
-  }
-};
 
 // ── Guardar habilitaciones ─────────────────────────────────────
 window.guardarHabilitaciones = async () => {
@@ -808,31 +835,53 @@ window.guardarHabilitaciones = async () => {
     const activas = filas.filter(f => !f.excluido);
 
     for (const f of activas) {
+      const habAdmin = f.cuotaPagada && f.derechoPagado; // recalcular con estado actual de la sesión
+      const habAcad  = f.habAcad;
+      // estado_materia: solo Aprobado/Reprobado si tiene ambas habilitaciones y puntaje
+      let estadoMat = 'Cursando';
+      if (f.excluido) {
+        estadoMat = 'Ausente';
+      } else if (habAdmin && habAcad && f.puntaje !== '') {
+        estadoMat = Number(f.puntaje) >= 60 ? 'Aprobado' : 'Reprobado';
+      } else if (!habAdmin || !habAcad) {
+        estadoMat = 'Cursando';
+      }
+
       const payload = {
-        inscripcion_id: f.inscripcion_id,
-        materia_id:     calendarioActivo.materia_id,
-        oportunidad_nro: calendarioActivo.oportunidad_nro,
-        estado_materia: f.habAcad ? 'Cursando' : 'Ausente',
-        nota_obtenida:  f.puntaje !== '' ? Number(f.puntaje) : null,
-        registrado_por: sesion.id,
-        fecha_registro: new Date().toISOString(),
+        inscripcion_id:     f.inscripcion_id,
+        materia_id:         calendarioActivo.materia_id,
+        oportunidad_nro:    calendarioActivo.oportunidad_nro,
+        estado_materia:     estadoMat,
+        hab_administrativo: habAdmin,
+        hab_academico:      habAcad,
+        registrado_por:     sesion.id,
       };
 
       if (f.historial_id) {
-        // Ya existe — actualizar
-        await supabase.from('historial_examenes')
-          .update({ estado_materia: payload.estado_materia, nota_obtenida: payload.nota_obtenida, registrado_por: sesion.id })
+        const { error: errUpd } = await supabase.from('historial_examenes')
+          .update({
+            estado_materia:     payload.estado_materia,
+            hab_administrativo: payload.hab_administrativo,
+            hab_academico:      payload.hab_academico,
+            registrado_por:     sesion.id,
+          })
           .eq('id', f.historial_id);
+        if (errUpd) {
+          console.error('PATCH error detalle:', JSON.stringify(errUpd));
+          throw new Error(`historial id ${f.historial_id}: ${errUpd.message} | code: ${errUpd.code} | details: ${errUpd.details} | hint: ${errUpd.hint}`);
+        }
       } else {
-        // Insertar nuevo — upsert por si acaso
-        const { data: inserted } = await supabase.from('historial_examenes')
-          .upsert(payload, { onConflict: 'inscripcion_id,materia_id,oportunidad_nro' })
+        // Para el insert, quitar fecha_registro del payload (usa DEFAULT)
+        const { fecha_registro: _, ...payloadInsert } = payload;
+        const { data: inserted, error: errIns } = await supabase.from('historial_examenes')
+          .upsert(payloadInsert, { onConflict: 'inscripcion_id,materia_id,oportunidad_nro' })
           .select('id').single();
+        if (errIns) throw new Error(`upsert: ${errIns.message}`);
         if (inserted) f.historial_id = inserted.id;
       }
     }
 
-    toast(`${activas.length} registros guardados en historial`, 'success');
+    toast(`${activas.length} registros guardados`, 'success');
     actualizarTopbar();
   } catch(e) {
     toast('Error: ' + e.message, 'error');

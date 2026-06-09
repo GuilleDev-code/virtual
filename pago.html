@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Portal de Pagos — UPG</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="icon" type="image/png" href="assets/logo.png">
     <link
         href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap"
         rel="stylesheet">
@@ -71,6 +72,11 @@
             font-weight: 700;
             color: #fff;
             letter-spacing: -.01em;
+        }
+
+        .header-brand img {
+            width: 48px;
+            height: 48px;
         }
 
         .header-brand span {
@@ -178,7 +184,6 @@
         .main {
             max-width: 480px;
             margin: 0 auto;
-            padding: 24px 16px 80px;
         }
 
         /* ── CARD ── */
@@ -1036,7 +1041,11 @@
 
     <!-- HEADER -->
     <header class="header">
-        <div class="header-brand">UPG <span>Educación a Distancia</span></div>
+        <div style="display: flex;">
+            <div class="header-brand"><img src="assets/logo.png" alt="UPG"></div>
+        <div class="header-brand" style="align-content: center; margin-left: 5px;"><span>Educación a Distancia</span></div>
+        </div>
+        
         <div class="header-badge">Portal de pagos</div>
     </header>
 
@@ -1172,7 +1181,7 @@
             root.innerHTML = `
     <div class="ci-screen">
       <div style="text-align:center">
-        <div class="ci-logo">UPG <span>Educación a Distancia</span></div>
+        <div class="ci-logo">    <img src="assets/logo.png" alt="UPG" class="login-logo"> <span>Educación a Distancia</span></div>
       </div>
       <div class="ci-card">
         <h2>Registrar pago</h2>
@@ -1808,7 +1817,7 @@
 
                 // Opcional: Si n8n te responde ya con el ID generado tras procesar, puedes pasarlo aquí
                 const n8nData = await n8nRes.json();
-                (n8nData.respuesta=="ok") ? renderExito():console.log(error)
+                (n8nData.respuesta == "ok") ? renderExito() : console.log(error)
 
             } catch (e) {
                 document.getElementById('envioError').innerHTML =
