@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Académico — Sistema UPG</title>
   <link rel="stylesheet" href="assets/styles.css">
-    <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="icon" type="image/png" href="assets/logo.png">
   <style>
     .ac-wrap {
       display: flex;
@@ -283,46 +283,91 @@
       background: var(--warning-bg) !important;
     }
 
-    /* Calendario exámenes */
-    .cal-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 14px;
-    }
-
-    .cal-card {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
+    /* Calendario exámenes — vista tabla */
+    .cal-table-wrap {
+      border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 14px;
-      transition: all var(--transition);
+      overflow: hidden;
     }
 
-    .cal-card:hover {
-      border-color: var(--verde);
-      box-shadow: var(--shadow-sm);
+    .cal-table-wrap table {
+      width: 100%;
+      border-collapse: collapse;
     }
 
-    .cal-card-materia {
+    .cal-table-wrap thead th {
+      background: var(--surface-2);
+      padding: 10px 14px;
+      font-size: .75rem;
       font-weight: 700;
-      font-size: .88rem;
-      margin-bottom: 6px;
+      color: var(--txt-muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
     }
 
-    .cal-card-dates {
-      font-size: .78rem;
+    .cal-table-wrap tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition);
+    }
+
+    .cal-table-wrap tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    .cal-table-wrap tbody tr:hover {
+      background: var(--verde-light);
+    }
+
+    .cal-table-wrap td {
+      padding: 10px 14px;
+      font-size: .83rem;
+      vertical-align: middle;
+    }
+
+    .cal-td-materia {
+      font-weight: 600;
+      color: var(--txt-primary);
+    }
+
+    .cal-td-codigo {
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      color: var(--txt-muted);
+      margin-top: 2px;
+    }
+
+    .cal-op-btn {
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      font-size: .75rem;
+      font-weight: 500;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
       color: var(--txt-secondary);
-      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
     }
 
-    .cal-card-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .cal-vigente {
+    .cal-op-btn:hover {
       border-color: var(--verde);
+      color: var(--verde);
+    }
+
+    .cal-op-btn.vigente {
+      background: var(--verde);
+      border-color: var(--verde);
+      color: #fff;
+    }
+
+    .cal-op-btn.cerrado {
+      background: var(--surface-2);
+      border-color: var(--border);
+      color: var(--txt-muted);
+      text-decoration: line-through;
+      cursor: default;
     }
   </style>
 </head>
@@ -434,17 +479,17 @@
           <!-- ── CALENDARIO EXÁMENES ────────────────────────── -->
           <div class="tab-section" id="tab-examenes">
             <div class="toolbar">
-              <select class="form-control" id="filtroCarreraCal" style="width:auto">
-                <option value="">Todas las carreras</option>
+              <select class="form-control" id="filtroCarreraCal" style="width:auto;min-width:220px">
+                <option value="">-Selecciona una Carrera-</option>
               </select>
-              <select class="form-control" id="filtroEstadoCal" style="width:auto">
-                <option value="">Todos</option>
-                <option value="VIGENTE">Vigentes</option>
-                <option value="PENDIENTE">Pendientes</option>
-                <option value="CERRADO">Cerrados</option>
+              <select class="form-control" id="filtroCohorteCalView" style="width:auto;min-width:140px" disabled>
+                <option value="">-Cohorte-</option>
               </select>
-              <button class="btn btn-primary btn-sm" id="btnNuevoCalendario"
-                data-requiere-rol="Admin,Academico,Docente">
+              <select class="form-control" id="filtroAnhoCalView" style="width:auto;min-width:110px" disabled>
+                <option value="">-Año/Curso-</option>
+              </select>
+              <button class="btn btn-primary btn-sm" id="btnNuevoCalendario" data-requiere-rol="Admin,Academico,Docente"
+                style="margin-left:auto">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="5" x2="12" y2="19" />
@@ -452,10 +497,23 @@
                 </svg>
                 Nuevo período
               </button>
-              <span id="calTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
             </div>
-            <div class="cal-grid" id="calGrid">
-              <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt-muted)">Cargando...</div>
+            <div id="calEmpty" style="text-align:center;padding:60px;color:var(--txt-muted)">
+              <p style="font-size:.88rem">Seleccioná una carrera para ver el calendario de exámenes</p>
+            </div>
+            <div class="cal-table-wrap" id="calTableWrap" style="display:none">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Materia</th>
+                    <th style="text-align:center">1ª Oportunidad</th>
+                    <th style="text-align:center">2ª Oportunidad</th>
+                    <th style="text-align:center">3ª Oportunidad</th>
+                    <th style="text-align:center">Extraordinaria</th>
+                  </tr>
+                </thead>
+                <tbody id="calTableBody"></tbody>
+              </table>
             </div>
           </div>
 
@@ -738,6 +796,7 @@
     let docenteActual = null; // Si rol=Docente, se carga su registro
     let carrerasDocente = []; // IDs de carreras del docente
     let cohortesDocente = []; // IDs de carreras del docente
+    let cohortes = [];
 
     // ── Init ──────────────────────────────────────────────────────
     // Si es Docente, primero buscamos su registro en la tabla docentes por CI
@@ -814,7 +873,7 @@
 
       // Tab calendario
       const elCal = document.getElementById('filtroCarreraCal');
-      if (elCal) elCal.innerHTML = `<option value="">Todas las carreras</option>${optsPlain}`;
+      if (elCal) elCal.innerHTML = `<option value="">-Selecciona una Carrera-</option>${optsPlain}`;
 
       // Tab actas
       const elAct = document.getElementById('filtroCarreraActas');
@@ -1200,74 +1259,204 @@
 
     // ── Calendario de exámenes ────────────────────────────────────
     async function cargarCalendarios() {
-      const { data } = await supabase
-        .from('calendario_examenes')
-        .select(`id, anho_lectivo, oportunidad_nro, fecha_desde, fecha_hasta, estado,
-      materias ( id, nombre ),
-      cohortes ( id, nro_cohorte, anho_inicio, carreras ( id, nombre ) )`)
-        .order('fecha_desde', { ascending: false });
+      // 1. Traer TODAS las materias
+      const { data: dataMaterias } = await supabase.from('materias').select('id, nombre, carrera_id,modulo_nro').order('modulo_nro');
+      let listaMaterias = dataMaterias || [];
 
-      let all = data || [];
+      // 2. Traer TODAS las cohortes
+      const { data: dataCohortes } = await supabase.from('cohortes').select('id, nro_cohorte, anho_inicio, carrera_id').order('anho_inicio', { ascending: false });
+      let listaCohortes = dataCohortes || [];
 
-      // Si docente, filtrar solo sus materias asignadas activas
-      if (sesion.rol === 'Docente' && docenteActual) {
-        const { data: dm } = await supabase
-          .from('docentes_carreras')
-          .select('cohorte_id')
-          .eq('docente_id', docenteActual.id)
-          .eq('activo', true);
-        const misCohsIds = (dm || []).map(x => x.cohorte_id);
-        all = all.filter(c => misCohsIds.includes(c.cohortes?.id));
+      // 3. Traer los exámenes que ya están agendados
+      const { data: dataExamenes } = await supabase.from('calendario_examenes').select('id, anho_lectivo, oportunidad_nro, fecha_desde, fecha_hasta, estado, materia_id, cohorte_id');
+      let listaExamenes = dataExamenes || [];
+
+      // [FILTRO DOCENTE]: Si es docente, recortamos las listas en memoria
+      if (sesion.rol === 'Docente') {
+        listaMaterias = listaMaterias.filter(m => carrerasDocente.includes(m.carrera_id));
+        listaCohortes = listaCohortes.filter(co => cohortesDocente.includes(co.id));
+        listaExamenes = listaExamenes.filter(ex => cohortesDocente.includes(ex.cohorte_id));
       }
 
-      calendarios = all;
+      // Guardamos todo en las variables globales
+      materias = listaMaterias;
+      cohortes = listaCohortes;
+      calendarios = listaExamenes;
+
+
+      // Dibujamos la tabla por primera vez
       renderCalendarios();
     }
 
     function renderCalendarios() {
-      const carrera = document.getElementById('filtroCarreraCal').value;
-      const estado = document.getElementById('filtroEstadoCal').value;
+      const carreraId = document.getElementById('filtroCarreraCal').value;
+      const cohorteId = document.getElementById('filtroCohorteCalView').value;
+      const anhoLect = document.getElementById('filtroAnhoCalView').value;
 
-      let items = calendarios;
-      if (carrera) items = items.filter(c => String(c.cohortes?.carreras?.id) === carrera);
-      if (estado) items = items.filter(c => c.estado === estado);
+      const wrap = document.getElementById('calTableWrap');
+      const empty = document.getElementById('calEmpty');
 
-      document.getElementById('calTotal').textContent = `${items.length} períodos`;
-      const EST = { VIGENTE: 'badge-success', PENDIENTE: 'badge-warning', CERRADO: 'badge-muted' };
-      const OP = { 1: '1ª oportunidad', 2: '2ª oportunidad', 3: '3ª oportunidad', 4: 'Extraordinaria' };
+      // Si no hay carrera seleccionada, no mostramos nada aún
+      if (!carreraId || !cohorteId) {
+        wrap.style.display = 'none';
+        empty.style.display = '';
+        empty.querySelector('p').textContent = 'Seleccioná una carrera para ver el calendario';
+        return;
+      }
+
+      // Filtramos las materias que pertenecen a la carrera seleccionada
+      const materiasDeLaCarrera = materias.filter(m => String(m.carrera_id) === carreraId);
+
       const puedeGestionar = ['Admin', 'Academico', 'Docente'].includes(sesion.rol);
+      const OP_LABELS = { 1: '1ª Op.', 2: '2ª Op.', 3: '3ª Op.', 4: 'Ext.' };
 
-      document.getElementById('calGrid').innerHTML = items.map(c => `
-    <div class="cal-card ${c.estado === 'VIGENTE' ? 'cal-vigente' : ''}">
-      <div class="cal-card-materia">${c.materias?.nombre || '—'}</div>
-      <div class="cal-card-dates">Carrera: ${c.cohortes?.carreras?.nombre || '—'}</div>
-      <div class="cal-card-dates">${c.cohortes?.nro_cohorte || '—'}ª Cohorte — ${c.cohortes?.anho_inicio || '—'}</div>
-      <div class="cal-card-dates">
-        ${new Date(c.fecha_desde).toLocaleDateString('es-PY')} — ${new Date(c.fecha_hasta).toLocaleDateString('es-PY')}
-      </div>
-      <div class="cal-card-footer">
-        <span class="badge badge-muted" style="font-size:.65rem">${OP[c.oportunidad_nro] || c.oportunidad_nro + 'ª'}</span>
-        <span class="badge ${EST[c.estado] || 'badge-muted'}" style="font-size:.65rem">${c.estado}</span>
-        ${puedeGestionar && c.estado !== 'CERRADO' ? `
-          <button class="btn btn-ghost btn-sm" onclick="cambiarEstadoCal(${c.id},'${c.estado === 'PENDIENTE' ? 'VIGENTE' : 'CERRADO'}')">
-            ${c.estado === 'PENDIENTE' ? 'Activar' : 'Cerrar'}
-          </button>` : ''}
-      </div>
-    </div>`).join('') || `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt-muted)">Sin períodos</div>`;
+      // Construimos las filas de la tabla iterando por MATERIA
+      const rows = materiasDeLaCarrera.map(m => {
+
+        // Para cada materia, creamos sus 4 columnas de oportunidades (1 a 4)
+        const columnasOportunidades = [1, 2, 3, 4].map(n => {
+
+          // BUSCAMOS: ¿Existe un examen para ESTA materia, ESTA cohorte, ESTE año y ESTA oportunidad?
+          const examenEncontrado = calendarios.find(ex =>
+            String(ex.materia_id) === String(m.id) &&
+            (cohorteId ? String(ex.cohorte_id) === cohorteId : true) &&
+            (anhoLect ? String(ex.anho_lectivo) === anhoLect : true) &&
+            ex.oportunidad_nro === n
+          );
+
+          // SI NO HAY EXAMEN: Mostramos la casilla gris/vacía
+          // SI NO HAY EXAMEN: Mostramos un botón sutil para programar al instante
+          if (!examenEncontrado) {
+            return `<td style="text-align:center">
+            <button class="cal-op-btn-crear" 
+                    style="opacity:.4; cursor:pointer; font-size:.75rem; border:1px dashed var(--txt-muted); background:none; padding:4px 8px; border-radius:4px;"
+                    onclick="abrirModalNuevoPeriodo('${carreraId}', '${cohorteId}', '${m.id}', ${n})" 
+                    title="Programar examen">
+              + Programar
+            </button>
+          </td>`;
+          }
+
+          // SI HAY EXAMEN: Preparamos el botón con su estado (VIGENTE, CERRADO, PENDIENTE)
+          const ex = examenEncontrado;
+          const claseEstado = ex.estado === 'VIGENTE' ? 'vigente' : ex.estado === 'CERRADO' ? 'cerrado' : 'pendiente';
+
+          const labelBoton = `${OP_LABELS[n]}<br><small style="font-size:.68rem">${new Date(ex.fecha_desde).toLocaleDateString('es-PY')} al ${new Date(ex.fecha_hasta).toLocaleDateString('es-PY')}</small>`;
+
+          const clickAccion = puedeGestionar && ex.estado !== 'CERRADO'
+            ? `onclick="cambiarEstadoCal(${ex.id}, '${ex.estado === 'PENDIENTE' ? 'VIGENTE' : 'CERRADO'}')"`
+            : '';
+
+          return `<td style="text-align:center"><button class="cal-op-btn ${claseEstado}" ${clickAccion}>${labelBoton}</button></td>`;
+        }).join('');
+
+        return `<tr><td><div class="cal-td-materia">${m.modulo_nro} - ${m.nombre}</div></td>${columnasOportunidades}</tr>`;
+      }).join('');
+
+      document.getElementById('calTableBody').innerHTML = rows;
+      wrap.style.display = '';
+      empty.style.display = 'none';
     }
 
-    ['filtroCarreraCal', 'filtroEstadoCal'].forEach(id => document.getElementById(id)?.addEventListener('change', renderCalendarios));
+    // Cascada: Carrera → Cohorte → Año Lectivo
+    document.getElementById('filtroCarreraCal')?.addEventListener('change', function () {
+      const carreraId = this.value;
+      const selCohorte = document.getElementById('filtroCohorteCalView');
 
-    window.cambiarEstadoCal = async (id, nuevoEst) => {
-      await supabase.from('calendario_examenes').update({ estado: nuevoEst }).eq('id', id);
-      toast(`Período ${nuevoEst === 'VIGENTE' ? 'activado' : 'cerrado'}`, 'success');
-      await cargarCalendarios();
-    };
+      selCohorte.innerHTML = '<option value="">-Todas las Cohortes-</option>';
+      selCohorte.disabled = !carreraId;
+
+      if (!carreraId) { renderCalendarios(); return; }
+
+      // Filtramos las cohortes de la carrera elegida
+      const cohortesFiltradas = cohortes.filter(co => String(co.carrera_id) === carreraId);
+
+      cohortesFiltradas.forEach(co => {
+        const option = document.createElement('option');
+        option.value = co.id;
+        option.textContent = `${co.nro_cohorte}ª Cohorte — ${co.anho_inicio}`;
+        selCohorte.appendChild(option);
+      });
+
+      renderCalendarios();
+    });
+
+    document.getElementById('filtroCohorteCalView')?.addEventListener('change', function () {
+      const carreraId = document.getElementById('filtroCarreraCal').value;
+      const cohorteId = this.value;
+      const selAnho = document.getElementById('filtroAnhoCalView');
+
+      selAnho.innerHTML = '<option value="">—</option>';
+      selAnho.disabled = !cohorteId;
+
+      if (cohorteId) {
+        const anhos = [...new Set(
+          calendarios.filter(c => String(c.cohortes?.carreras?.id) === carreraId && String(c.cohortes?.id) === cohorteId)
+            .map(c => c.anho_lectivo)
+        )].sort((a, b) => b - a);
+
+        anhos.forEach(a => {
+          const o = document.createElement('option');
+          o.value = a; o.textContent = a;
+          selAnho.appendChild(o);
+        });
+      }
+
+      renderCalendarios();
+    });
+
+    document.getElementById('filtroAnhoCalView')?.addEventListener('change', renderCalendarios);
+
+    window.cambiarEstadoCal = async (id, nuevoEstado) => {
+      const examen = calendarios.find(ex => ex.id === id);
+  const materia = materias.find(m => m.id === examen?.materia_id);
+  const nombreMat = materia ? materia.nombre : 'la materia';
+
+  // 2. Preparamos mensajes personalizados según el salto de estado
+  let mensajeConfirmacion = '';
+
+  if (nuevoEstado === 'VIGENTE') {
+    mensajeConfirmacion = `¿Deseas abrir y pasar a VIGENTE el periodo de examen para:\n📖 ${nombreMat}?\n\n(Esto permitirá que los alumnos interactúen o se inscriban).`;
+  } 
+  else if (nuevoEstado === 'CERRADO') {
+    mensajeConfirmacion = `⚠️ ¡ATENCIÓN! ¿Estás seguro de CERRAR definitivamente el periodo de examen de:\n📖 ${nombreMat}?\n\n❌ Una vez cerrado, el periodo finalizará y ya no se podrán realizar modificaciones ni recibir más respuestas.`;
+  } 
+  else {
+    // Por si en algún momento manejas otro flujo
+    mensajeConfirmacion = `¿Estás seguro de cambiar el estado de este examen a ${nuevoEstado}?`;
+  }
+
+  // 3. Lanzamos el cuadro de confirmación
+  const aceptar = confirm(mensajeConfirmacion);
+  if (!aceptar) return; // Si el usuario le da a "Cancelar", el flujo se corta acá y no pasa nada.
+
+  // 4. Si el usuario acepta, se ejecuta tu lógica original con Supabase
+  try {
+    const { error } = await supabase
+      .from('calendario_examenes')
+      .update({ estado: nuevoEstado })
+      .eq('id', id);
+
+    if (error) {
+      toast('Error al cambiar el estado: ' + error.message, 'danger');
+      return;
+    }
+
+    toast(`Examen actualizado a ${nuevoEstado} con éxito`, 'success');
+    
+    // Recargamos los datos para que la grilla se vuelva a pintar con los nuevos colores
+    await cargarCalendarios(); 
+
+  } catch (err) {
+    console.error(err);
+    toast('Error inesperado en el servidor', 'danger');
+  }
+}
 
 
     document.getElementById('btnNuevoCalendario')?.addEventListener('click', async () => {
-  document.getElementById('modalTitle').textContent = 'Nuevo periodo de exámen';
-  document.getElementById('modalBody').innerHTML = `
+      document.getElementById('modalTitle').textContent = 'Nuevo periodo de exámen';
+      document.getElementById('modalBody').innerHTML = `
     <div class="form-group">
       <label>Carrera</label>
       <select id="calCarreraId" class="form-control">
@@ -1332,219 +1521,325 @@
       </div>
     </div>`;
 
-  const selectCarrera = document.getElementById('calCarreraId');
-  const selectCohorte = document.getElementById('calCohorteId');
-  const selectMateria = document.getElementById('calMateriaId');
-  const selectOportunidad = document.getElementById('calOportunidadNro');
-  const selectMoodleCourse = document.getElementById('calMoodleId');
-  const selectMoodleGrupo = document.getElementById('calMoodleGrupoId');
-  
-  const statusCourse = document.getElementById('statusMoodleCourse');
-  const statusGrupo = document.getElementById('statusMoodleGrupo');
+      const selectCarrera = document.getElementById('calCarreraId');
+      const selectCohorte = document.getElementById('calCohorteId');
+      const selectMateria = document.getElementById('calMateriaId');
+      const selectOportunidad = document.getElementById('calOportunidadNro');
+      const selectMoodleCourse = document.getElementById('calMoodleId');
+      const selectMoodleGrupo = document.getElementById('calMoodleGrupoId');
 
-  let coursesMoodleDisponibles = [];
-  let gruposMoodleDisponibles = [];
+      const statusCourse = document.getElementById('statusMoodleCourse');
+      const statusGrupo = document.getElementById('statusMoodleGrupo');
 
-  // Función interna para estandarizar textos de oportunidades (Diccionario de Sinónimos)
-  const obtenerClaveEstandar = (texto) => {
-    const t = texto.toUpperCase();
-    if (t.includes('1') || t.includes('PRIMER')) return 'OP1';
-    if (t.includes('2') || t.includes('SEGUND')) return 'OP2';
-    if (t.includes('3') || t.includes('TERCER')) return 'OP3';
-    if (t.includes('4') || t.includes('EXTRAORDINARIO')) return 'OP4';
-    return t;
-  };
+      let coursesMoodleDisponibles = [];
+      let gruposMoodleDisponibles = [];
 
-  // Carga inicial de Carreras
-  const { data: carreras } = await supabase.from('carreras').select('id, nombre, codigo').eq('estado', 'Activa').order('nombre');
-  const carrExFiltradas = sesion.rol === 'Docente' ? carreras.filter(c => carrerasDocente.includes(c.id)) : carreras;
-  if (carrExFiltradas) {
-    carrExFiltradas.forEach(c => { selectCarrera.innerHTML += `<option value="${c.id}">${c.nombre} (${c.codigo})</option>`; });
-  }
+      // Función interna para estandarizar textos de oportunidades (Diccionario de Sinónimos)
+      const obtenerClaveEstandar = (texto) => {
+        const t = texto.toUpperCase();
+        if (t.includes('1') || t.includes('PRIMER')) return 'OP1';
+        if (t.includes('2') || t.includes('SEGUND')) return 'OP2';
+        if (t.includes('3') || t.includes('TERCER')) return 'OP3';
+        if (t.includes('4') || t.includes('EXTRAORDINARIO')) return 'OP4';
+        return t;
+      };
 
-  // 1. Cambio de Carrera
-  selectCarrera.addEventListener('change', async () => {
-    const carreraId = selectCarrera.value;
-    if (!carreraId) {
-      selectCohorte.disabled = true; selectMateria.disabled = true; selectMoodleCourse.disabled = true; selectMoodleGrupo.disabled = true;
-      return;
-    }
+      // Carga inicial de Carreras
+      const { data: carreras } = await supabase.from('carreras').select('id, nombre, codigo').eq('estado', 'Activa').order('nombre');
+      const carrExFiltradas = sesion.rol === 'Docente' ? carreras.filter(c => carrerasDocente.includes(c.id)) : carreras;
+      if (carrExFiltradas) {
+        carrExFiltradas.forEach(c => { selectCarrera.innerHTML += `<option value="${c.id}">${c.nombre} (${c.codigo})</option>`; });
+      }
 
-    const [resCohortes, resMaterias] = await Promise.all([
-      supabase.from('cohortes').select('id, nro_cohorte, anho_inicio, moodle_id').eq('carrera_id', carreraId).eq('estado', 'Activo').order('anho_inicio', { ascending: false }),
-      supabase.from('materias').select('id, nombre, codigo').eq('carrera_id', carreraId).eq('activa', true).order('modulo_nro')
-    ]);
+      // 1. Cambio de Carrera
+      selectCarrera.addEventListener('change', async () => {
+        const carreraId = selectCarrera.value;
+        if (!carreraId) {
+          selectCohorte.disabled = true; selectMateria.disabled = true; selectMoodleCourse.disabled = true; selectMoodleGrupo.disabled = true;
+          return;
+        }
 
-    selectCohorte.innerHTML = '<option value="">-- Selecciona el Cohorte --</option>';
-    const chExFiltrados = sesion.rol === 'Docente' ? resCohortes.data.filter(ch => cohortesDocente.includes(ch.id)) : resCohortes.data;
-    if (chExFiltrados && chExFiltrados.length > 0) {
-      chExFiltrados.forEach(coh => { selectCohorte.innerHTML += `<option value="${coh.id}" data-moodle-id="${coh.moodle_id || ''}">${coh.nro_cohorte}ª Cohorte - ${coh.anho_inicio}</option>`; });
-      selectCohorte.disabled = false;
-    }
+        const [resCohortes, resMaterias] = await Promise.all([
+          supabase.from('cohortes').select('id, nro_cohorte, anho_inicio, moodle_id').eq('carrera_id', carreraId).eq('estado', 'Activo').order('anho_inicio', { ascending: false }),
+          supabase.from('materias').select('id, nombre, codigo').eq('carrera_id', carreraId).eq('activa', true).order('modulo_nro')
+        ]);
 
-    selectMateria.innerHTML = '<option value="">-- Selecciona la Materia --</option>';
-    if (resMaterias.data && resMaterias.data.length > 0) {
-      resMaterias.data.forEach(mat => { selectMateria.innerHTML += `<option value="${mat.id}">${mat.nombre} [${mat.codigo}]</option>`; });
-      selectMateria.disabled = false;
-    }
-  });
+        selectCohorte.innerHTML = '<option value="">-- Selecciona el Cohorte --</option>';
+        const chExFiltrados = sesion.rol === 'Docente' ? resCohortes.data.filter(ch => cohortesDocente.includes(ch.id)) : resCohortes.data;
+        if (chExFiltrados && chExFiltrados.length > 0) {
+          chExFiltrados.forEach(coh => { selectCohorte.innerHTML += `<option value="${coh.id}" data-moodle-id="${coh.moodle_id || ''}">${coh.nro_cohorte}ª Cohorte - ${coh.anho_inicio}</option>`; });
+          selectCohorte.disabled = false;
+        }
 
-  // 2. Al seleccionar Cohorte -> Descargamos los cursos de Moodle
-  selectCohorte.addEventListener('change', async () => {
-    const cohorteOption = selectCohorte.selectedOptions[0];
-    const moodleIdCategoria = cohorteOption?.getAttribute('data-moodle-id');
-    coursesMoodleDisponibles = [];
-    selectMoodleCourse.innerHTML = '<option value="">-- Selecciona el Aula Virtual --</option>';
-    selectMoodleCourse.disabled = true;
+        selectMateria.innerHTML = '<option value="">-- Selecciona la Materia --</option>';
+        if (resMaterias.data && resMaterias.data.length > 0) {
+          resMaterias.data.forEach(mat => { selectMateria.innerHTML += `<option value="${mat.id}">${mat.nombre} [${mat.codigo}]</option>`; });
+          selectMateria.disabled = false;
+        }
+      });
 
-    if (!selectCohorte.value || !moodleIdCategoria) {
-      statusCourse.innerHTML = '⚠️ Cohorte sin vinculación base con Moodle.';
-      return;
-    }
+      // 2. Al seleccionar Cohorte -> Descargamos los cursos de Moodle
+      selectCohorte.addEventListener('change', async () => {
+        const cohorteOption = selectCohorte.selectedOptions[0];
+        const moodleIdCategoria = cohorteOption?.getAttribute('data-moodle-id');
+        coursesMoodleDisponibles = [];
+        selectMoodleCourse.innerHTML = '<option value="">-- Selecciona el Aula Virtual --</option>';
+        selectMoodleCourse.disabled = true;
 
-    statusCourse.textContent = 'Cargando aulas de Moodle...';
+        if (!selectCohorte.value || !moodleIdCategoria) {
+          statusCourse.innerHTML = '⚠️ Cohorte sin vinculación base con Moodle.';
+          return;
+        }
+
+        statusCourse.textContent = 'Cargando aulas de Moodle...';
+
+        try {
+          const url = `${MOODLE.URL}/webservice/rest/server.php?wstoken=${MOODLE.TOKEN}&wsfunction=core_course_get_courses_by_field&moodlewsrestformat=json&field=category&value=${moodleIdCategoria}`;
+          const res = await fetch(url);
+          const dataMoodle = await res.json();
+
+          if (dataMoodle.courses) {
+            coursesMoodleDisponibles = dataMoodle.courses.filter(c => c.id !== 1);
+            coursesMoodleDisponibles.forEach(course => {
+              selectMoodleCourse.innerHTML += `<option value="${course.id}">${course.fullname}</option>`;
+            });
+            selectMoodleCourse.disabled = false;
+            statusCourse.innerHTML = '✅ Aulas virtuales de Moodle listas.';
+          }
+        } catch (err) {
+          console.error(err);
+          statusCourse.textContent = '❌ Error al conectar con Moodle.';
+        }
+      });
+
+      // 3. Al cambiar Materia Local -> Intentamos preseleccionar el curso de Moodle
+      selectMateria.addEventListener('change', async () => {
+        if (!selectMateria.value) return;
+
+        const nombreMateriaLocal = selectMateria.selectedOptions[0].text.split('[')[0].trim().toUpperCase();
+        const cursoMacho = coursesMoodleDisponibles.find(c => c.fullname.toUpperCase().includes(nombreMateriaLocal));
+
+        if (cursoMacho) {
+          selectMoodleCourse.value = cursoMacho.id; // Sincroniza el select visualmente
+          statusCourse.innerHTML = `✅ <span style="color: green">Sincronizado automáticamente.</span>`;
+        } else {
+          selectMoodleCourse.value = "";
+          statusCourse.innerHTML = `ℹ️ <span style="color: #b76e00">No se halló coincidencia exacta. Por favor, seleccionalo a mano.</span>`;
+        }
+
+        // De cualquier forma, gatillamos el cambio del curso para traer sus grupos
+        selectMoodleCourse.dispatchEvent(new Event('change'));
+      });
+
+      // 4. Al cambiar el Aula Virtual de Moodle (ya sea manual o por trigger automático)
+      selectMoodleCourse.addEventListener('change', async () => {
+        const courseId = selectMoodleCourse.value;
+        gruposMoodleDisponibles = [];
+        selectMoodleGrupo.innerHTML = '<option value="">-- Selecciona el Grupo / Oportunidad --</option>';
+        selectMoodleGrupo.disabled = true;
+        statusGrupo.textContent = '';
+
+        if (!courseId) return;
+
+        statusGrupo.textContent = 'Cargando grupos de Moodle...';
+
+        try {
+          const url = `${MOODLE.URL}/webservice/rest/server.php?wstoken=${MOODLE.TOKEN}&wsfunction=core_group_get_course_groups&moodlewsrestformat=json&courseid=${courseId}`;
+          const res = await fetch(url);
+          gruposMoodleDisponibles = await res.json();
+
+          if (!gruposMoodleDisponibles || gruposMoodleDisponibles.exception || gruposMoodleDisponibles.length === 0) {
+            statusGrupo.textContent = '⚠️ Este curso no tiene grupos creados en Moodle.';
+            return;
+          }
+
+          gruposMoodleDisponibles.forEach(g => {
+            selectMoodleGrupo.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+          });
+          selectMoodleGrupo.disabled = false;
+
+          // Intentamos el macheo automático del grupo al terminar de cargar
+          machearGrupoMoodle();
+
+        } catch (err) {
+          console.error(err);
+          statusGrupo.textContent = '❌ Error al traer grupos.';
+        }
+      });
+
+      // 5. Al cambiar la Oportunidad Local -> Buscamos y preseleccionamos el grupo de Moodle
+      selectOportunidad.addEventListener('change', () => {
+        machearGrupoMoodle();
+      });
+
+      function machearGrupoMoodle() {
+        if (!selectMoodleCourse.value || gruposMoodleDisponibles.length === 0 || gruposMoodleDisponibles.exception) return;
+
+        const textoOportunidadLocal = selectOportunidad.selectedOptions[0].text;
+        const claveLocal = obtenerClaveEstandar(textoOportunidadLocal);
+
+        const grupoMacho = gruposMoodleDisponibles.find(g => obtenerClaveEstandar(g.name) === claveLocal);
+
+        if (grupoMacho) {
+          selectMoodleGrupo.value = grupoMacho.id; // Sincroniza el select de grupos visualmente
+          statusGrupo.innerHTML = `✅ <span style="color: green">Sincronizado automáticamente.</span>`;
+        } else {
+          selectMoodleGrupo.value = "";
+          statusGrupo.innerHTML = `ℹ️ <span style="color: #b76e00">No se halló coincidencia. Selecciona el grupo a mano.</span>`;
+        }
+      }
+
+      // Guardar datos
+      modalGuardarFn = async () => {
+        const cohorteId = selectCohorte.value;
+        const materiaId = selectMateria.value;
+        const moodleCourseId = selectMoodleCourse.value;
+        const moodleGrupoId = selectMoodleGrupo.value;
+        const anhoLectivo = document.getElementById('calAnhoLectivo').value;
+        const opNro = selectOportunidad.value;
+        const desde = document.getElementById('calFechaDesde').value;
+        const hasta = document.getElementById('calFechaHasta').value;
+
+        if (!cohorteId || !materiaId || !desde || !hasta) {
+          toast('Por favor, completa todos los campos obligatorios', 'warning');
+          return;
+        }
+
+        const { error } = await supabase
+          .from('calendario_examenes')
+          .insert({
+            materia_id: parseInt(materiaId),
+            cohorte_id: parseInt(cohorteId),
+            anho_lectivo: parseInt(anhoLectivo),
+            oportunidad_nro: parseInt(opNro),
+            fecha_desde: desde,
+            fecha_hasta: hasta,
+            estado: 'PENDIENTE',
+            id_moodle: moodleCourseId || null,     // Se guarda lo seleccionado en el combo (sea auto o manual)
+            id_grupo_moodle: moodleGrupoId || null // Se guarda lo seleccionado en el combo (sea auto o manual)
+          });
+
+        if (error) {
+          if (error.code === '23505') {
+            toast('Error: Ya existe un examen para esta materia, cohorte y oportunidad.', 'danger');
+          } else {
+            toast('Error al guardar: ' + error.message, 'danger');
+          }
+          return;
+        }
+
+        toast('Período creado con éxito', 'success');
+        cerrarModal(); await cargarCalendarios();
+      };
+
+      document.getElementById('modalOverlay').classList.add('open');
+
+    });
+
+    // Agregamos window. al inicio para hacerla global a la fuerza
+window.abrirModalNuevoPeriodo = async function(carreraId, cohorteId, materiaId, oportunidadNro) {
+  // 1. Abrimos el modal simulando el clic tradicional
+  document.getElementById('btnNuevoCalendario').click();
+
+  // 2. Esperamos un instante corto a que el HTML se renderice en el DOM
+  setTimeout(async () => {
+    const titleEl = document.getElementById('modalTitle');
+    const selectCarrera = document.getElementById('calCarreraId');
+    const selectCohorte = document.getElementById('calCohorteId');
+    const selectMateria = document.getElementById('calMateriaId');
+    const selectOportunidad = document.getElementById('calOportunidadNro');
+
+    if (!selectCarrera || !titleEl) return;
+
+    // Guardamos el título original para restaurarlo después
+    const tituloOriginal = titleEl.textContent;
+
+    // 3. PONEMOS EL SPINNER DIRECTO EN EL TÍTULO (Imposible de omitir o borrar por otros eventos)
+    titleEl.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="loader-global-spinner"></div>
+        <span>Sincronizando con Moodle...</span>
+      </div>
+      <style>
+        .loader-global-spinner {
+          width: 18px;
+          height: 18px;
+          border: 2.5px solid rgba(0,0,0,.1);
+          border-top-color: var(--primary, #007bff);
+          border-radius: 50%;
+          animation: spinGlobal 0.7s linear infinite;
+        }
+        @keyframes spinGlobal {
+          to { transform: rotate(360deg); }
+        }
+      </style>
+    `;
+
+    // 4. Bloqueamos preventivamente todos los campos del formulario
+    selectCarrera.disabled = true;
+    selectCohorte.disabled = true;
+    selectMateria.disabled = true;
+    selectOportunidad.disabled = true;
+
+    // Asignamos la Carrera
+    selectCarrera.value = carreraId;
 
     try {
-      const url = `${MOODLE.URL}/webservice/rest/server.php?wstoken=${MOODLE.TOKEN}&wsfunction=core_course_get_courses_by_field&moodlewsrestformat=json&field=category&value=${moodleIdCategoria}`;
-      const res = await fetch(url);
-      const dataMoodle = await res.json();
-      
-      if (dataMoodle.courses) {
-        coursesMoodleDisponibles = dataMoodle.courses.filter(c => c.id !== 1);
-        coursesMoodleDisponibles.forEach(course => {
-          selectMoodleCourse.innerHTML += `<option value="${course.id}">${course.fullname}</option>`;
+      // 5. Consultamos las cohortes y materias directamente a Supabase
+      const [resCohortes, resMaterias] = await Promise.all([
+        supabase.from('cohortes').select('id, nro_cohorte, anho_inicio, moodle_id').eq('carrera_id', carreraId).eq('estado', 'Activo').order('anho_inicio', { ascending: false }),
+        supabase.from('materias').select('id, nombre, codigo').eq('carrera_id', carreraId).eq('activa', true).order('modulo_nro')
+      ]);
+
+      // Llenamos el selector de Cohortes
+      selectCohorte.innerHTML = '<option value="">-- Selecciona el Cohorte --</option>';
+      const chExFiltrados = sesion.rol === 'Docente' ? resCohortes.data.filter(ch => cohortesDocente.includes(ch.id)) : resCohortes.data;
+      if (chExFiltrados) {
+        chExFiltrados.forEach(coh => { 
+          selectCohorte.innerHTML += `<option value="${coh.id}" data-moodle-id="${coh.moodle_id || ''}">${coh.nro_cohorte}ª Cohorte - ${coh.anho_inicio}</option>`; 
         });
-        selectMoodleCourse.disabled = false;
-        statusCourse.innerHTML = '✅ Aulas virtuales de Moodle listas.';
-      }
-    } catch (err) {
-      console.error(err);
-      statusCourse.textContent = '❌ Error al conectar con Moodle.';
-    }
-  });
-
-  // 3. Al cambiar Materia Local -> Intentamos preseleccionar el curso de Moodle
-  selectMateria.addEventListener('change', async () => {
-    if (!selectMateria.value) return;
-
-    const nombreMateriaLocal = selectMateria.selectedOptions[0].text.split('[')[0].trim().toUpperCase();
-    const cursoMacho = coursesMoodleDisponibles.find(c => c.fullname.toUpperCase().includes(nombreMateriaLocal));
-
-    if (cursoMacho) {
-      selectMoodleCourse.value = cursoMacho.id; // Sincroniza el select visualmente
-      statusCourse.innerHTML = `✅ <span style="color: green">Sincronizado automáticamente.</span>`;
-    } else {
-      selectMoodleCourse.value = "";
-      statusCourse.innerHTML = `ℹ️ <span style="color: #b76e00">No se halló coincidencia exacta. Por favor, seleccionalo a mano.</span>`;
-    }
-    
-    // De cualquier forma, gatillamos el cambio del curso para traer sus grupos
-    selectMoodleCourse.dispatchEvent(new Event('change'));
-  });
-
-  // 4. Al cambiar el Aula Virtual de Moodle (ya sea manual o por trigger automático)
-  selectMoodleCourse.addEventListener('change', async () => {
-    const courseId = selectMoodleCourse.value;
-    gruposMoodleDisponibles = [];
-    selectMoodleGrupo.innerHTML = '<option value="">-- Selecciona el Grupo / Oportunidad --</option>';
-    selectMoodleGrupo.disabled = true;
-    statusGrupo.textContent = '';
-
-    if (!courseId) return;
-
-    statusGrupo.textContent = 'Cargando grupos de Moodle...';
-
-    try {
-      const url = `${MOODLE.URL}/webservice/rest/server.php?wstoken=${MOODLE.TOKEN}&wsfunction=core_group_get_course_groups&moodlewsrestformat=json&courseid=${courseId}`;
-      const res = await fetch(url);
-      gruposMoodleDisponibles = await res.json();
-
-      if (!gruposMoodleDisponibles || gruposMoodleDisponibles.exception || gruposMoodleDisponibles.length === 0) {
-        statusGrupo.textContent = '⚠️ Este curso no tiene grupos creados en Moodle.';
-        return;
       }
 
-      gruposMoodleDisponibles.forEach(g => {
-        selectMoodleGrupo.innerHTML += `<option value="${g.id}">${g.name}</option>`;
-      });
-      selectMoodleGrupo.disabled = false;
-
-      // Intentamos el macheo automático del grupo al terminar de cargar
-      machearGrupoMoodle();
-
-    } catch (err) {
-      console.error(err);
-      statusGrupo.textContent = '❌ Error al traer grupos.';
-    }
-  });
-
-  // 5. Al cambiar la Oportunidad Local -> Buscamos y preseleccionamos el grupo de Moodle
-  selectOportunidad.addEventListener('change', () => {
-    machearGrupoMoodle();
-  });
-
-  function machearGrupoMoodle() {
-    if (!selectMoodleCourse.value || gruposMoodleDisponibles.length === 0 || gruposMoodleDisponibles.exception) return;
-
-    const textoOportunidadLocal = selectOportunidad.selectedOptions[0].text; 
-    const claveLocal = obtenerClaveEstandar(textoOportunidadLocal);
-
-    const grupoMacho = gruposMoodleDisponibles.find(g => obtenerClaveEstandar(g.name) === claveLocal);
-
-    if (grupoMacho) {
-      selectMoodleGrupo.value = grupoMacho.id; // Sincroniza el select de grupos visualmente
-      statusGrupo.innerHTML = `✅ <span style="color: green">Sincronizado automáticamente.</span>`;
-    } else {
-      selectMoodleGrupo.value = "";
-      statusGrupo.innerHTML = `ℹ️ <span style="color: #b76e00">No se halló coincidencia. Selecciona el grupo a mano.</span>`;
-    }
-  }
-
-  // Guardar datos
-  modalGuardarFn = async () => {
-    const cohorteId = selectCohorte.value;
-    const materiaId = selectMateria.value;
-    const moodleCourseId = selectMoodleCourse.value;
-    const moodleGrupoId = selectMoodleGrupo.value;
-    const anhoLectivo = document.getElementById('calAnhoLectivo').value;
-    const opNro = selectOportunidad.value;
-    const desde = document.getElementById('calFechaDesde').value;
-    const hasta = document.getElementById('calFechaHasta').value;
-
-    if (!cohorteId || !materiaId || !desde || !hasta) {
-      toast('Por favor, completa todos los campos obligatorios', 'warning');
-      return;
-    }
-
-    const { error } = await supabase
-      .from('calendario_examenes')
-      .insert({
-        materia_id: parseInt(materiaId),
-        cohorte_id: parseInt(cohorteId),
-        anho_lectivo: parseInt(anhoLectivo),
-        oportunidad_nro: parseInt(opNro),
-        fecha_desde: desde,
-        fecha_hasta: hasta,
-        estado: 'PENDIENTE',
-        id_moodle: moodleCourseId || null,     // Se guarda lo seleccionado en el combo (sea auto o manual)
-        id_grupo_moodle: moodleGrupoId || null // Se guarda lo seleccionado en el combo (sea auto o manual)
-      });
-
-    if (error) {
-      if (error.code === '23505') {
-        toast('Error: Ya existe un examen para esta materia, cohorte y oportunidad.', 'danger');
-      } else {
-        toast('Error al guardar: ' + error.message, 'danger');
+      // Llenamos el selector de Materias
+      selectMateria.innerHTML = '<option value="">-- Selecciona la Materia --</option>';
+      if (resMaterias.data) {
+        resMaterias.data.forEach(mat => { 
+          selectMateria.innerHTML += `<option value="${mat.id}">${mat.nombre} [${mat.codigo}]</option>`; 
+        });
       }
-      return;
+
+      // 6. Fijamos los valores objetivos del casillero cliqueado
+      selectCohorte.value = cohorteId;
+      selectMateria.value = materiaId;
+      selectOportunidad.value = oportunidadNro;
+
+      // 7. Disparamos la cascada de llamadas a Moodle (Cursos y Grupos)
+      selectCohorte.dispatchEvent(new Event('change'));
+
+      // 8. Esperamos un tiempo prudencial (500ms) para que finalicen todas las peticiones asíncronas
+      setTimeout(() => {
+        if (selectMateria.value) {
+          selectMateria.dispatchEvent(new Event('change'));
+        }
+        
+        // 9. FINALIZACIÓN: Restauramos el título original del modal y quitamos el spinner
+        titleEl.textContent = tituloOriginal;
+
+      }, 500);
+
+    } catch (error) {
+      console.error("Error en la precarga indexada:", error);
+      titleEl.textContent = tituloOriginal;
+      
+      // Si hay error crítico liberamos los campos por seguridad
+      selectCarrera.disabled = false;
+      selectCohorte.disabled = false;
+      selectMateria.disabled = false;
+      selectOportunidad.disabled = false;
     }
 
-    toast('Período creado con éxito', 'success');
-    cerrarModal(); await cargarCalendarios();
-  };
-
-  document.getElementById('modalOverlay').classList.add('open');
-});
+  }, 1500);
+};
 
     // ── Corroboración de actas ────────────────────────────────────
     // Años dinámicos según carrera seleccionada
@@ -1976,7 +2271,7 @@
           if (!uid) return;
           const nota = userIdToNota[uid];
           if (nota === undefined) return;
-          
+
           const notaEscala = Math.round(nota);
           habPlanilla[i].calif_proceso = notaEscala;
           habPlanilla[i].hab_academico = nota >= MOODLE.MINIMO_PROCESO;
@@ -2098,87 +2393,87 @@
     };
 
     // ── Guardar planilla (upsert historial_examenes) ──────────────
-document.getElementById('btnGuardarHab').addEventListener('click', async () => {
-  const sucios = habPlanilla.filter(r => r._dirty);
-  if (!sucios.length) { toast('Sin cambios para guardar', 'info'); return; }
+    document.getElementById('btnGuardarHab').addEventListener('click', async () => {
+      const sucios = habPlanilla.filter(r => r._dirty);
+      if (!sucios.length) { toast('Sin cambios para guardar', 'info'); return; }
 
-  const btn = document.getElementById('btnGuardarHab');
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner" style="width:12px;height:12px;border-width:2px"></span> Guardando...`;
+      const btn = document.getElementById('btnGuardarHab');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner" style="width:12px;height:12px;border-width:2px"></span> Guardando...`;
 
-  try {
-    // 1. Mapeamos y preparamos el array de objetos para el Upsert masivo
-    const payloads = sucios.map(r => {
-      const cp = r.calif_proceso !== '' && r.calif_proceso !== null ? Number(r.calif_proceso) : null;
-      const ce = r.calif_examen_final !== '' && r.calif_examen_final !== null ? Number(r.calif_examen_final) : null;
-      
-      // Cálculo de nota basándonos en tus reglas
-      const nota = (cp !== null && ce !== null) ? (cp + ce) / 2 : (r.nota_obtenida !== undefined ? r.nota_obtenida : null);
-      const est = nota !== null ? (nota >= 6 ? 'Aprobado' : 'Reprobado') : (r.estado_materia || 'Cursando');
+      try {
+        // 1. Mapeamos y preparamos el array de objetos para el Upsert masivo
+        const payloads = sucios.map(r => {
+          const cp = r.calif_proceso !== '' && r.calif_proceso !== null ? Number(r.calif_proceso) : null;
+          const ce = r.calif_examen_final !== '' && r.calif_examen_final !== null ? Number(r.calif_examen_final) : null;
 
-      const item = {
-        inscripcion_id: parseInt(r.inscripcion_id),
-        materia_id: parseInt(r.materia_id),
-        oportunidad_nro: parseInt(r.oportunidad_nro),
-        calif_proceso: cp,
-        calif_examen_final: ce,
-        nota_obtenida: nota,
-        hab_academico: r.hab_academico,
-        estado_materia: est,
-        registrado_por: sesion.id
-        // Omitimos fecha_registro para que use el CURRENT_TIMESTAMP por defecto de tu BD
-      };
+          // Cálculo de nota basándonos en tus reglas
+          const nota = (cp !== null && ce !== null) ? (cp + ce) / 2 : (r.nota_obtenida !== undefined ? r.nota_obtenida : null);
+          const est = nota !== null ? (nota >= 6 ? 'Aprobado' : 'Reprobado') : (r.estado_materia || 'Cursando');
 
-      // Si ya conocemos el ID primario, se lo incluimos para asegurar el matching rápido
-      if (r.historial_id) {
-        item.id = r.historial_id;
-      }
+          const item = {
+            inscripcion_id: parseInt(r.inscripcion_id),
+            materia_id: parseInt(r.materia_id),
+            oportunidad_nro: parseInt(r.oportunidad_nro),
+            calif_proceso: cp,
+            calif_examen_final: ce,
+            nota_obtenida: nota,
+            hab_academico: r.hab_academico,
+            estado_materia: est,
+            registrado_por: sesion.id
+            // Omitimos fecha_registro para que use el CURRENT_TIMESTAMP por defecto de tu BD
+          };
 
-      return item;
-    });
+          // Si ya conocemos el ID primario, se lo incluimos para asegurar el matching rápido
+          if (r.historial_id) {
+            item.id = r.historial_id;
+          }
 
-    // 2. EJECUTAMOS EL UPSERT MASIVO EN UNA SOLA OPERACIÓN
-    // 'onConflict' le dice a Supabase qué campos componen la clave única para decidir si actualiza o inserta
-    const { data: insertados, error } = await supabase
-      .from('historial_examenes')
-      .upsert(payloads, { 
-        onConflict: 'inscripcion_id,materia_id,oportunidad_nro' 
-      })
-      .select('id, inscripcion_id, materia_id, oportunidad_nro');
+          return item;
+        });
 
-    if (error) throw error;
+        // 2. EJECUTAMOS EL UPSERT MASIVO EN UNA SOLA OPERACIÓN
+        // 'onConflict' le dice a Supabase qué campos componen la clave única para decidir si actualiza o inserta
+        const { data: insertados, error } = await supabase
+          .from('historial_examenes')
+          .upsert(payloads, {
+            onConflict: 'inscripcion_id,materia_id,oportunidad_nro'
+          })
+          .select('id, inscripcion_id, materia_id, oportunidad_nro');
 
-    // 3. Sincronizamos los IDs devueltos con tu estructura en memoria (habPlanilla)
-    if (insertados) {
-      insertados.forEach(ins => {
-        const registroLocal = habPlanilla.find(r => 
-          r.inscripcion_id === ins.inscripcion_id && 
-          r.materia_id === ins.materia_id && 
-          r.oportunidad_nro === ins.oportunidad_nro
-        );
-        if (registroLocal) {
-          registroLocal.historial_id = ins.id; // Guardamos el ID autogenerado
+        if (error) throw error;
+
+        // 3. Sincronizamos los IDs devueltos con tu estructura en memoria (habPlanilla)
+        if (insertados) {
+          insertados.forEach(ins => {
+            const registroLocal = habPlanilla.find(r =>
+              r.inscripcion_id === ins.inscripcion_id &&
+              r.materia_id === ins.materia_id &&
+              r.oportunidad_nro === ins.oportunidad_nro
+            );
+            if (registroLocal) {
+              registroLocal.historial_id = ins.id; // Guardamos el ID autogenerado
+            }
+          });
         }
-      });
-    }
 
-    // Limpiamos las banderas de cambio de los registros procesados
-    sucios.forEach(r => {
-      r._dirty = false;
-      r._moodle = false;
+        // Limpiamos las banderas de cambio de los registros procesados
+        sucios.forEach(r => {
+          r._dirty = false;
+          r._moodle = false;
+        });
+
+        toast(`${sucios.length} registro${sucios.length > 1 ? 's' : ''} guardado${sucios.length > 1 ? 's' : ''} con éxito`, 'success');
+        renderPlanillaHab();
+
+      } catch (err) {
+        console.error(err);
+        toast('Error al guardar: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `${ICONO_CHECK} Guardar cambios`;
+      }
     });
-
-    toast(`${sucios.length} registro${sucios.length > 1 ? 's' : ''} guardado${sucios.length > 1 ? 's' : ''} con éxito`, 'success');
-    renderPlanillaHab();
-
-  } catch (err) {
-    console.error(err);
-    toast('Error al guardar: ' + err.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `${ICONO_CHECK} Guardar cambios`;
-  }
-});
 
     // ── Docentes ──────────────────────────────────────────────────
     async function cargarDocentes() {

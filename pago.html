@@ -6,10 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Portal de Pagos — UPG</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="icon" type="image/png" href="assets/logo.png">
     <link
         href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap"
         rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/logo.png">
     <style>
         *,
         *::before,
@@ -184,6 +184,7 @@
         .main {
             max-width: 480px;
             margin: 0 auto;
+            padding: 24px 16px 80px;
         }
 
         /* ── CARD ── */
@@ -1024,6 +1025,97 @@
             background: var(--verde-2);
         }
 
+        /* ── MÉTODO DE PAGO ── */
+        .metodo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+
+        .metodo-card {
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s;
+            background: var(--white);
+        }
+
+        .metodo-card:hover {
+            border-color: var(--verde);
+            background: var(--verde-light);
+        }
+
+        .metodo-card.selected {
+            border-color: var(--verde);
+            background: var(--verde-light);
+        }
+
+        .metodo-icon {
+            font-size: 1.6rem;
+            margin-bottom: 6px;
+        }
+
+        .metodo-titulo {
+            font-size: .78rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 3px;
+        }
+
+        .metodo-sub {
+            font-size: .65rem;
+            color: var(--ink-3);
+            line-height: 1.3;
+        }
+
+        /* QR display en pantalla de comprobante */
+        .qr-display {
+            text-align: center;
+            background: var(--white);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .qr-display img {
+            width: 180px;
+            height: 180px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto 8px;
+        }
+
+        .qr-label {
+            font-size: .75rem;
+            color: var(--ink-3);
+            line-height: 1.4;
+        }
+
+        .qr-label strong {
+            color: var(--ink);
+            display: block;
+            font-size: .82rem;
+            margin-bottom: 2px;
+        }
+
+        /* Info badge caja */
+        .caja-info {
+            background: #fffbeb;
+            border: 1.5px solid #fde68a;
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            font-size: .78rem;
+            color: #92400e;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
         /* Responsive tweaks */
         @media (max-width: 380px) {
             .card-title {
@@ -1043,9 +1135,10 @@
     <header class="header">
         <div style="display: flex;">
             <div class="header-brand"><img src="assets/logo.png" alt="UPG"></div>
-        <div class="header-brand" style="align-content: center; margin-left: 5px;"><span>Educación a Distancia</span></div>
+            <div class="header-brand" style="align-content: center; margin-left: 5px;"><span>Educación a
+                    Distancia</span></div>
         </div>
-        
+
         <div class="header-badge">Portal de pagos</div>
     </header>
 
@@ -1092,6 +1185,12 @@
         const SUPABASE_ANON = 'sb_publishable_N5wBvz9PTzz4sSCemLyCnQ_XiFGmKhk';
         const N8N_WEBHOOK = 'https://n8n.uniupg.edu.py/webhook/comprobantes_moodle';
 
+        // URL de la imagen del QR de Banco Continental.
+        // Reemplazá con la URL pública del servidor, o un data:image/jpeg;base64,...
+        const QR_CONTINENTAL_URL = './assets/qr.jpeg';
+        // ID de la cuenta QR en la tabla cuentas_bancarias (id=2 según el CSV)
+        const QR_CUENTA_ID = 2;
+
         async function sbGet(path, params = '') {
             const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}${params}`, {
                 headers: {
@@ -1131,6 +1230,9 @@
             telefono: '',
             archivoFile: null,
             archivoUrl: null,  // URL pública en Supabase Storage
+            metodoPago: null,  // 'transferencia' | 'caja'
+            cuentasBancarias: null,
+            cuentaBancariaSel: null,
         };
 
         // ── Helpers ────────────────────────────────────────────────────
@@ -1176,6 +1278,7 @@
 
         // ── PASO 0: Pantalla CI ────────────────────────────────────────
         function renderCI(ciPrefill = '') {
+            console.log(ciPrefill)
             setStep(0);
             document.getElementById('totalBar').classList.remove('visible');
             root.innerHTML = `
@@ -1290,7 +1393,8 @@
           </label>`;
             }).join('')}
       </div>
-    </div>`;
+    </div>
+    <button class="btn btn-ghost" onclick="renderCI(state.alumno.ci)" style="margin-top:12px">← Cambiar cédula</button>`;
         }
 
         window.selCarrera = async (idx) => {
@@ -1404,11 +1508,11 @@
                     const subTxt = esVenc
                         ? `Venció hace ${diffDias} día${diffDias !== 1 ? 's' : ''}`
                         : `Vence ${venc.toLocaleDateString('es-PY', { day: '2-digit', month: 'long' })}`;
-                    return `<label class="item-pago ${esVenc ? 'vencido' : ''}" onclick="toggleItem(this)">
+                    return `<label class="item-pago ${esVenc ? 'vencido' : ''}" >
           <input type="checkbox" value="cuota_${c.id}"
             data-tipo="cuota" data-id="${c.id}"
             data-label="Cuota ${c.nro_cuota}" data-monto="${c.monto_final}"
-            onchange="syncSeleccion()">
+            >
           <div class="item-info">
             <div class="item-label">Cuota ${c.nro_cuota}</div>
           </div>
@@ -1424,14 +1528,14 @@
                 ? state.examenesHabilitados.map(e => {
                     const hasta = new Date(e.fecha_hasta + 'T23:59:00');
                     const diff = Math.round((hasta - new Date()) / 86400000);
-                    return `<label class="item-pago" onclick="toggleItem(this)">
+                    return `<label class="item-pago" >
           <input type="checkbox" value="examen_${e.id}"
             data-tipo="examen" data-id="${e.id}"
             data-label="${e.materias?.nombre || '?'} — ${e.oportunidad_nro}ª oportunidad"
             data-monto="${e.monto_final}" 
             data-materia-id="${e.materia_id}"
             data-oportunidad="${e.oportunidad_nro}"
-            onchange="syncSeleccion()">
+            >
           <div class="item-info">
             <div class="item-label">
               ${e.materias?.nombre || '?'}
@@ -1470,7 +1574,7 @@
         <div class="seccion-titulo" style="margin-top:18px">Otro concepto</div>
         <div class="otros-wrap" id="otrosWrap">
           <div class="otros-header" onclick="toggleOtros()">
-            <input type="checkbox" id="chkOtros" onchange="syncSeleccion()">
+            <input type="checkbox" id="chkOtros">
             <div>
               <div style="font-size:.88rem;font-weight:600;color:var(--ink)">Otro monto</div>
               <div style="font-size:.72rem;color:var(--ink-3)">Matricula, título, constancia u otro concepto</div>
@@ -1481,23 +1585,19 @@
             <textarea class="otros-desc" id="otrosDesc" rows="2" placeholder="Ej: Matrícula 2026, Título de especialización..."></textarea>
             <div class="otros-label" style="margin-top:10px">Monto (Gs.)</div>
             <input class="otros-input" type="number" id="otrosMonto" inputmode="numeric"
-              placeholder="0" oninput="syncSeleccion()">
+              placeholder="0" >
           </div>
         </div>
       </div>
-    </div>`;
+    </div>
+    <button class="btn btn-ghost" onclick="${state.inscripciones.length > 1 ? 'renderCarreras()' : 'renderCI()'}" style="margin-top:12px">
+      ← ${state.inscripciones.length > 1 ? 'Cambiar carrera' : 'Cambiar cédula'}
+    </button>`;
 
             updateTotalBar();
         }
 
-        window.toggleItem = (label) => {
-            const chk = label.querySelector('input[type=checkbox]');
-            if (chk) {
-                chk.checked = !chk.checked;
-                label.classList.toggle('selected', chk.checked);
-                syncSeleccion();
-            }
-        };
+
 
         window.toggleOtros = () => {
             const chk = document.getElementById('chkOtros');
@@ -1513,16 +1613,19 @@
             state.seleccion = [];
 
             // Cuotas y exámenes
-            document.querySelectorAll('.item-pago input[type=checkbox]:checked').forEach(chk => {
-                state.seleccion.push({
-                    tipo: chk.dataset.tipo,
-                    id: Number(chk.dataset.id),
-                    label: chk.dataset.label,
-                    monto: Number(chk.dataset.monto),
-                    materia_id: chk.dataset.materiaId ? Number(chk.dataset.materiaId) : null,
-                    oportunidad: chk.dataset.oportunidad ? Number(chk.dataset.oportunidad) : null,
-                });
-                chk.closest('.item-pago')?.classList.add('selected');
+            document.querySelectorAll('.item-pago input[type=checkbox]').forEach(chk => {
+                const label = chk.closest('.item-pago');
+                label?.classList.toggle('selected', chk.checked);
+                if (chk.checked) {
+                    state.seleccion.push({
+                        tipo: chk.dataset.tipo,
+                        id: Number(chk.dataset.id),
+                        label: chk.dataset.label,
+                        monto: Number(chk.dataset.monto),
+                        materia_id: chk.dataset.materiaId ? Number(chk.dataset.materiaId) : null,
+                        oportunidad: chk.dataset.oportunidad ? Number(chk.dataset.oportunidad) : null,
+                    });
+                }
             });
 
             // Otros
@@ -1538,20 +1641,76 @@
 
         window.irPaso3 = () => {
             if (!state.seleccion.length) return;
-            renderComprobante();
+            renderMetodoPago();
+        };
+
+        // ── PASO 2b: Selección de método de pago ──────────────────────
+        function renderMetodoPago() {
+            setStep(3);
+            document.getElementById('totalBar').classList.remove('visible');
+            const a = state.alumno;
+            const iniciales = (a.nombres[0] + a.apellidos[0]).toUpperCase();
+            const ins = state.inscripcionSel;
+            const carreraNombre = ins.cohortes?.carreras?.nombre || '—';
+            const total = state.seleccion.reduce((s, x) => s + (x.monto || 0), 0);
+
+            root.innerHTML = `
+    <div class="alumno-pill">
+      <div class="alumno-avatar">${iniciales}</div>
+      <div>
+        <div class="alumno-nombre">${a.nombres} ${a.apellidos}</div>
+        <div class="alumno-ci">${carreraNombre} · Año ${ins.anho_lectivo}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-eyebrow">Paso 3 de 4 · Total: ${fmt(total)}</div>
+        <div class="card-title">¿Cómo vas a pagar?</div>
+      </div>
+      <div class="card-body">
+        <div class="metodo-grid">
+          <div class="metodo-card ${state.metodoPago === 'transferencia' ? 'selected' : ''}" onclick="selMetodo('transferencia')">
+            <div class="metodo-icon">🏧</div>
+            <div class="metodo-titulo">Transferencia</div>
+            <div class="metodo-sub">Depósito o transferencia bancaria</div>
+          </div>
+          <div class="metodo-card ${state.metodoPago === 'qr' ? 'selected' : ''}" onclick="selMetodo('qr')">
+            <div class="metodo-icon">📷</div>
+            <div class="metodo-titulo">Pago QR</div>
+            <div class="metodo-sub">Escaneá y pagá desde tu celular</div>
+          </div>
+          <div class="metodo-card ${state.metodoPago === 'caja' ? 'selected' : ''}" onclick="selMetodo('caja')">
+            <div class="metodo-icon">🏦</div>
+            <div class="metodo-titulo">Caja/Factura</div>
+            <div class="metodo-sub">Pagaste en caja o tenés una factura</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-ghost" onclick="volverPaso2()">← Volver a la selección</button>`;
+        }
+
+        window.selMetodo = (metodo) => {
+            state.metodoPago = metodo;
+            document.querySelectorAll('.metodo-card').forEach(c => c.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            setTimeout(() => {
+                if (metodo === 'transferencia') renderComprobanteTransferencia();
+                else if (metodo === 'qr') renderComprobanteQR();
+                else renderComprobanteCaja();
+            }, 220);
         };
 
         if (!state.cuentasBancarias) {
-            // Ejemplo si usas una función helper de fetch/supabase
             state.cuentasBancarias = await sbGet('cuentas_bancarias');
         }
-        // ── PASO 3: Teléfono + foto comprobante ───────────────────────
-        function renderComprobante() {
+        // ── PASO 3a: Transferencia — teléfono + foto comprobante ───────
+        function renderComprobanteTransferencia() {
             setStep(3);
             document.getElementById('totalBar').classList.remove('visible');
 
             // Generar las opciones del Select dinámicamente desde el state
-            const cuentas = state.cuentasBancarias || [];
+            const cuentas = (state.cuentasBancarias || []).filter(c => c.id != QR_CUENTA_ID);
             const opcionesCuentas = cuentas.map(c => `
         <option value="${c.id}" ${state.cuentaBancariaSel?.id == c.id ? 'selected' : ''}>
             ${c.nombre || 'Cuenta'}
@@ -1612,14 +1771,96 @@
       Revisar y confirmar
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
     </button>
-    <button class="btn btn-ghost" onclick="volverPaso2()">← Volver</button>`;
+    <button class="btn btn-ghost" onclick="renderMetodoPago()">← Volver</button>`;
 
             // Si ya había una cuenta seleccionada previamente, renderizar sus detalles de entrada
             if (state.cuentaBancariaSel) {
                 renderDetallesBanco(state.cuentaBancariaSel);
             }
         }
-        // Maneja el cambio del select de bancos
+
+        // ── PASO 3c: QR — mostrar QR + subir comprobante ─────────────
+        function renderComprobanteQR() {
+            setStep(3);
+            document.getElementById('totalBar').classList.remove('visible');
+
+            // Pre-seleccionar automáticamente la cuenta QR (id=2)
+            const cuentaQR = (state.cuentasBancarias || []).find(c => c.id == QR_CUENTA_ID);
+            if (cuentaQR) state.cuentaBancariaSel = cuentaQR;
+
+            root.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-eyebrow">Paso 3 de 4 · Pago QR</div>
+        <div class="card-title">Escaneá el QR y pagá</div>
+      </div>
+      <div class="card-body">
+
+        <div class="qr-display">
+          <img src="${QR_CONTINENTAL_URL}" alt="QR Banco Continental"
+               onerror="this.style.display='none';document.getElementById('qrFallback').style.display='block'">
+          <div id="qrFallback" style="display:none;font-size:3rem;padding:16px">📷</div>
+          <div class="qr-label">
+            <strong>Banco Continental · Cuenta QR</strong>
+            ${cuentaQR ? `Titular: ${cuentaQR.titular} · RUC: ${cuentaQR.RUC}` : 'Universidad Privada del Guairá'}
+          </div>
+        </div>
+
+        <div style="background:#e6f2ec;border-radius:var(--radius-sm);padding:11px 14px;font-size:.78rem;color:#145230;margin-bottom:16px;display:flex;gap:8px;align-items:flex-start">
+          <span>✅</span>
+          <span>Después de pagar, sacá una captura de pantalla del comprobante y subila abajo.</span>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="telInputQR">Tu número de WhatsApp</label>
+          <input class="form-input" type="tel" id="telInputQR" inputmode="tel"
+            placeholder="Ej: 0981 123456"
+            value="${state.telefono || state.alumno.telefono || ''}"
+            autocomplete="tel" oninput="checkBtnQR()">
+          <div class="form-hint">Te avisamos cuando secretaría confirme tu pago.</div>
+        </div>
+
+        <div class="form-field" style="margin-bottom:0">
+          <label class="form-label">Captura del comprobante QR</label>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="fileInput" accept="image/*,application/pdf"
+              capture="environment" onchange="onFileChange(event)">
+            <div class="upload-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </div>
+            <div class="upload-title">Subir captura</div>
+            <div class="upload-sub">Foto o captura del comprobante · JPG, PNG, PDF</div>
+          </div>
+          <div class="upload-preview" id="uploadPreview">
+            <img id="previewImg" src="" alt="Comprobante QR">
+            <div class="preview-overlay">
+              <span class="preview-name" id="previewName"></span>
+              <button class="preview-change" onclick="cambiarArchivo()">Cambiar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btnQRConfirmar" onclick="irPaso4QR()" style="margin-top:16px" disabled>
+      Revisar y confirmar
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+    <button class="btn btn-ghost" onclick="renderMetodoPago()">← Volver</button>`;
+        }
+
+        window.checkBtnQR = () => {
+            const tel = document.getElementById('telInputQR')?.value?.trim();
+            const btn = document.getElementById('btnQRConfirmar');
+            if (btn) btn.disabled = !(state.archivoFile && tel);
+        };
+
+        window.irPaso4QR = () => {
+            const tel = document.getElementById('telInputQR')?.value?.trim();
+            if (!tel) return;
+            state.telefono = tel;
+            renderConfirmar(); // Reutiliza el mismo paso 4 que la transferencia
+        };
         window.onBancoChange = (id) => {
             const cuenta = state.cuentasBancarias.find(c => c.id == id);
             if (!cuenta) return;
@@ -1631,7 +1872,7 @@
             renderDetallesBanco(cuenta);
 
             // Validar si ya podemos habilitar el botón "Siguiente" (si ya hay archivo e internet)
-            / * Si tenías una función de validación de botones acá, la ejecutas * /
+            checkBtnConfirmar();
         };
 
         // Renderiza la tarjeta con los datos de transferencia abajo del select
@@ -1658,6 +1899,211 @@
         </div>
     `;
         };
+        // ── PASO 3b: Caja — subir boleta ──────────────────────────────
+        function renderComprobanteCaja() {
+            setStep(3);
+            document.getElementById('totalBar').classList.remove('visible');
+
+            root.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-eyebrow">Paso 3 de 4 · Pago en Caja</div>
+        <div class="card-title">Subí tu factura de pago</div>
+      </div>
+      <div class="card-body">
+        <div class="caja-info">
+          <span>ℹ️</span>
+          <span>Tu factura será registrada y verificada por secretaría. No es necesario que sea una transferencia bancaria.</span>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="telInputCaja">Tu número de WhatsApp</label>
+          <input class="form-input" type="tel" id="telInputCaja" inputmode="tel"
+            placeholder="Ej: 0981 123456"
+            value="${state.telefono || state.alumno.telefono || ''}"
+            autocomplete="tel" oninput="checkBtnCaja()">
+          <div class="form-hint">Te avisamos cuando secretaría confirme tu pago.</div>
+        </div>
+
+        <div class="form-field" style="margin-bottom:0">
+          <label class="form-label">Foto de la factura</label>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="fileInput" accept="image/*,application/pdf"
+              capture="environment" onchange="onFileChange(event)">
+            <div class="upload-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </div>
+            <div class="upload-title">Subir factura</div>
+            <div class="upload-sub">Foto de la factura de caja · JPG, PNG, PDF</div>
+          </div>
+          <div class="upload-preview" id="uploadPreview">
+            <img id="previewImg" src="" alt="factura">
+            <div class="preview-overlay">
+              <span class="preview-name" id="previewName"></span>
+              <button class="preview-change" onclick="cambiarArchivo()">Cambiar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btnCajaConfirmar" onclick="irPaso4Caja()" style="margin-top:16px" disabled>
+      Revisar y confirmar
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+    <button class="btn btn-ghost" onclick="renderMetodoPago()">← Volver</button>`;
+        }
+
+        window.checkBtnCaja = () => {
+            const tel = document.getElementById('telInputCaja')?.value?.trim();
+            const btn = document.getElementById('btnCajaConfirmar');
+            if (btn) btn.disabled = !(state.archivoFile && tel);
+        };
+
+        window.irPaso4Caja = () => {
+            const tel = document.getElementById('telInputCaja')?.value?.trim();
+            if (!tel) return;
+            state.telefono = tel;
+            renderConfirmarCaja();
+        };
+
+        function renderConfirmarCaja() {
+            setStep(4);
+            const total = state.seleccion.reduce((s, x) => s + x.monto, 0);
+
+            const itemsHTML = state.seleccion.map(x => `
+    <div class="resumen-item">
+      <span class="resumen-concepto">${x.label}</span>
+      <span class="resumen-monto">${x.monto > 0 ? fmt(x.monto) : 'S/ arancel'}</span>
+    </div>`).join('');
+
+            root.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-eyebrow">Paso 4 de 4 · Pago en Caja</div>
+        <div class="card-title">Revisá tu pago antes de enviar</div>
+      </div>
+      <div class="card-body">
+        <div style="margin-bottom:16px">
+          ${itemsHTML}
+          <div class="resumen-total">
+            <span class="label">Total declarado</span>
+            <span class="monto">${total > 0 ? fmt(total) : '—'}</span>
+          </div>
+        </div>
+
+        <div style="background:var(--cream);border-radius:var(--radius-sm);padding:12px 14px;font-size:.8rem;color:var(--ink-3);margin-bottom:4px">
+          📱 Confirmación a: <strong style="color:var(--ink)">${state.telefono}</strong>
+        </div>
+        <div style="background:var(--cream);border-radius:var(--radius-sm);padding:12px 14px;font-size:.8rem;color:var(--ink-3);margin-bottom:4px;margin-top:8px">
+          🏦 Método: <strong style="color:var(--ink)">Pago en Caja / Factura</strong>
+        </div>
+
+        <div id="envioError" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btnEnviarCaja" onclick="enviarPagoCaja()" style="margin-top:16px">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Registrar pago en caja
+    </button>
+    <button class="btn btn-ghost" onclick="renderComprobanteCaja()">← Volver</button>`;
+        }
+
+        window.enviarPagoCaja = async () => {
+            const btn = document.getElementById('btnEnviarCaja');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;margin:0"></div>';
+            document.getElementById('envioError').innerHTML = '';
+
+            try {
+                if (!state.archivoFile) throw new Error('Por favor, seleccioná la factura.');
+
+                // 1. Subir imagen al servidor
+                const formData = new FormData();
+                formData.append('comprobante', state.archivoFile);
+                formData.append('ci', state.alumno.ci);
+
+                const uploadRes = await fetch('./api/upload.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (!uploadRes.ok) throw new Error('No se pudo guardar la factura en el servidor.');
+
+                const uploadData = await uploadRes.json();
+                const rutaLimpia = uploadData.url.replace(/^\.\.\//, '');
+                const imagenUrlPublica = `https://app.uniupg.edu.py/${rutaLimpia}`;
+
+                // 2. Insertar comprobante directamente en Supabase (sin n8n, sin análisis IA)
+                const compRec = await sbPost('comprobantes_pago', {
+                    inscripcion_id: state.inscripcionSel.id,
+                    telefono_remitente: state.telefono,
+                    ci_remitente: state.alumno.ci,
+                    imagen_url: imagenUrlPublica,
+                    monto_detectado: state.seleccion.reduce((s, x) => s + (x.monto || 0), 0),
+                    banco_origen: 'CAJA',
+                    banco_receptor: 'CAJA',
+                    nro_comprobante: null,
+                    estado_procesamiento: 'En Verificación',
+                    recibido_en: new Date().toISOString(),
+                    titular_cuenta: `${state.alumno.nombres} ${state.alumno.apellidos}`,
+                });
+
+                const comprobanteId = compRec[0]?.id;
+                if (!comprobanteId) throw new Error('No se pudo registrar el comprobante.');
+
+                // 3. Insertar detalles por cada ítem seleccionado
+                for (const item of state.seleccion) {
+                    const detalle = {
+                        comprobante_id: comprobanteId,
+                        concepto_tipo: item.tipo.toUpperCase(),
+                        monto_pactado: item.monto || null,
+                    };
+                    if (item.tipo === 'cuota' || item.tipo === 'examen') {
+                        detalle.referencia_id = item.id || null;
+                    }
+                    await sbPost('detalles_pago_comprobante', detalle);
+
+                    // 4. Si es examen, insertar derecho + historial igual que n8n
+                    if (item.tipo === 'examen' && item.id) {
+                        // Obtener datos del calendario de examenes
+                        const calRows = await sbGet('calendario_examenes',
+                            `?id=eq.${item.id}&select=materia_id,oportunidad_nro`);
+                        const cal = calRows[0];
+                        if (cal) {
+                            const derechoRec = await sbPost('derechos_examen', {
+                                inscripcion_id: state.inscripcionSel.id,
+                                materia_id: cal.materia_id,
+                                oportunidad_nro: cal.oportunidad_nro,
+                                monto_pagado: item.monto || null,
+                                estado: 'EN VERIFICACION',
+                            });
+                            const derechoId = derechoRec[0]?.id;
+                            if (derechoId) {
+                                await sbPost('historial_examenes', {
+                                    inscripcion_id: state.inscripcionSel.id,
+                                    materia_id: cal.materia_id,
+                                    oportunidad_nro: cal.oportunidad_nro,
+                                    estado_materia: 'Cursando',
+                                    hab_academico: false,
+                                    hab_administrativo: false,
+                                    derecho_examen_id: derechoId,
+                                });
+                            }
+                        }
+                    }
+                }
+
+                renderExito();
+
+            } catch (e) {
+                document.getElementById('envioError').innerHTML =
+                    `<div class="error-box"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${e.message}</div>`;
+                btn.disabled = false;
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Registrar pago en caja`;
+            }
+        };
+
         window.onFileChange = (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -1697,16 +2143,33 @@
             const tel = document.getElementById('telInput')?.value?.trim();
             const btn = document.getElementById('btnIrConfirmar');
             if (btn) btn.disabled = !(state.archivoFile && tel);
+            // También verificar botones de otros modos
+            if (window.checkBtnCaja) checkBtnCaja();
+            if (window.checkBtnQR) checkBtnQR();
         }
+
+        document.addEventListener('change', e => {
+            if (e.target.matches('.item-pago input[type=checkbox]')) {
+                syncSeleccion();
+            }
+        });
 
         document.addEventListener('input', e => {
             if (e.target.id === 'telInput') checkBtnConfirmar();
         });
 
         window.volverPaso2 = () => {
+            state.metodoPago = null;
             setStep(2);
             renderSeleccion();
         };
+
+        window.renderCarreras = renderCarreras;
+        window.renderMetodoPago = renderMetodoPago;
+        window.renderComprobanteTransferencia = renderComprobanteTransferencia;
+        window.renderComprobanteQR = renderComprobanteQR;
+        window.renderComprobanteCaja = renderComprobanteCaja;
+        window.renderCI = renderCI;
 
         window.irPaso4 = () => {
             const tel = document.getElementById('telInput')?.value?.trim();
@@ -1744,6 +2207,9 @@
         <div style="background:var(--cream);border-radius:var(--radius-sm);padding:12px 14px;font-size:.8rem;color:var(--ink-3);margin-bottom:4px">
           📱 Confirmación a: <strong style="color:var(--ink)">${state.telefono}</strong>
         </div>
+        <div style="background:var(--cream);border-radius:var(--radius-sm);padding:12px 14px;font-size:.8rem;color:var(--ink-3);margin-bottom:4px;margin-top:8px">
+          ${state.metodoPago === 'qr' ? '📷 Método: <strong style="color:var(--ink)">Pago QR · Banco Continental</strong>' : `🏧 Método: <strong style="color:var(--ink)">Transferencia${state.cuentaBancariaSel ? ' · ' + state.cuentaBancariaSel.entidad : ''}</strong>`}
+        </div>
 
         <div id="envioError" style="margin-top:10px"></div>
       </div>
@@ -1753,7 +2219,7 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
       Enviar comprobante
     </button>
-    <button class="btn btn-ghost" onclick="irPaso3()">← Volver</button>`;
+    <button class="btn btn-ghost" onclick="${state.metodoPago === 'qr' ? 'renderComprobanteQR()' : 'renderComprobanteTransferencia()'}">← Volver</button>`;
         }
 
         // ── ENVÍO ──────────────────────────────────────────────────────
@@ -1801,7 +2267,9 @@
                         inscripcion_id: state.inscripcionSel.id,
                         carrera: state.inscripcionSel.cohortes?.carreras?.nombre,
                         imagen_url_local: imagenUrlPublica,
-                        banco_destino_nombre: state.cuentaBancariaSel?.id || 'No seleccionado',
+                        banco_destino_nombre: state.metodoPago === 'qr'
+                            ? QR_CUENTA_ID
+                            : (state.cuentaBancariaSel?.id || 'No seleccionado'),
                         // Enviamos la selección completa para que n8n genere los detalles_pago_comprobante
                         items_seleccionados: state.seleccion.map(x => ({
                             concepto_tipo: x.tipo,
@@ -1817,7 +2285,7 @@
 
                 // Opcional: Si n8n te responde ya con el ID generado tras procesar, puedes pasarlo aquí
                 const n8nData = await n8nRes.json();
-                (n8nData.respuesta == "ok") ? renderExito() : console.log(error)
+                (n8nData.respuesta == "ok") ? renderExito() : console.log(e)
 
             } catch (e) {
                 document.getElementById('envioError').innerHTML =
