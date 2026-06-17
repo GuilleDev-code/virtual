@@ -82,6 +82,87 @@
       margin-top: 0;
     }
 
+    /* Sistema tab */
+    .sys-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .sys-section-title {
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--txt-muted);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .sys-field {
+      display: grid;
+      grid-template-columns: 200px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .sys-field:last-child { border-bottom: none; }
+    .sys-field-label { font-size: .84rem; font-weight: 500; }
+    .sys-field-desc { font-size: .75rem; color: var(--txt-muted); }
+    .sys-field-input { display: flex; align-items: center; gap: 8px; }
+    .sys-field-input input { flex: 1; }
+    .escala-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    .escala-table th { text-align: left; padding: 6px 8px; font-size: .75rem; font-weight: 600; color: var(--txt-muted); text-transform: uppercase; }
+    .escala-table td { padding: 4px 8px; }
+    .escala-table tr:not(:last-child) td { border-bottom: 1px solid var(--border-light); }
+    .escala-table input[type=number] { width: 70px; }
+    .escala-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+
+    /* Plantillas tab */
+    .plantilla-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 12px;
+    }
+    .plantilla-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      cursor: pointer;
+    }
+    .plantilla-header:hover { background: rgba(0,0,0,.02); border-radius: var(--radius-lg); }
+    .plantilla-meta { display: flex; align-items: center; gap: 10px; }
+    .plantilla-name { font-weight: 600; font-size: .88rem; }
+    .plantilla-body { border-top: 1px solid var(--border-light); padding: 16px; display: none; }
+    .plantilla-body.open { display: block; }
+    .plantilla-vars {
+      background: rgba(0,0,0,.03);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: .78rem;
+      color: var(--txt-secondary);
+      margin-bottom: 12px;
+      font-family: var(--font-mono);
+      line-height: 1.8;
+    }
+    .plantilla-editor {
+      width: 100%;
+      min-height: 180px;
+      font-family: var(--font-mono);
+      font-size: .8rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      resize: vertical;
+      background: var(--surface);
+      color: inherit;
+    }
+    .plantilla-editor:focus { outline: 2px solid var(--verde); }
+
     /* Tabla inline editable */
     .editable-cell input {
       border: none;
@@ -165,6 +246,8 @@
           <button class="cfg-tab" data-tab="precios">Precios y aranceles</button>
           <button class="cfg-tab" data-tab="bancos">Cuentas bancarias</button>
           <button class="cfg-tab" data-tab="usuarios">Usuarios del sistema</button>
+          <button class="cfg-tab" data-tab="sistema" data-requiere-rol="Admin">Sistema</button>
+          <button class="cfg-tab" data-tab="plantillas" data-requiere-rol="Admin">Plantillas</button>
         </div>
 
         <div class="cfg-content">
@@ -186,6 +269,7 @@
               <table>
                 <thead>
                   <tr>
+                    <th>ID</th>
                     <th>Código</th>
                     <th>Nombre</th>
                     <th>Duración</th>
@@ -224,6 +308,7 @@
                 <thead>
                   <tr>
                     <th>Carrera</th>
+                    <th>ID</th>
                     <th>Nº Cohorte</th>
                     <th>Año inicio</th>
                     <th>Inicio clases</th>
@@ -334,6 +419,79 @@
             </div>
           </div>
 
+          <!-- ── SISTEMA ────────────────────────────────────────── -->
+          <div class="tab-section" id="tab-sistema">
+            <div class="toolbar">
+              <span style="font-weight:600">Configuración del sistema</span>
+              <span style="font-size:.8rem;color:var(--txt-muted)">Solo visible para Administradores</span>
+            </div>
+
+            <!-- Moodle -->
+            <div class="sys-section">
+              <div class="sys-section-title">🔗 Integración Moodle</div>
+              <div id="sysFieldsMoodle">
+                <div style="color:var(--txt-muted);font-size:.83rem">Cargando...</div>
+              </div>
+            </div>
+
+            <!-- Institución -->
+            <div class="sys-section">
+              <div class="sys-section-title">🏛 Institución</div>
+              <div id="sysFieldsSistema">
+                <div style="color:var(--txt-muted);font-size:.83rem">Cargando...</div>
+              </div>
+            </div>
+
+            <!-- Académico -->
+            <div class="sys-section">
+              <div class="sys-section-title">📚 Parámetros académicos</div>
+              <div id="sysFieldsAcademico">
+                <div style="color:var(--txt-muted);font-size:.83rem">Cargando...</div>
+              </div>
+            </div>
+
+            <!-- Escalas -->
+            <div class="sys-section">
+              <div class="sys-section-title">📊 Escalas de notas</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" id="sysEscalas">
+                <div>
+                  <div style="font-weight:600;margin-bottom:8px;font-size:.85rem">Grado</div>
+                  <table class="escala-table" id="tablaGrado">
+                    <thead><tr><th>Desde</th><th>Hasta</th><th>Nota</th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                  <div class="escala-actions">
+                    <button class="btn btn-ghost btn-sm" onclick="guardarEscala('escala_grado','tablaGrado')">Guardar Grado</button>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-weight:600;margin-bottom:8px;font-size:.85rem">Posgrado</div>
+                  <table class="escala-table" id="tablaPosgrado">
+                    <thead><tr><th>Desde</th><th>Hasta</th><th>Nota</th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                  <div class="escala-actions">
+                    <button class="btn btn-ghost btn-sm" onclick="guardarEscala('escala_posgrado','tablaPosgrado')">Guardar Posgrado</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── PLANTILLAS ──────────────────────────────────────── -->
+          <div class="tab-section" id="tab-plantillas">
+            <div class="toolbar">
+              <span style="font-weight:600">Plantillas de documentos</span>
+              <button class="btn btn-primary btn-sm" id="btnNuevaPlantilla">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nueva plantilla
+              </button>
+            </div>
+            <div id="plantillasList">
+              <div style="color:var(--txt-muted);padding:32px;text-align:center">Cargando...</div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -363,14 +521,18 @@
   <div id="toast-container"></div>
 
   <script type="module">
-    import { supabase, formatGs, formatFechaHora, toast } from './assets/supabase.js';
+    import { supabase, formatGs, formatFechaHora, toast, getMoodle, invalidarConfigCache } from './assets/supabase.js';
     import { requireAuth } from './assets/auth.js';
     import { initSidebar } from './assets/sidebar.js';
-    import { MOODLE } from './config.js';
 
     const sesion = requireAuth('configuracion');
     if (!sesion) throw new Error('Sin sesión');
     initSidebar('configuracion');
+
+    // Ocultar tabs exclusivos de Admin para otros roles
+    if (sesion.rol !== 'Admin') {
+      document.querySelectorAll('[data-requiere-rol="Admin"]').forEach(el => el.style.display = 'none');
+    }
 
     let carreras = [], cohortes = [], precios = [], bancos = [], usuarios = [];
     let modalFn = null;
@@ -403,6 +565,7 @@
     function renderCarreras() {
       const EST = { Activa: 'badge-success', Inactiva: 'badge-muted' };
       document.getElementById('tbodyCarreras').innerHTML = carreras.map(c => `<tr>
+    <td class="td-mono">${c.id}</td>
     <td class="td-mono">${c.codigo}</td>
     <td class="td-bold">${c.nombre}</td>
     <td>${c.duracion_anhos} años</td>
@@ -663,6 +826,7 @@
       const EST = { Activo: 'badge-success', Cerrado: 'badge-muted', Suspendido: 'badge-warning' };
       document.getElementById('tbodyCohortes').innerHTML = cohortes.map(c => `<tr>
     <td>${c.carreras?.nombre || '—'}</td>
+    <td>${c.id || '—'}</td>
     <td class="td-mono">${c.nro_cohorte}ª</td>
     <td class="td-mono">${c.anho_inicio}</td>
     <td class="td-mono">${c.fecha_inicio_clases || '—'}</td>
@@ -761,6 +925,7 @@
 
         // 2. Fetch a la API de Moodle
         try {
+          const MOODLE = await getMoodle();
           const url = `${MOODLE.URL}/webservice/rest/server.php?wstoken=${MOODLE.TOKEN}&wsfunction=core_course_get_categories&moodlewsrestformat=json&criteria[0][key]=parent&criteria[0][value]=${vCarrera.moodle_id}`;
 
           const res = await fetch(url);
@@ -1064,6 +1229,271 @@
     document.getElementById('btnGuardar').addEventListener('click', () => { if (modalFn) modalFn(); });
     function cerrarModal() { document.getElementById('modalOverlay').classList.remove('open'); modalFn = null; }
     window.cerrarModal = cerrarModal;
+
+    // ── SISTEMA ───────────────────────────────────────────────────
+    let configSistema = {};
+
+    async function cargarConfigSistema() {
+      const { data, error } = await supabase.from('configuracion_sistema').select('*').order('categoria').order('clave');
+      if (error) { toast('Error cargando configuración: ' + error.message, 'error'); return; }
+      configSistema = Object.fromEntries((data || []).map(r => [r.clave, r]));
+      renderConfigSistema(data || []);
+    }
+
+    function renderConfigSistema(rows) {
+      const byCategoria = {};
+      rows.forEach(r => {
+        if (!byCategoria[r.categoria]) byCategoria[r.categoria] = [];
+        byCategoria[r.categoria].push(r);
+      });
+
+      const mapContainerId = { moodle: 'sysFieldsMoodle', sistema: 'sysFieldsSistema', academico: 'sysFieldsAcademico' };
+
+      Object.entries(mapContainerId).forEach(([cat, cId]) => {
+        const container = document.getElementById(cId);
+        if (!container) return;
+        const fields = (byCategoria[cat] || []).filter(r => r.tipo !== 'json');
+        if (!fields.length) { container.innerHTML = `<div style="color:var(--txt-muted);font-size:.83rem">Sin campos configurados.</div>`; return; }
+        container.innerHTML = fields.map(r => renderSysField(r)).join('');
+      });
+
+      // Escalas
+      ['escala_grado', 'escala_posgrado'].forEach(clave => {
+        const r = configSistema[clave];
+        if (!r) return;
+        const tableId = clave === 'escala_grado' ? 'tablaGrado' : 'tablaPosgrado';
+        try {
+          const escala = JSON.parse(r.valor);
+          renderEscalaTable(tableId, escala);
+        } catch (e) { console.warn('Error parseando escala', clave, e); }
+      });
+    }
+
+    function renderSysField(r) {
+      const esPassword = r.tipo === 'password';
+      const inputType = esPassword ? 'password' : (r.tipo === 'numero' ? 'number' : 'text');
+      const revelarBtn = esPassword
+        ? `<button type="button" class="btn btn-icon" onclick="toggleReveal('sysInput_${r.clave}')" title="Mostrar/Ocultar">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>` : '';
+      return `<div class="sys-field">
+        <div>
+          <div class="sys-field-label">${r.descripcion || r.clave}</div>
+          <div class="sys-field-desc" style="font-size:.72rem;color:var(--txt-muted);font-family:var(--font-mono)">${r.clave}</div>
+        </div>
+        <div class="sys-field-input">
+          <input type="${inputType}" class="form-control" id="sysInput_${r.clave}" value="${escapeHtml(r.valor)}"
+            style="font-family:${r.tipo === 'password' ? 'var(--font-mono)' : 'inherit'}">
+          ${revelarBtn}
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="guardarCampoSistema('${r.clave}')">Guardar</button>
+      </div>`;
+    }
+
+    window.toggleReveal = (inputId) => {
+      const el = document.getElementById(inputId);
+      if (!el) return;
+      el.type = el.type === 'password' ? 'text' : 'password';
+    };
+
+    window.guardarCampoSistema = async (clave) => {
+      const el = document.getElementById('sysInput_' + clave);
+      if (!el) return;
+      const valor = el.value.trim();
+      if (!valor && valor !== '0') { toast('El valor no puede estar vacío', 'warning'); return; }
+      const { error } = await supabase.from('configuracion_sistema')
+        .update({ valor, updated_by: sesion.id, updated_at: new Date().toISOString() })
+        .eq('clave', clave);
+      if (error) { toast('Error: ' + error.message, 'error'); return; }
+      toast('Guardado', 'success');
+      configSistema[clave] = { ...configSistema[clave], valor };
+      invalidarConfigCache();
+    };
+
+    function renderEscalaTable(tableId, escala) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      if (!tbody) return;
+      tbody.innerHTML = escala.map((fila, i) => `<tr>
+        <td><input type="number" class="form-control" data-col="desde" data-i="${i}" value="${fila.desde}" min="0" max="100"></td>
+        <td><input type="number" class="form-control" data-col="hasta" data-i="${i}" value="${fila.hasta}" min="0" max="100"></td>
+        <td><input type="number" class="form-control" data-col="nota" data-i="${i}" value="${fila.nota}" min="1" max="5"></td>
+      </tr>`).join('');
+    }
+
+    window.guardarEscala = async (clave, tableId) => {
+      const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+      const escala = Array.from(rows).map(tr => {
+        const inputs = tr.querySelectorAll('input');
+        return {
+          desde: Number(inputs[0].value),
+          hasta: Number(inputs[1].value),
+          nota: Number(inputs[2].value)
+        };
+      });
+      const valor = JSON.stringify(escala);
+      const { error } = await supabase.from('configuracion_sistema')
+        .update({ valor, updated_by: sesion.id, updated_at: new Date().toISOString() })
+        .eq('clave', clave);
+      if (error) { toast('Error: ' + error.message, 'error'); return; }
+      toast('Escala guardada', 'success');
+      invalidarConfigCache();
+    };
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // Lazy load: cargar cuando se activa el tab
+    let sistemaLoaded = false;
+
+    // ── PLANTILLAS ────────────────────────────────────────────────
+    let plantillas = [];
+    let plantillasLoaded = false;
+
+    async function cargarPlantillas() {
+      const { data, error } = await supabase.from('plantillas_documentos').select('*').order('tipo').order('nombre');
+      if (error) { toast('Error: ' + error.message, 'error'); return; }
+      plantillas = data || [];
+      renderPlantillas();
+    }
+
+    const TIPO_LABELS = {
+      nota_baja: 'Nota de baja',
+      nota_traslado: 'Nota de traslado',
+      nota_alta_docente: 'Alta docente',
+      nota_asignacion_modulo: 'Asignación módulo',
+      nota_convalidacion: 'Convalidación',
+      constancia_estudio: 'Constancia de estudio',
+      solicitud_titulo: 'Solicitud de título',
+      certificado_estudio: 'Certificado de estudio',
+    };
+
+    function renderPlantillas() {
+      const container = document.getElementById('plantillasList');
+      if (!plantillas.length) {
+        container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--txt-muted)">Sin plantillas configuradas.</div>`;
+        return;
+      }
+      container.innerHTML = plantillas.map(p => `
+        <div class="plantilla-card" id="pcard_${p.id}">
+          <div class="plantilla-header" onclick="togglePlantilla(${p.id})">
+            <div class="plantilla-meta">
+              <span class="plantilla-name">${escapeHtml(p.nombre)}</span>
+              <span class="badge badge-muted" style="font-size:.7rem">${TIPO_LABELS[p.tipo] || p.tipo}</span>
+              ${p.activa ? '' : '<span class="badge badge-danger" style="font-size:.7rem">Inactiva</span>'}
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button class="btn btn-icon" onclick="event.stopPropagation();toggleActivaPlantilla(${p.id},${!p.activa})" title="${p.activa ? 'Desactivar' : 'Activar'}">
+                ${p.activa
+                  ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`
+                  : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>`}
+              </button>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" id="pchevron_${p.id}"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+          <div class="plantilla-body" id="pbody_${p.id}">
+            ${p.variables_disponibles ? `<div class="plantilla-vars"><b>Variables disponibles:</b><br>${escapeHtml(p.variables_disponibles)}</div>` : ''}
+            <div class="form-group" style="margin-bottom:8px">
+              <label class="form-label" style="font-size:.78rem">Nombre</label>
+              <input type="text" class="form-control" id="pnombre_${p.id}" value="${escapeHtml(p.nombre)}">
+            </div>
+            <div class="form-group" style="margin-bottom:8px">
+              <label class="form-label" style="font-size:.78rem">Variables disponibles <span style="font-weight:400;color:var(--txt-muted)">(separadas por coma)</span></label>
+              <input type="text" class="form-control" id="pvars_${p.id}" value="${escapeHtml(p.variables_disponibles || '')}" style="font-family:var(--font-mono);font-size:.78rem">
+            </div>
+            <div class="form-group" style="margin-bottom:8px">
+              <label class="form-label" style="font-size:.78rem">Contenido del template</label>
+              <textarea class="plantilla-editor" id="ptemplate_${p.id}">${escapeHtml(p.contenido_template)}</textarea>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="togglePlantilla(${p.id})">Cancelar</button>
+              <button class="btn btn-primary btn-sm" onclick="guardarPlantilla(${p.id})">Guardar cambios</button>
+            </div>
+          </div>
+        </div>`).join('');
+    }
+
+    window.togglePlantilla = (id) => {
+      const body = document.getElementById('pbody_' + id);
+      const chevron = document.getElementById('pchevron_' + id);
+      if (!body) return;
+      const isOpen = body.classList.toggle('open');
+      if (chevron) chevron.style.transform = isOpen ? 'rotate(180deg)' : '';
+    };
+
+    window.guardarPlantilla = async (id) => {
+      const nombre = document.getElementById('pnombre_' + id)?.value.trim();
+      const contenido = document.getElementById('ptemplate_' + id)?.value;
+      const vars = document.getElementById('pvars_' + id)?.value.trim();
+      if (!nombre || !contenido) { toast('Nombre y contenido son requeridos', 'warning'); return; }
+      const { error } = await supabase.from('plantillas_documentos').update({
+        nombre,
+        contenido_template: contenido,
+        variables_disponibles: vars || null,
+        last_modified_by: sesion.id,
+        last_modified_at: new Date().toISOString()
+      }).eq('id', id);
+      if (error) { toast('Error: ' + error.message, 'error'); return; }
+      toast('Plantilla guardada', 'success');
+      await cargarPlantillas();
+    };
+
+    window.toggleActivaPlantilla = async (id, activa) => {
+      const { error } = await supabase.from('plantillas_documentos').update({
+        activa,
+        last_modified_by: sesion.id,
+        last_modified_at: new Date().toISOString()
+      }).eq('id', id);
+      if (error) { toast('Error: ' + error.message, 'error'); return; }
+      toast(activa ? 'Plantilla activada' : 'Plantilla desactivada', 'success');
+      await cargarPlantillas();
+    };
+
+    document.getElementById('btnNuevaPlantilla')?.addEventListener('click', () => {
+      const tipoOpts = Object.entries(TIPO_LABELS).map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+      document.getElementById('modalTitle').textContent = 'Nueva plantilla';
+      document.getElementById('modalBody').innerHTML = `
+        <div class="form-group"><label class="form-label">Nombre <span class="required">*</span></label>
+          <input type="text" class="form-control" id="npNombre" placeholder="Ej: Constancia de alumno regular"></div>
+        <div class="form-group"><label class="form-label">Tipo <span class="required">*</span></label>
+          <select class="form-control" id="npTipo">${tipoOpts}</select></div>
+        <div class="form-group"><label class="form-label">Variables disponibles <span style="font-weight:400;color:var(--txt-muted)">(separadas por coma)</span></label>
+          <input type="text" class="form-control" id="npVars" placeholder="{{alumno_nombre}}, {{carrera}}, {{fecha}}" style="font-family:var(--font-mono);font-size:.83rem"></div>
+        <div class="form-group"><label class="form-label">Contenido del template <span class="required">*</span></label>
+          <textarea class="plantilla-editor" id="npTemplate" style="min-height:200px" placeholder="Escribí el contenido..."></textarea></div>`;
+      modalFn = async () => {
+        const nombre = document.getElementById('npNombre').value.trim();
+        const tipo = document.getElementById('npTipo').value;
+        const contenido = document.getElementById('npTemplate').value.trim();
+        const vars = document.getElementById('npVars').value.trim();
+        if (!nombre || !contenido) { toast('Nombre y contenido son requeridos', 'warning'); return; }
+        const { error } = await supabase.from('plantillas_documentos').insert({
+          nombre, tipo, contenido_template: contenido,
+          variables_disponibles: vars || null,
+          activa: true,
+          created_by: sesion.id
+        });
+        if (error) { toast('Error: ' + error.message, 'error'); return; }
+        toast('Plantilla creada', 'success');
+        cerrarModal(); await cargarPlantillas();
+      };
+      document.getElementById('modalOverlay').classList.add('open');
+    });
+
+    // Hook lazy loading en el tab click
+    document.querySelectorAll('.cfg-tab').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const tab = btn.dataset.tab;
+        if (tab === 'sistema' && !sistemaLoaded) {
+          sistemaLoaded = true;
+          await cargarConfigSistema();
+        }
+        if (tab === 'plantillas' && !plantillasLoaded) {
+          plantillasLoaded = true;
+          await cargarPlantillas();
+        }
+      });
+    });
   </script>
 </body>
 

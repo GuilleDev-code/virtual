@@ -370,7 +370,7 @@ async function cargarLista() {
 
   // 1. Datos del calendario seleccionado
   const { data: cal } = await supabase.from('calendario_examenes')
-    .select('id,oportunidad_nro,fecha_desde,fecha_hasta,estado,materia_id,id_moodle,materias(nombre,anho_curricula,cuota_requerida_examen)')
+    .select('id,oportunidad_nro,fecha_desde,fecha_hasta,estado,materia_id,id_moodle,cohorte_id,materias(nombre,anho_curricula,cuota_requerida_examen)')
     .eq('id', calendarioId).single();
   calendarioActivo = cal;
 
@@ -396,6 +396,7 @@ async function cargarLista() {
     const { data: aprobados } = await supabase.from('historial_examenes')
       .select('inscripcion_id')
       .eq('materia_id', cal.materia_id)
+      .eq('cohorte_id', cal.cohorte_id)
       .in('oportunidad_nro', opsPrevias)
       .in('inscripcion_id', inscIds0)
       .or('estado_materia.eq.Aprobado,nota_obtenida.gte.2');
@@ -459,11 +460,14 @@ async function cargarLista() {
   cal._montoExamen = montoExamen;
 
   // 5. Historial previo (si ya se cargó esta lista antes)
+  const cohorteIdCal = cal.cohorte_id;
   const { data: histPrev } = await supabase.from('historial_examenes')
     .select('id,inscripcion_id,estado_materia,nota_obtenida,hab_academico,hab_administrativo,calif_proceso,calif_examen_final')
     .eq('materia_id', cal.materia_id)
     .eq('oportunidad_nro', cal.oportunidad_nro)
+    .eq('cohorte_id', cohorteIdCal)
     .in('inscripcion_id', inscIds);
+  console.log(histPrev)
 
   const histMap = {};
   (histPrev||[]).forEach(h => { histMap[h.inscripcion_id] = h; });
@@ -531,6 +535,10 @@ function renderTabla() {
       <button class="btn btn-ghost btn-sm" onclick="abrirDocumento()">
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         Ver documento
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="exportarPdfHab()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Exportar PDF
       </button>
     </div>
 
@@ -851,7 +859,9 @@ window.guardarHabilitaciones = async () => {
         inscripcion_id:     f.inscripcion_id,
         materia_id:         calendarioActivo.materia_id,
         oportunidad_nro:    calendarioActivo.oportunidad_nro,
+        cohorte_id:         calendarioActivo.cohorte_id,
         estado_materia:     estadoMat,
+        nota_obtenida:      notaEscala,
         hab_administrativo: habAdmin,
         hab_academico:      habAcad,
         registrado_por:     sesion.id,
@@ -995,6 +1005,190 @@ window.imprimirDoc = () => {
   ventana.focus();
   setTimeout(() => ventana.print(), 400);
 };
+
+// ── Exportar PDF planilla habilitados (jsPDF) ──────────────────
+window.exportarPdfHab = () => {
+  if (!filas.length || !calendarioActivo) { toast('Cargá la lista primero', 'warning'); return; }
+
+  // Importar jsPDF dinámicamente (mismo patrón que academico.html)
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  script.onload = () => generarPdfExamen();
+  if (window.jspdf) { generarPdfExamen(); return; }
+  document.head.appendChild(script);
+};
+
+function generarPdfExamen() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  const cal       = calendarioActivo;
+  const materia   = cal.materias?.nombre || '—';
+  const carNombre = document.getElementById('selCarrera').selectedOptions[0]?.text || '—';
+  const cohNombre = document.getElementById('selCohorte').selectedOptions[0]?.text || '—';
+  const opLabel   = `${['','1ra','2da','3ra','4ta'][cal.oportunidad_nro] || cal.oportunidad_nro + 'ta'} oportunidad`;
+  const visibles  = filas.filter(f => !f.excluido);
+
+  const margenL = 20, margenR = 190, ancho = 170;
+  
+  // ── FUNCIÓN INTERNA PARA DIBUJAR MARCA DE AGUA Y MEMBRETE ──
+  function dibujarFondoYEncabezado(esPrimeraPagina = false) {
+    // 1. Marca de Agua (Descomentar cuando integres el archivo en producción)
+    /*
+    const imgWatermark = './assets/img/watermark.png';
+    if (imgWatermark) {
+      doc.saveGraphicsState();
+      doc.setGState(new doc.GState({ opacity: 0.04 }));
+      doc.addImage(imgWatermark, 'PNG', 35, 78, 140, 140); 
+      doc.restoreGraphicsState();
+    }
+    */
+
+    // 2. Membrete institucional (Sólo primera página)
+    if (esPrimeraPagina) {
+      const imgMembrete = './assets/img/membrete.png';
+      if (imgMembrete) {
+        doc.addImage(imgMembrete, 'PNG', margenL, 12, ancho, 24);
+      }
+    }
+  }
+
+  // Ejecutamos la estructura inicial de la página 1
+  dibujarFondoYEncabezado(true);
+  let y = 44; 
+
+  // ── Encabezado de Títulos ──────────────────────────────────────────
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0);
+  doc.text('PLANILLA DE HABILITADOS — EXAMEN FINAL', 105, y, { align: 'center' });
+  y += 6;
+
+  // Línea separadora institucional (Verde oscuro)
+  doc.setDrawColor(6, 64, 43);
+  doc.setLineWidth(0.6);
+  doc.line(margenL, y, margenR, y);
+  y += 6;
+
+  // ── Datos del examen organizados en renglones limpios ──
+  doc.setTextColor(0);
+  doc.setFontSize(9);
+  const col1x = margenL, col2x = 115;
+  
+  // Renglón 1: Carrera
+  doc.setFont('helvetica', 'bold');   doc.text('Carrera:', col1x, y);
+  doc.setFont('helvetica', 'normal'); doc.text(carNombre, col1x + 16, y);
+  y += 6;
+
+  // Renglón 2: Materia
+  doc.setFont('helvetica', 'bold');   doc.text('Materia:', col1x, y);
+  doc.setFont('helvetica', 'normal'); doc.text(materia, col1x + 16, y);
+  y += 6;
+  
+  // Renglón 3: Cohorte y Oportunidad
+  doc.setFont('helvetica', 'bold');   doc.text('Cohorte:', col1x, y);
+  doc.setFont('helvetica', 'normal'); doc.text(cohNombre, col1x + 16, y);
+  
+  doc.setFont('helvetica', 'bold');   doc.text('Oportunidad:', col2x, y);
+  doc.setFont('helvetica', 'normal'); doc.text(opLabel, col2x + 23, y);
+  y += 6;
+  
+  // Renglón 4: Habilitados y Fecha emisión
+  doc.setFont('helvetica', 'bold');   doc.text('Habilitados:', col1x, y);
+  const habCount = visibles.filter(f => f.habAcad && f.cuotaPagada && f.derechoPagado).length;
+  doc.setFont('helvetica', 'normal'); doc.text(`${habCount} / ${visibles.length}`, col1x + 21, y);
+  
+  doc.setFont('helvetica', 'bold');   doc.text('Fecha emisión:', col2x, y);
+  doc.setFont('helvetica', 'normal'); doc.text(new Date().toLocaleDateString('es-PY'), col2x + 26, y);
+  
+  y += 10; // Espaciado holgado antes de la tabla
+
+  // ── Distribución de columnas optimizada para el ancho de 170mm ──
+  const colNro    = margenL;       // 20mm
+  const colCI     = margenL + 12;  // 32mm
+  const colPunt   = margenL + 47;  // 67mm
+  const colHabAcd = margenL + 67;  // 87mm
+  const colCuota  = margenL + 92;  // 112mm
+  const colDer    = margenL + 114; // 134mm
+  const colObs    = margenL + 138; // 158mm
+
+  const dibujarHeaderTabla = () => {
+    doc.setFillColor(6, 64, 43);
+    doc.rect(margenL, y, ancho, 7, 'F');
+    doc.setTextColor(255);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('N°',       colNro + 1.5, y + 5);
+    doc.text('C.I.',     colCI + 1.5,   y + 5);
+    doc.text('Puntaje',  colPunt + 1.5, y + 5);
+    doc.text('Acad.',    colHabAcd + 1.5, y + 5);
+    doc.text('Cuota',    colCuota + 1.5, y + 5);
+    doc.text('Derecho',  colDer + 1.5,  y + 5);
+    doc.text('Obs.',     colObs + 1.5,  y + 5);
+    doc.setTextColor(0);
+    doc.setFont('helvetica', 'normal');
+    y += 7;
+  };
+
+  dibujarHeaderTabla();
+
+  doc.setFontSize(8);
+  let nro = 0;
+  visibles.forEach((f) => {
+    // Salto de página automático seguro
+    if (y > 270) {
+      doc.addPage();
+      dibujarFondoYEncabezado(false); // Refresca fondo sin membrete superior
+      y = 20;
+      dibujarHeaderTabla();
+    }
+
+    nro++;
+    const rowH  = 6.5;
+    const fillC = nro % 2 === 0 ? [245, 247, 250] : [255, 255, 255];
+    doc.setFillColor(...fillC);
+    doc.rect(margenL, y, ancho, rowH, 'F');
+
+    // Borde de la celda
+    doc.setDrawColor(230);
+    doc.setLineWidth(0.2);
+    doc.rect(margenL, y, ancho, rowH);
+
+    // Traer el puntaje (evalúa si está vacío, nulo o definido)
+    const puntaje = f.puntaje !== '' && f.puntaje != null ? f.puntaje : '—';
+
+    doc.setTextColor(0);
+    doc.text(String(nro),        colNro + 1.5, y + 4.5);
+    doc.text(String(f.ci),       colCI + 1.5,   y + 4.5);
+    doc.text(String(puntaje),    colPunt + 1.5, y + 4.5);
+
+    // Mapeo dinámico y color de Habilitado Académicamente (f.habAcad booleano)
+    doc.setTextColor(...(f.habAcad ? [6, 64, 43] : [180, 0, 0]));
+    doc.text(f.habAcad ? 'Sí' : 'No', colHabAcd + 1.5, y + 4.5);
+
+    // Administrativo: Cuota
+    doc.setTextColor(...(f.cuotaPagada ? [6, 64, 43] : [180, 0, 0]));
+    doc.text(f.cuotaPagada ? 'Sí' : 'No', colCuota + 1.5, y + 4.5);
+
+    // Administrativo: Derecho de Examen
+    doc.setTextColor(...(f.derechoPagado ? [6, 64, 43] : [180, 0, 0]));
+    doc.text(f.derechoPagado ? 'Sí' : 'No', colDer + 1.5, y + 4.5);
+
+    // Observaciones (Recorte seguro)
+    doc.setTextColor(100);
+    const obsTxt = (f.obs || '').substring(0, 16);
+    doc.text(obsTxt, colObs + 1.5, y + 4.5);
+
+    doc.setTextColor(0);
+    y += rowH;
+  });
+
+  // ── Guardar Documento ─────────────────────────────────────
+  const fechaStr = new Date().toLocaleDateString('es-PY').replace(/\//g, '-');
+  const materiaSlug = materia.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+  doc.save(`habilitados_${materiaSlug}_${fechaStr}.pdf`);
+  toast('PDF generado con éxito', 'success');
+}
 
 // ── Historial ──────────────────────────────────────────────────
 async function cargarHistorial() {

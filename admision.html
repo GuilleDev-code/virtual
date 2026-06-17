@@ -1245,64 +1245,129 @@ document.getElementById('btnAdGuardar').addEventListener('click', async () => {
   btn.disabled=true; btn.textContent='Procesando...';
 
   try {
-    // Verificar CI duplicada
-    const { data: exist } = await supabase.from('alumnos').select('id').eq('ci',ci).maybeSingle();
-    if(exist){ toast('Ya existe un alumno con esa CI','warning'); btn.disabled=false; btn.textContent='Crear alumno e inscribir'; return; }
+  let alumnoId = null;
+
+  // 1. Verificar si el alumno ya existe en la institución por su CI
+  const { data: exist, error: errExist } = await supabase
+    .from('alumnos')
+    .select('id, nombres, apellidos')
+    .eq('ci', ci)
+    .maybeSingle();
+
+  if (errExist) throw new Error('Verificación de CI: ' + errExist.message);
+
+  if (exist) {
+    // El alumno existe en la base de datos general.
+    alumnoId = exist.id;
+
+    // 🌟 NUEVA VERIFICACIÓN: ¿Ya está inscrito en esta misma cohorte/carrera?
+    const { data: inscripcionPrevia, error: errInsc } = await supabase
+      .from('inscripciones_anuales')
+      .select('id')
+      .eq('alumno_id', alumnoId)
+      .eq('cohorte_id', cohorteId)
+      .eq('anho_lectivo', anhoLectivo)
+      .maybeSingle();
+
+    if (errInsc) throw new Error('Verificación de inscripción previa: ' + errInsc.message);
+
+    if (inscripcionPrevia) {
+      // 🛑 FRENAR FLUJO: El alumno ya cursa esta misma carrera en este período
+      toast(`El alumno ${exist.nombres} ${exist.apellidos} ya se encuentra inscrito en esta misma cohorte/carrera.`, 'warning');
+      btn.disabled = false;
+      btn.textContent = 'Crear alumno e inscribir';
+      return; // Salimos de la función de manera segura sin duplicar nada
+    }
+
+    console.log(`El alumno ya existe pero NO en esta carrera. Procediendo a inscribir en nuevo programa.`);
+    
+  } else {
+    // CASO B: Es un alumno totalmente nuevo en la institución. Registramos Prospecto + Alumno.
 
     // Crear prospecto (registro mínimo)
     const { data: prosp, error: errP } = await supabase.from('prospectos').insert({
       nombres, apellidos, ci,
-      telefono_whatsapp: document.getElementById('adTelefono').value.trim()||null,
-      email: document.getElementById('adEmail').value.trim()||null,
+      telefono_whatsapp: document.getElementById('adTelefono').value.trim() || null,
+      email: document.getElementById('adEmail').value.trim() || null,
       carrera_interes_id: carreraId,
       etapa_crm: 'Convertido',
       canal_origen: 'Presencial'
     }).select('id').single();
-    if(errP) throw new Error('prospecto: '+errP.message);
+    
+    if (errP) throw new Error('prospecto: ' + errP.message);
 
     // Crear alumno
-    const { data: alumno, error: errA } = await supabase.from('alumnos').insert({
+    const { data: nuevoAlumno, error: errA } = await supabase.from('alumnos').insert({
       nombres, apellidos, ci,
-      fecha_nacimiento: document.getElementById('adFechaNac').value||null,
-      telefono: document.getElementById('adTelefono').value.trim()||null,
-      email: document.getElementById('adEmail').value.trim()||null,
-      pais: document.getElementById('adPais').value.trim()||'Paraguay',
-      departamento: document.getElementById('adDepto').value.trim()||null,
+      fecha_nacimiento: document.getElementById('adFechaNac').value || null,
+      telefono: document.getElementById('adTelefono').value.trim() || null,
+      email: document.getElementById('adEmail').value.trim() || null,
+      pais: document.getElementById('adPais').value.trim() || 'Paraguay',
+      departamento: document.getElementById('adDepto').value.trim() || null,
       prospecto_id: prosp.id,
       estado: 'Activo'
     }).select('id').single();
-    if(errA) throw new Error('alumno: '+errA.message);
+    
+    if (errA) throw new Error('alumno: ' + errA.message);
 
-    // Actualizar prospecto con alumno_id
-    await supabase.from('prospectos').update({
-      convertido_alumno_id:alumno.id, fecha_conversion:new Date().toISOString()
-    }).eq('id',prosp.id);
+    alumnoId = nuevoAlumno.id;
 
-    // Crear inscripción + cuotas
-    const inscripcionId = await crearInscripcionConCuotas({
-      alumnoId:alumno.id, cohorteId, anhoLectivo, anhoCursada,
-      montoBase, montoCuotaFinal, cantCuotas, porcentajeBeca
+    // Actualizar prospecto con alumno_id (Background)
+    supabase.from('prospectos').update({
+      convertido_alumno_id: alumnoId, 
+      fecha_conversion: new Date().toISOString()
+    }).eq('id', prosp.id).then(({ error }) => {
+      if (error) console.error('Error secundario actualizando prospecto:', error.message);
     });
+  }
 
-    cerrarModal('modalAlumnoDirectoOverlay');
-    toast(`${nombres} ${apellidos} creado e inscripto (${cantCuotas} cuotas generadas)`,'success');
+  // =================================================================
+  // CAMINO SEGURO: Inscripción única para Alumnos Nuevos o Multicarrera
+  // =================================================================
 
-    // Disparar n8n
-    try {
-      await fetch(N8N_WEBHOOK_HABILITAR,{
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ alumno_id:alumno.id, nombres, apellidos, ci,
-          email:document.getElementById('adEmail').value.trim()||null,
-          telefono:document.getElementById('adTelefono').value.trim()||null,
-          carrera_id:carreraId, cohorte_id:cohorteId, inscripcion_id:inscripcionId })
-      });
-    } catch(e){ console.warn('n8n:',e.message); }
+  const inscripcionId = await crearInscripcionConCuotas({
+    alumnoId: alumnoId, 
+    cohorteId, 
+    anhoLectivo, 
+    anhoCursada,
+    montoBase, 
+    montoCuotaFinal, 
+    cantCuotas, 
+    porcentajeBeca
+  });
 
-    await Promise.all([cargarAlumnos(), cargarSolicitudes()]);
+  cerrarModal('modalAlumnoDirectoOverlay');
+  
+  if (exist) {
+    toast(`${exist.nombres} ${exist.apellidos} inscrito exitosamente en su nueva carrera.`, 'success');
+  } else {
+    toast(`${nombres} ${apellidos} creado e inscrito con éxito.`, 'success');
+  }
 
-  } catch(e){
-    toast('Error: '+e.message,'error');
-  } finally {
+  // Disparar n8n
+  /*try {
+    await fetch(N8N_WEBHOOK_HABILITAR, {
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        alumno_id: alumnoId, nombres, apellidos, ci,
+        email: document.getElementById('adEmail').value.trim() || null,
+        telefono: document.getElementById('adTelefono').value.trim() || null,
+        carrera_id: carreraId, cohorte_id: cohorteId, inscripcion_id: inscripcionId 
+      })
+    });
+  } catch(e) { 
+    console.warn('n8n:', e.message); 
+  }*/
+
+  await Promise.all([cargarAlumnos(), cargarSolicitudes()]);
+
+} catch (error) {
+  console.error("Error en el flujo de inscripción:", error);
+  toast('Ocurrió un error: ' + error.message, 'danger');
+  btn.disabled = false;
+  btn.textContent = 'Crear alumno e inscribir';
+}finally {
     btn.disabled=false;
     btn.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Crear alumno e inscribir`;
   }

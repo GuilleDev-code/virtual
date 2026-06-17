@@ -623,6 +623,17 @@
                 </svg>
                 Guardar cambios
               </button>
+              <button class="btn btn-ghost btn-sm" id="btnPdfHab" style="display:none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10 9 9 9 8 9" />
+                </svg>
+                Exportar PDF
+              </button>
               <span id="habTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
             </div>
 
@@ -780,7 +791,7 @@
     import { supabase, formatGs, formatFechaHora, toast } from './assets/supabase.js';
     import { requireAuth, aplicarPermisosNav } from './assets/auth.js';
     import { initSidebar } from './assets/sidebar.js';
-    import { MOODLE } from './config.js';
+    import { getMoodle, invalidarConfigCache } from './assets/supabase.js';
 
     const sesion = requireAuth('academico');
     if (!sesion) throw new Error('Sin sesión');
@@ -1263,8 +1274,8 @@
       const { data: dataMaterias } = await supabase.from('materias').select('id, nombre, carrera_id,modulo_nro').order('modulo_nro');
       let listaMaterias = dataMaterias || [];
 
-      // 2. Traer TODAS las cohortes con tipo de carrera
-      const { data: dataCohortes } = await supabase.from('cohortes').select('id, nro_cohorte, anho_inicio, carrera_id, moodle_id, carreras(tipo)').order('anho_inicio', { ascending: false });
+      // 2. Traer TODAS las cohortes
+      const { data: dataCohortes } = await supabase.from('cohortes').select('id, nro_cohorte, anho_inicio, carrera_id').order('anho_inicio', { ascending: false });
       let listaCohortes = dataCohortes || [];
 
       // 3. Traer los exámenes que ya están agendados
@@ -1455,302 +1466,91 @@
       }
     }
 
-    // ── Escalas oficiales UPG ─────────────────────────────────
-    function calcularNota(pct, tipoCarrera) {
-      if (tipoCarrera === 'Posgrado') {
-        if (pct >= 94) return 5;
-        if (pct >= 86) return 4;
-        if (pct >= 78) return 3;
-        if (pct >= 70) return 2;
-        return 1;
-      } else { // Grado (default)
-        if (pct >= 91) return 5;
-        if (pct >= 81) return 4;
-        if (pct >= 70) return 3;
-        if (pct >= 60) return 2;
-        return 1;
-      }
-    }
-
-    function escalaHTML(tipo) {
-      const grado = [
-        { nota:1, rango:'0 – 59',  color:'var(--danger)'  },
-        { nota:2, rango:'60 – 69', color:'var(--warning)' },
-        { nota:3, rango:'70 – 80', color:'var(--verde)'   },
-        { nota:4, rango:'81 – 90', color:'var(--verde)'   },
-        { nota:5, rango:'91 – 100',color:'var(--verde)'   },
-      ];
-      const posgrado = [
-        { nota:1, rango:'0 – 69',  color:'var(--danger)'  },
-        { nota:2, rango:'70 – 77', color:'var(--warning)' },
-        { nota:3, rango:'78 – 85', color:'var(--verde)'   },
-        { nota:4, rango:'86 – 93', color:'var(--verde)'   },
-        { nota:5, rango:'94 – 100',color:'var(--verde)'   },
-      ];
-      const escala = tipo === 'Posgrado' ? posgrado : grado;
-      return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
-        ${escala.map(e=>`
-          <div style="flex:1;min-width:70px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;text-align:center">
-            <div style="font-size:1.1rem;font-weight:800;color:${e.color}">${e.nota}</div>
-            <div style="font-size:.65rem;color:var(--txt-muted);margin-top:1px">${e.rango}</div>
-          </div>`).join('')}
-      </div>`;
-    }
-
-    // ── Abrir modal de notas finales ──────────────────────────
     window.abrirCargaNotasFinales = async (calendarioId, nombreMateria, oportunidadTexto, materiaId, oportunidadNro) => {
-      // Obtener tipo de carrera desde el cohorte del calendario
-      const cal      = calendarios.find(c => c.id === calendarioId);
-      const cohorte  = cohortes.find(co => co.id === cal?.cohorte_id);
-      const tipoCarrera = cohorte?.carreras?.tipo || 'Grado';
-      const courseId    = cal?.id_moodle || null;
+      // 1. Forzamos que el modal sea bien amplio modificando dinámicamente su contenedor
+      const modalContainer = document.querySelector('#modalGenerico');
+      if (modalContainer) {
+        modalContainer.style.maxWidth = '1100px';
+        modalContainer.style.width = '1100px';
+      }
 
-      document.getElementById('modalTitle').textContent = `Acta final — ${nombreMateria} · ${oportunidadTexto}`;
+      document.getElementById('modalTitle').textContent = `Acta Final Académica — ${oportunidadTexto}`;
 
+      // 2. Armamos la estructura inicial con la escala país y el botón de sincronización masiva
       document.getElementById('modalBody').innerHTML = `
-        <div style="margin-bottom:12px">
-          <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
-            Escala ${tipoCarrera}
-          </div>
-          ${escalaHTML(tipoCarrera)}
+    <div style="padding: 15px; font-family: system-ui, sans-serif;">
+      <h4 style="font-size: 1.25rem; margin-bottom: 5px; font-weight: 700; color: #333;">📖 ${nombreMateria}</h4>
+      
+      <div style="background: #f8f9fa; border-left: 4px solid #4e73df; border-radius: 4px; padding: 12px; margin-bottom: 20px; font-size: 0.8rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <strong style="color: #4e73df; display: block; margin-bottom: 6px; font-size: 0.85rem;">⚖️ Escala de Calificación Final Obligatoria (Paraguay):</strong>
+        <div style="display: flex; justify-content: space-between; text-align: center; font-weight: bold; color: #5a5c69;">
+          <div style="background:#fff; padding:6px 12px; border-radius:4px; border:1px solid #e3e6f0;">1 <br><span style="color:#e74a3b; font-size:.7rem;">< 60%</span></div>
+          <div style="background:#fff; padding:6px 12px; border-radius:4px; border:1px solid #e3e6f0;">2 <br><span style="color:#1cc88a; font-size:.7rem;">60% - 70%</span></div>
+          <div style="background:#fff; padding:6px 12px; border-radius:4px; border:1px solid #e3e6f0;">3 <br><span style="color:#1cc88a; font-size:.7rem;">71% - 80%</span></div>
+          <div style="background:#fff; padding:6px 12px; border-radius:4px; border:1px solid #e3e6f0;">4 <br><span style="color:#1cc88a; font-size:.7rem;">81% - 90%</span></div>
+          <div style="background:#fff; padding:6px 12px; border-radius:4px; border:1px solid #e3e6f0;">5 <br><span style="color:#1cc88a; font-size:.7rem;">91% - 100%</span></div>
         </div>
-        <div class="toolbar" style="margin-bottom:12px;padding:0">
-          <span style="font-size:.82rem;color:var(--txt-muted)">Alumnos habilitados académicamente</span>
-          <button class="btn btn-ghost btn-sm" id="btnSyncActa" style="margin-left:auto;${!courseId?'display:none':''}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-            Sincronizar Moodle
-          </button>
-          <span id="actaTotal" style="font-size:.78rem;color:var(--txt-muted)"></span>
-        </div>
-        <div id="tablaNotasContainer" style="max-height:420px;overflow-y:auto">
-          <div style="text-align:center;padding:30px;color:var(--txt-muted)">
-            <span class="spinner" style="display:inline-block;width:18px;height:18px;border-width:2px"></span>
-          </div>
-        </div>`;
+      </div>
 
-      // Ampliar modal para la tabla
-      const modalEl = document.querySelector('.modal');
-      if (modalEl) modalEl.style.maxWidth = '860px';
+      <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.9rem; color: #6c757d; font-weight: 500;">Lista de alumnos habilitados para examen final:</span>
+        <button id="btnSincronizarMoodle" class="btn btn-primary" style="font-size: 0.85rem; padding: 8px 16px; display: flex; align-items: center; gap: 8px; font-weight: 600; border-radius: 5px;">
+          🔄 Sincronizar Calificaciones Moodle
+        </button>
+      </div>
+      
+      <div id="tablaNotasContainer" style="max-height: 380px; overflow-y: auto; border: 1px solid #e3e6f0; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+        <div style="text-align:center; padding: 30px; color: #858796;" id="statusNotas">Cargando alumnos y perfiles...</div>
+      </div>
+    </div>
+  `;
+
       document.getElementById('modalOverlay').classList.add('open');
 
       try {
+        // 3. Traemos los alumnos del historial haciendo un JOIN implícito para traer los datos del Alumno (CI, Nombre, Apellido)
+        // NOTA: Si en tu base de datos la relación apunta a 'perfiles' o 'alumnos', ajustá el sub-select string
         const { data: historial, error } = await supabase
           .from('historial_examenes')
-          .select(`id, inscripcion_id, calif_proceso, hab_academico, hab_administrativo,
-            inscripciones_anuales( alumnos(ci, nombres, apellidos) )`)
-          .eq('materia_id', Number(materiaId))
-          .eq('oportunidad_nro', Number(oportunidadNro))
-          .eq('hab_academico', true);
+          .select(`
+        id, 
+        inscripcion_id, 
+        calif_proceso, 
+        hab_academico, 
+        hab_administrativo,
+        inscripciones_anuales(
+          alumnos(ci, nombres, apellidos)
+        )
+      `)
+          .eq('materia_id', materiaId)
+          .eq('oportunidad_nro', oportunidadNro);
 
         if (error) throw error;
-
-        if (!historial?.length) {
-          document.getElementById('tablaNotasContainer').innerHTML =
-            `<div style="padding:30px;text-align:center;color:var(--txt-muted);font-size:.85rem">
-               No hay alumnos con habilitación académica para este período.
-             </div>`;
-          document.getElementById('actaTotal').textContent = '0 alumnos';
+        if (!historial || historial.length === 0) {
+          document.getElementById('tablaNotasContainer').innerHTML = `
+        <div style="padding:30px; text-align:center; color:#e74a3b; font-weight:500;">ℹ️ No existen registros de alumnos calificados para este periodo.</div>`;
           return;
         }
 
-        document.getElementById('actaTotal').textContent = `${historial.length} alumnos`;
-        renderizarTablaActa(historial, tipoCarrera);
+        // 4. Renderizamos la tabla pasando los datos procesados con los datos del alumno
+        renderizarTablaActa(historial);
 
-        // Botón Moodle
-        document.getElementById('btnSyncActa')?.addEventListener('click', async () => {
-          await ejecutarSincronizacionMoodle(courseId, historial, tipoCarrera);
-        });
+        // 5. Obtenemos el id_moodle del curso guardado en este examen
+        const examenCal = calendarios.find(c => c.id === calendarioId);
+        const courseIdMoodle = examenCal ? examenCal.id_moodle : null;
 
-        configurarBotonGuardarFinal(calendarioId, tipoCarrera);
+        // 6. Vinculamos el evento al botón de Sincronizar pasándole la estructura limpia
+        document.getElementById('btnSincronizarMoodle').onclick = async () => {
+          await ejecutarSincronizacionMoodle(courseIdMoodle, historial);
+        };
 
-      } catch(err) {
-        document.getElementById('tablaNotasContainer').innerHTML =
-          `<div style="padding:20px;color:var(--danger);text-align:center">Error: ${err.message}</div>`;
+        // 7. Seteamos el botón del footer para procesar el impacto final en la base de datos
+        configurarBotonGuardarFinal(calendarioId);
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('tablaNotasContainer').innerHTML = `<div style="padding:20px; color:red; text-align:center;">❌ Error al recuperar la planilla desde Supabase.</div>`;
       }
-    };
-
-    // ── Renderizar tabla del acta ─────────────────────────────
-    function renderizarTablaActa(historial, tipoCarrera) {
-      document.getElementById('tablaNotasContainer').innerHTML = `
-        <table style="width:100%;border-collapse:collapse;font-size:.83rem">
-          <thead>
-            <tr style="border-bottom:2px solid var(--border)">
-              <th style="padding:8px 10px;text-align:left;font-weight:600">CI</th>
-              <th style="padding:8px 10px;text-align:left;font-weight:600">Estudiante</th>
-              <th style="padding:8px 10px;text-align:center;font-weight:600">Proceso<br><span style="font-weight:400;font-size:.65rem;color:var(--txt-muted)">(BD)</span></th>
-              <th style="padding:8px 10px;text-align:center;font-weight:600;width:110px">Total Moodle<br><span style="font-weight:400;font-size:.65rem;color:var(--txt-muted)">(0–100)</span></th>
-              <th style="padding:8px 10px;text-align:center;font-weight:600">Examen final</th>
-              <th style="padding:8px 10px;text-align:center;font-weight:600">Nota</th>
-              <th style="padding:8px 10px;text-align:center;font-weight:600">Estado</th>
-            </tr>
-          </thead>
-          <tbody id="tbodyActa">
-            ${historial.map(row => filaActaHTML(row, tipoCarrera)).join('')}
-          </tbody>
-        </table>`;
-
-      document.querySelectorAll('.input-moodle').forEach(input => {
-        input.addEventListener('input', () => {
-          recalcularFilaActa(input, parseInt(input.dataset.proceso) || 0, tipoCarrera);
-        });
-      });
-    }
-
-    function filaActaHTML(row, tipoCarrera) {
-      const alumno = row.inscripciones_anuales?.alumnos;
-      const ci     = alumno?.ci || '—';
-      const nombre = alumno ? `${alumno.apellidos}, ${alumno.nombres}`.toUpperCase() : `Inscripción #${row.inscripcion_id}`;
-      const proceso = row.calif_proceso || 0;
-      const nota   = calcularNota(0, tipoCarrera);
-      return `
-        <tr class="fila-alumno-acta" data-historial-id="${row.id}" data-ci="${ci}"
-            style="border-bottom:1px solid var(--border-light);transition:background .15s">
-          <td style="padding:8px 10px;font-family:var(--font-mono);font-size:.8rem">${ci}</td>
-          <td style="padding:8px 10px;font-weight:600">${nombre}</td>
-          <td style="padding:8px 10px;text-align:center;font-family:var(--font-mono);color:var(--verde);font-weight:700">${proceso}</td>
-          <td style="padding:6px 10px;text-align:center">
-            <input type="number" class="form-control input-moodle"
-              min="0" max="100" step="1" value="0"
-              data-proceso="${proceso}"
-              style="width:72px;text-align:center;font-family:var(--font-mono);font-weight:700;margin:0 auto">
-          </td>
-          <td class="txt-examen-final" style="padding:8px 10px;text-align:center;font-family:var(--font-mono);font-weight:700;color:var(--txt-secondary)">0</td>
-          <td class="txt-nota-final" style="padding:8px 10px;text-align:center;font-size:1.1rem;font-weight:900;color:var(--danger)">${nota}</td>
-          <td class="td-estado" style="padding:8px 10px;text-align:center">
-            <span class="badge badge-danger" style="font-size:.65rem">Reprobado</span>
-          </td>
-        </tr>`;
-    }
-
-    function recalcularFilaActa(input, proceso, tipoCarrera) {
-      const fila        = input.closest('.fila-alumno-acta');
-      const totalMoodle = Math.min(100, Math.max(0, parseInt(input.value) || 0));
-      const examenFinal = Math.max(0, totalMoodle - proceso);
-      const nota        = calcularNota(totalMoodle, tipoCarrera);
-      const aprobado    = nota >= 2;
-
-      fila.querySelector('.txt-examen-final').textContent = examenFinal;
-      const tdNota = fila.querySelector('.txt-nota-final');
-      tdNota.textContent   = nota;
-      tdNota.style.color   = aprobado ? 'var(--verde)' : 'var(--danger)';
-      fila.querySelector('.td-estado').innerHTML =
-        `<span class="badge ${aprobado?'badge-success':'badge-danger'}" style="font-size:.65rem">
-          ${aprobado?'Aprobado':'Reprobado'}
-        </span>`;
-    }
-
-    // ── Sincronizar Moodle desde el modal de acta ─────────────
-    async function ejecutarSincronizacionMoodle(courseId, historial, tipoCarrera) {
-      if (!courseId) { toast('Este examen no tiene ID de Moodle configurado','warning'); return; }
-
-      const cis = historial.map(r => r.inscripciones_anuales?.alumnos?.ci).filter(Boolean);
-      if (!cis.length) { toast('No se encontraron CIs en la lista','warning'); return; }
-
-      const btn = document.getElementById('btnSyncActa');
-      btn.disabled = true;
-      btn.innerHTML = `<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block"></span> Conectando...`;
-
-      try {
-        const base = `${MOODLE.URL}/webservice/rest/server.php?wstoken=${MOODLE.TOKEN}&moodlewsrestformat=json`;
-
-        // 1. Usuarios por CI
-        const paramsCIs = cis.map((ci,i) => `values[${i}]=${encodeURIComponent(ci)}`).join('&');
-        const resUsers   = await fetch(`${base}&wsfunction=core_user_get_users_by_field&field=username&${paramsCIs}`);
-        const usrData    = await resUsers.json();
-        if (usrData.exception) throw new Error(usrData.message);
-        const ciToUid = {};
-        (usrData||[]).forEach(u => { ciToUid[u.username] = u.id; });
-
-        // 2. Notas del curso
-        const resNotas  = await fetch(`${base}&wsfunction=gradereport_user_get_grade_items&courseid=${courseId}`);
-        const notasData = await resNotas.json();
-        if (notasData.exception) throw new Error(notasData.message);
-        const uidToNota = {};
-        (notasData.usergrades||[]).forEach(ug => {
-          const total = ug.gradeitems?.find(g => g.itemtype === 'course');
-          if (total?.graderaw != null) uidToNota[ug.userid] = parseFloat(total.graderaw);
-        });
-
-        // 3. Cruzar y actualizar filas
-        let actualizados = 0;
-        document.querySelectorAll('.fila-alumno-acta').forEach(fila => {
-          const uid = ciToUid[fila.dataset.ci];
-          if (!uid || uidToNota[uid] === undefined) return;
-          const input = fila.querySelector('.input-moodle');
-          if (!input) return;
-          input.value = Math.round(uidToNota[uid]);
-          input.dispatchEvent(new Event('input'));
-          actualizados++;
-        });
-
-        const sinCuenta = cis.length - Object.keys(ciToUid).length;
-        if (!actualizados) {
-          toast('Sin coincidencias. Verificá que los usernames en Moodle sean los CIs.','warning');
-        } else {
-          toast(`${actualizados} sincronizado${actualizados>1?'s':''}${sinCuenta>0?` · ${sinCuenta} sin cuenta en Moodle`:''}`, 'success');
-        }
-      } catch(e) {
-        toast('Error Moodle: '+e.message, 'error');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Sincronizar Moodle`;
-      }
-    }
-
-    // ── Confirmar acta y cerrar período ───────────────────────
-    function configurarBotonGuardarFinal(calendarioId, tipoCarrera) {
-      const btnGuardar = document.getElementById('btnModalGuardar');
-      if (!btnGuardar) return;
-      btnGuardar.textContent = '🔒 Confirmar acta y cerrar período';
-      btnGuardar.className   = 'btn btn-danger';
-
-      modalGuardarFn = async () => {
-        const filas = document.querySelectorAll('.fila-alumno-acta');
-        if (!filas.length) { toast('Sin alumnos en el acta','warning'); return; }
-
-        if (!confirm('⚠️ ¿Confirmás el cierre definitivo del acta?\nLas notas se asentarán permanentemente y el período quedará CERRADO.')) return;
-
-        const btnG = document.getElementById('btnModalGuardar');
-        btnG.disabled = true; btnG.textContent = 'Guardando...';
-
-        try {
-          for (const fila of filas) {
-            const historialId  = parseInt(fila.dataset.historialId || fila.getAttribute('data-historial-id'));
-            const totalMoodle  = parseInt(fila.querySelector('.input-moodle').value) || 0;
-            const proceso      = parseInt(fila.querySelector('.input-moodle').dataset.proceso) || 0;
-            const examenFinal  = Math.max(0, totalMoodle - proceso);
-            const nota         = calcularNota(totalMoodle, tipoCarrera);
-            const aprobado     = nota >= 2;
-            // nota_obtenida en escala 0-10: convertimos el total sobre 100
-            const notaEscala   = Math.round((totalMoodle / 100) * 10 * 10) / 10;
-
-            const { error } = await supabase.from('historial_examenes').update({
-              calif_examen_final: examenFinal,
-              nota_obtenida:      notaEscala,
-              estado_materia:     aprobado ? 'Aprobado' : 'Reprobado',
-            }).eq('id', historialId);
-            if (error) throw new Error(`id ${historialId}: ${error.message}`);
-          }
-
-          // Cerrar el calendario
-          await supabase.from('calendario_examenes')
-            .update({ estado: 'CERRADO' })
-            .eq('id', calendarioId);
-
-          toast('Acta asentada y período cerrado', 'success');
-          cerrarModal();
-          // Restaurar tamaño del modal
-          const modalEl = document.querySelector('.modal');
-          if (modalEl) modalEl.style.maxWidth = '';
-          await cargarCalendarios();
-
-        } catch(err) {
-          toast('Error al guardar: ' + err.message, 'error');
-        } finally {
-          btnG.disabled = false;
-          btnG.textContent = '🔒 Confirmar acta y cerrar período';
-        }
-      };
     }
 
     document.getElementById('btnNuevoCalendario')?.addEventListener('click', async () => {
@@ -1893,6 +1693,7 @@
         statusCourse.textContent = 'Cargando aulas de Moodle...';
 
         try {
+          const MOODLE = await getMoodle();
           const url = `${MOODLE.URL}/webservice/rest/server.php?wstoken=${MOODLE.TOKEN}&wsfunction=core_course_get_courses_by_field&moodlewsrestformat=json&field=category&value=${moodleIdCategoria}`;
           const res = await fetch(url);
           const dataMoodle = await res.json();
@@ -1943,6 +1744,7 @@
         statusGrupo.textContent = 'Cargando grupos de Moodle...';
 
         try {
+          const MOODLE = await getMoodle();
           const url = `${MOODLE.URL}/webservice/rest/server.php?wstoken=${MOODLE.TOKEN}&wsfunction=core_group_get_course_groups&moodlewsrestformat=json&courseid=${courseId}`;
           const res = await fetch(url);
           gruposMoodleDisponibles = await res.json();
@@ -2035,35 +1837,385 @@
 
     });
 
-    // ── Programar período desde el grid (botón "+ Programar") ─
+    function renderizarTablaActa(historial) {
+      let html = `
+    <table class="table" style="width: 100%; font-size: 0.85rem; border-collapse: collapse; margin: 0; background: #fff;">
+      <thead>
+        <tr style="background: #f4f6f9; border-bottom: 2px solid #e3e6f0; text-align: left; color: #4e73df;">
+          <th style="padding: 12px;">CI / Documento</th>
+          <th style="padding: 12px;">Estudiante</th>
+          <th style="text-align: center; padding: 12px;">Proceso (BD)</th>
+          <th style="text-align: center; padding: 12px; width: 110px;">Total (Moodle)</th>
+          <th style="text-align: center; padding: 12px;">Examen Final</th>
+          <th style="text-align: center; padding: 12px; width: 60px;">Nota</th>
+          <th style="text-align: center; padding: 12px;">Estado Materia</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+      historial.forEach(row => {
+        // Desarmamos de forma segura los datos que vienen del join de perfiles
+        const infoPerfil = row.inscripciones_anuales?.alumnos || null;
+        const ciAlumno = infoPerfil?.ci || '—';
+        const nombreCompleto = infoPerfil ? `${infoPerfil.apellidos}, ${infoPerfil.nombres}` : `Inscripción #${row.inscripcion_id}`;
+
+        const proceso = row.calif_proceso || 0;
+        const totalMoodleInicial = 0;
+        const examenFinal = Math.max(0, totalMoodleInicial - proceso);
+
+        const notaFinal = 1;
+        const estadoMateria = 'Reprobado';
+
+        html += `
+      <tr class="fila-alumno-acta" data-historial-id="${row.id}" data-ci="${ciAlumno}" style="border-bottom: 1px solid #e3e6f0; transition: background 0.2s;">
+        <td style="padding: 12px; font-weight: bold; color: #5a5c69;">${ciAlumno}</td>
+        <td style="padding: 12px; font-weight: 500;">${nombreCompleto.toUpperCase()}</td>
+        <td style="text-align: center; font-weight: bold; color: #4e73df; font-size: 0.95rem;">${proceso}</td>
+        <td style="text-align: center; padding: 6px;">
+          <input type="number" class="form-control input-moodle" value="${totalMoodleInicial}" min="0" max="100" data-proceso="${proceso}"
+                 style="text-align: center; font-weight: bold; padding: 5px; border-radius: 4px; border: 1px solid #d1d3e2;"
+                 >
+        </td>
+        <td class="txt-examen-final" style="text-align: center; font-weight: bold; color: #1cc88a; font-size: 0.95rem;">${examenFinal}</td>
+        <td style="text-align: center; font-weight: 900; font-size: 1.1rem;" class="txt-nota-final">${notaFinal}</td>
+        <td style="text-align: center;" class="td-estado">
+          <span class="badge bg-danger" style="padding: 6px 10px; font-size: 0.75rem;">${estadoMateria}</span>
+        </td>
+      </tr>
+    `;
+      });
+
+      html += `</tbody></table>`;
+      document.getElementById('tablaNotasContainer').innerHTML = html;
+
+      document.querySelectorAll('.input-moodle').forEach(input => {
+        const proceso = parseInt(input.getAttribute('data-proceso')) || 0;
+
+        input.addEventListener('input', () => {
+          // Reutiliza la lógica matemática sin necesidad de que recalcularFilaActa sea global
+          recalcularFilaActa(input, proceso);
+        });
+      });
+    };
+
+    // Función matemática de recálculo dinámico en el cliente
+    function recalcularFilaActa(input, proceso) {
+      const fila = input.closest('.fila-alumno-acta');
+      const totalMoodle = parseInt(input.value) || 0;
+      // Examen Final = Total Moodle - Proceso
+      const examenFinal = Math.max(0, totalMoodle - proceso);
+      fila.querySelector('.txt-examen-final').textContent = examenFinal;
+
+      // Escala País Paraguay
+      let nota = 1;
+      let estado = 'Reprobado';
+      let badgeClass = 'bg-danger';
+
+      if (totalMoodle >= 60 && totalMoodle <= 70) { nota = 2; estado = 'Aprobado'; badgeClass = 'bg-success'; }
+      else if (totalMoodle >= 71 && totalMoodle <= 80) { nota = 3; estado = 'Aprobado'; badgeClass = 'bg-success'; }
+      else if (totalMoodle >= 81 && totalMoodle <= 90) { nota = 4; estado = 'Aprobado'; badgeClass = 'bg-success'; }
+      else if (totalMoodle >= 91) { nota = 5; estado = 'Aprobado'; badgeClass = 'bg-success'; }
+
+      fila.querySelector('.txt-nota-final').textContent = nota;
+      fila.querySelector('.txt-nota-final').style.color = nota > 1 ? '#1cc88a' : '#e74a3b';
+      fila.querySelector('.td-estado').innerHTML = `<span class="badge ${badgeClass}" style="padding: 6px 10px; font-size: 0.75rem;">${estado}</span>`;
+    }
+
+    async function ejecutarSincronizacionMoodle(courseId, historial) {
+      if (!courseId) {
+        toast('Este examen no tiene un Curso de Moodle vinculado en el calendario.', 'warning');
+        return;
+      }
+
+      // Obtenemos todos los CIs válidos presentes en nuestra pantalla
+      const cis = historial.map(row => {
+        const info = row.inscripciones_anuales?.alumnos;
+        return info?.ci;
+      }).filter(Boolean);
+
+      if (!cis.length) {
+        toast('No se encontraron números de Cédula válidos en esta lista de alumnos.', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('btnSincronizarMoodle');
+      const textoOriginal = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `⏳ Cruzando datos con Moodle...`;
+
+      try {
+        const MOODLE = await getMoodle();
+        const baseMoodleUrl = `${MOODLE.URL}/webservice/rest/server.php`;
+
+        // ── LLAMADA 1: Conseguir los Moodle User IDs buscando por el campo username ──
+        const paramsCIs = cis.map((ci, i) => `values[${i}]=${encodeURIComponent(ci)}`).join('&');
+        const urlUsuarios = `${baseMoodleUrl}?wstoken=${MOODLE.TOKEN}&wsfunction=core_user_get_users_by_field&moodlewsrestformat=json&field=username&${paramsCIs}`;
+
+        const resUsers = await fetch(urlUsuarios);
+        const usuariosMoodle = await resUsers.json();
+
+        if (usuariosMoodle.exception) throw new Error(usuariosMoodle.message);
+
+        // Mapeamos un diccionario indexado: [ CI -> moodleUserId ]
+        const ciToUserId = {};
+        (usuariosMoodle || []).forEach(u => { ciToUserId[u.username] = u.id; });
+
+        // ── LLAMADA 2: Descargar el libro de calificaciones del Curso ──
+        const urlNotas = `${baseMoodleUrl}?wstoken=${MOODLE.TOKEN}&wsfunction=gradereport_user_get_grade_items&moodlewsrestformat=json&courseid=${courseId}`;
+        const resNotas = await fetch(urlNotas);
+        const dataMoodleNotas = await resNotas.json();
+
+        if (dataMoodleNotas.exception) throw new Error(dataMoodleNotas.message);
+
+        // Mapeamos un diccionario indexado: [ moodleUserId -> Nota Final Acumulada ]
+        let userIdToNota = {};
+        if (dataMoodleNotas.usergrades) {
+          dataMoodleNotas.usergrades.forEach(ug => {
+            const itemTotal = ug.gradeitems.find(item => item.itemtype === 'course');
+            const notaTotalVal = itemTotal && itemTotal.graderaw !== undefined && itemTotal.graderaw !== null
+              ? parseFloat(itemTotal.graderaw)
+              : 0;
+            userIdToNota[ug.userid] = notaTotalVal;
+          });
+        }
+
+        // ── LLAMADA 3: Macheo definitivo en la Grilla HTML ──
+        const filasHtml = document.querySelectorAll('.fila-alumno-acta');
+        let actualizados = 0;
+
+        filasHtml.forEach(fila => {
+          const ci = fila.getAttribute('data-ci');
+
+          // Pasamos de CI -> MoodleUserId -> Nota Moodle
+          const moodleUid = ciToUserId[ci];
+          if (moodleUid && userIdToNota[moodleUid] !== undefined) {
+            const notaMoodle = userIdToNota[moodleUid];
+            const input = fila.querySelector('.input-moodle');
+
+            if (input) {
+              input.value = Math.round(notaMoodle);
+              input.dispatchEvent(new Event('input')); // Ejecuta el recálculo y refresca la fila
+              actualizados++;
+            }
+          }
+        });
+
+        const sinCuenta = cis.length - Object.keys(ciToUserId).length;
+        if (actualizados === 0) {
+          toast('Sincronización finalizada sin coincidencias. Verificá los CIs en Moodle.', 'warning');
+        } else {
+          toast(`¡Éxito! ${actualizados} alumnos sincronizados por CI.${sinCuenta > 0 ? ` (${sinCuenta} sin cuenta en Moodle)` : ''}`, 'success');
+        }
+
+      } catch (error) {
+        console.error("Error crítico en sincronización:", error);
+        toast('Error al procesar el cruce de datos con Moodle', 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
+      }
+    }
+    function configurarBotonGuardarFinal(calendarioId) {
+      // 1. Buscamos el botón real en el footer usando tus selectores originales
+      const btnGuardar = document.querySelector('.ac-modal-footer .btn-primary, #modalGuardarBtn, #btnModalGuardar');
+      if (!btnGuardar) return;
+
+      // Personalizamos el diseño para advertir la acción crítica
+      btnGuardar.textContent = '🔒 Confirmar Acta y Cerrar Período';
+      btnGuardar.className = 'btn btn-danger'; // Color rojo institucional para acciones irreversibles
+
+      // 2. Asignamos directamente la lógica al click del botón físico
+      btnGuardar.onclick = async () => {
+        // Buscamos todas las filas generadas por tu tabla
+        const filas = document.querySelectorAll('.fila-alumno-acta');
+        const registrosCierre = [];
+
+        filas.forEach(fila => {
+          const idHistorial = fila.getAttribute('data-historial-id');
+
+          // Capturamos los valores dinámicos calculados leyendo el textContent interno de las celdas
+          const examenFinal = parseInt(fila.querySelector('.txt-examen-final')?.textContent) || 0;
+          const notaFinal = parseInt(fila.querySelector('.txt-nota-final')?.textContent) || 1;
+
+          const badgeEstado = fila.querySelector('.td-estado .badge');
+          const estadoTexto = badgeEstado ? badgeEstado.textContent.trim() : 'Reprobado';
+
+          registrosCierre.push({
+            id: parseInt(idHistorial),
+            calif_examen_final: examenFinal,
+            nota_obtenida: notaFinal,
+            // Estandarizamos para guardar en mayúsculas en Supabase (APROBADO / REPROBADO)
+            estado_materia: (estadoTexto === 'Reprobado' || estadoTexto === 'Reprobado') ? 'Reprobado' : 'Aprobado'
+          });
+        });
+
+        if (registrosCierre.length === 0) {
+          toast('No hay alumnos registrados en esta acta.', 'warning');
+          return;
+        }
+
+        const seguro = confirm('⚠️ ¿Estás seguro de asentar esta acta? Al confirmar, las notas impactarán permanentemente en el historial de los alumnos y el calendario de examen pasará a CERRADO de forma irreversible.');
+        if (!seguro) return;
+
+        // Bloqueamos el botón visualmente para evitar doble envío (Double Submit)
+        btnGuardar.disabled = true;
+        btnGuardar.textContent = '💾 Asentando y cerrando período...';
+
+        try {
+          // A. Impactamos fila por fila en la tabla historial_examenes con tu bucle original
+          for (const reg of registrosCierre) {
+            await supabase
+              .from('historial_examenes')
+              .update({
+                calif_examen_final: reg.calif_examen_final,
+                nota_obtenida: reg.nota_obtenida,
+                estado_materia: reg.estado_materia,
+                fecha_registro: new Date().toISOString() // Setea el timestamp actual
+              })
+              .eq('id', reg.id);
+          }
+
+          // B. Cerramos definitivamente la celda del Calendario de Exámenes
+          await supabase
+            .from('calendario_examenes')
+            .update({ estado: 'CERRADO' })
+            .eq('id', calendarioId);
+
+          toast('Acta final asentada y examen cerrado correctamente', 'success');
+
+          // C. Cerramos el modal limpiando la interfaz
+          if (typeof cerrarModal === 'function') {
+            cerrarModal();
+          } else {
+            document.getElementById('modalOverlay')?.classList.remove('open');
+          }
+
+          // D. Redibujamos la grilla principal del módulo
+          if (typeof cargarCalendarios === 'function') {
+            await cargarCalendarios();
+          }
+
+        } catch (err) {
+          console.error("Error al guardar acta final:", err);
+          toast('Error al guardar el acta académica', 'danger');
+        } finally {
+          // Devolvemos el estado al botón en caso de error o finalización
+          btnGuardar.disabled = false;
+          btnGuardar.textContent = '🔒 Confirmar Acta y Cerrar Período';
+        }
+      };
+    }
+    // Agregamos window. al inicio para hacerla global a la fuerza
     window.abrirModalNuevoPeriodo = async function (carreraId, cohorteId, materiaId, oportunidadNro) {
-      // Disparar el listener del botón que construye el formulario
+      // 1. Abrimos el modal simulando el clic tradicional
       document.getElementById('btnNuevoCalendario').click();
 
-      // Esperar a que el DOM esté listo y precargar los valores
+      const btnGuardar = document.querySelector('.ac-modal-footer .btn-primary, #modalGuardarBtn, #btnModalGuardar');
+      if (btnGuardar) {
+        btnGuardar.textContent = 'Guardar'; // O el texto original que uses
+        btnGuardar.className = 'btn btn-primary'; // Devolvemos el color azul original
+        btnGuardar.disabled = false; // Nos aseguramos de que no quede congelado
+        btnGuardar.onclick = null;
+      }
+
+      // 2. Esperamos un instante corto a que el HTML se renderice en el DOM
       setTimeout(async () => {
-        const selCarrera    = document.getElementById('calCarreraId');
-        const selCohorte    = document.getElementById('calCohorteId');
-        const selMateria    = document.getElementById('calMateriaId');
-        const selOportunidad= document.getElementById('calOportunidadNro');
-        if (!selCarrera) return;
+        const titleEl = document.getElementById('modalTitle');
+        const selectCarrera = document.getElementById('calCarreraId');
+        const selectCohorte = document.getElementById('calCohorteId');
+        const selectMateria = document.getElementById('calMateriaId');
+        const selectOportunidad = document.getElementById('calOportunidadNro');
 
-        // Preseleccionar carrera y disparar cambio para cargar cohortes/materias
-        selCarrera.value = carreraId;
-        selCarrera.dispatchEvent(new Event('change'));
+        if (!selectCarrera || !titleEl) return;
 
-        // Esperar a que carguen las opciones
-        setTimeout(async () => {
-          selCohorte.value    = cohorteId;
-          selMateria.value    = materiaId;
-          selOportunidad.value= oportunidadNro;
+        // Guardamos el título original para restaurarlo después
+        const tituloOriginal = titleEl.textContent;
 
-          // Disparar cascada Moodle
-          selCohorte.dispatchEvent(new Event('change'));
+        // 3. PONEMOS EL SPINNER DIRECTO EN EL TÍTULO (Imposible de omitir o borrar por otros eventos)
+        titleEl.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="loader-global-spinner"></div>
+        <span>Sincronizando con Moodle...</span>
+      </div>
+      <style>
+        .loader-global-spinner {
+          width: 18px;
+          height: 18px;
+          border: 2.5px solid rgba(0,0,0,.1);
+          border-top-color: var(--primary, #007bff);
+          border-radius: 50%;
+          animation: spinGlobal 0.7s linear infinite;
+        }
+        @keyframes spinGlobal {
+          to { transform: rotate(360deg); }
+        }
+      </style>
+    `;
+
+        // 4. Bloqueamos preventivamente todos los campos del formulario
+        selectCarrera.disabled = true;
+        selectCohorte.disabled = true;
+        selectMateria.disabled = true;
+        selectOportunidad.disabled = true;
+
+        // Asignamos la Carrera
+        selectCarrera.value = carreraId;
+
+        try {
+          // 5. Consultamos las cohortes y materias directamente a Supabase
+          const [resCohortes, resMaterias] = await Promise.all([
+            supabase.from('cohortes').select('id, nro_cohorte, anho_inicio, moodle_id').eq('carrera_id', carreraId).eq('estado', 'Activo').order('anho_inicio', { ascending: false }),
+            supabase.from('materias').select('id, nombre, codigo').eq('carrera_id', carreraId).eq('activa', true).order('modulo_nro')
+          ]);
+
+          // Llenamos el selector de Cohortes
+          selectCohorte.innerHTML = '<option value="">-- Selecciona el Cohorte --</option>';
+          const chExFiltrados = sesion.rol === 'Docente' ? resCohortes.data.filter(ch => cohortesDocente.includes(ch.id)) : resCohortes.data;
+          if (chExFiltrados) {
+            chExFiltrados.forEach(coh => {
+              selectCohorte.innerHTML += `<option value="${coh.id}" data-moodle-id="${coh.moodle_id || ''}">${coh.nro_cohorte}ª Cohorte - ${coh.anho_inicio}</option>`;
+            });
+          }
+
+          // Llenamos el selector de Materias
+          selectMateria.innerHTML = '<option value="">-- Selecciona la Materia --</option>';
+          if (resMaterias.data) {
+            resMaterias.data.forEach(mat => {
+              selectMateria.innerHTML += `<option value="${mat.id}">${mat.nombre} [${mat.codigo}]</option>`;
+            });
+          }
+
+          // 6. Fijamos los valores objetivos del casillero cliqueado
+          selectCohorte.value = cohorteId;
+          selectMateria.value = materiaId;
+          selectOportunidad.value = oportunidadNro;
+
+          // 7. Disparamos la cascada de llamadas a Moodle (Cursos y Grupos)
+          selectCohorte.dispatchEvent(new Event('change'));
+
+          // 8. Esperamos un tiempo prudencial (500ms) para que finalicen todas las peticiones asíncronas
           setTimeout(() => {
-            selMateria.dispatchEvent(new Event('change'));
-          }, 600);
-        }, 400);
+            if (selectMateria.value) {
+              selectMateria.dispatchEvent(new Event('change'));
+            }
+
+            // 9. FINALIZACIÓN: Restauramos el título original del modal y quitamos el spinner
+            titleEl.textContent = tituloOriginal;
+
+          }, 500);
+
+        } catch (error) {
+          console.error("Error en la precarga indexada:", error);
+          titleEl.textContent = tituloOriginal;
+
+          // Si hay error crítico liberamos los campos por seguridad
+          selectCarrera.disabled = false;
+          selectCohorte.disabled = false;
+          selectMateria.disabled = false;
+          selectOportunidad.disabled = false;
+        }
+
       }, 1500);
     };
 
@@ -2214,6 +2366,7 @@
       document.getElementById('habTableWrap').style.display = 'none';
       document.getElementById('btnSyncMoodle').style.display = 'none';
       document.getElementById('btnGuardarHab').style.display = 'none';
+      document.getElementById('btnPdfHab').style.display = 'none';
       document.getElementById('habTotal').textContent = '';
     }
 
@@ -2264,14 +2417,13 @@
       if (!carreraId || !anho) return;
 
       const { data: mats } = await supabase.from('materias')
-        .select('id,nombre,codigo').eq('carrera_id', carreraId)
+        .select('id,nombre,codigo,modulo_nro').eq('carrera_id', carreraId)
         .eq('anho_curricula', Number(anho)).eq('activa', true).order('modulo_nro');
 
       let lista = mats || [];
 
-
       selMat.innerHTML = '<option value="">— Materia —</option>' +
-        lista.map(m => `<option value="${m.id}">${m.nombre} [${m.codigo}]</option>`).join('');
+        lista.map(m => `<option value="${m.id}">${m.modulo_nro} - ${m.nombre}</option>`).join('');
       selMat.disabled = false;
     });
 
@@ -2304,7 +2456,7 @@
       try {
         // ── 1. Buscar período VIGENTE en calendario_examenes ──────
         let calQ = supabase.from('calendario_examenes')
-          .select('id, oportunidad_nro, fecha_desde, fecha_hasta, estado, id_moodle')
+          .select('id, oportunidad_nro, fecha_desde, fecha_hasta, estado, id_moodle,cohorte_id')
           .eq('materia_id', Number(materiaId))
           .eq('oportunidad_nro', opNro)
           .eq('estado', 'VIGENTE');
@@ -2367,9 +2519,33 @@
           q = q.in('cohorte_id', cIds.map(c => c.id));
         }
 
-        const { data: inscs } = await q;
+        let { data: inscs } = await q;
         if (!inscs?.length) {
           document.getElementById('habEmptyMsg').textContent = 'No hay alumnos activos para los filtros seleccionados.';
+          return;
+        }
+
+        // 🌟 NUEVO: 2.5 Buscar alumnos que YA APROBARON en oportunidades anteriores 🌟
+        // Buscamos en historial_examenes registros de esta materia con estado 'Aprobado' u 'Aprobada'
+        const { data: yaAprobados } = await supabase
+          .from('historial_examenes')
+          .select('inscripcion_id')
+          .eq('materia_id', Number(materiaId))
+          .eq('estado_materia', 'Aprobado'); // Cambiar a 'Aprobada' si guardas el string en femenino
+
+        if (yaAprobados?.length) {
+          // Creamos un Set con los IDs de las inscripciones que ya pasaron la materia
+          const aprobadosSet = new Set(yaAprobados.map(h => h.inscripcion_id));
+
+          // Filtramos la lista original para quedarnos SOLO con los que NO han aprobado aún
+          inscs = inscs.filter(i => !aprobadosSet.has(i.id));
+        }
+
+        // Si después de filtrar ya no quedan alumnos pendientes, frenamos la ejecución de forma limpia
+        if (!inscs.length) {
+          document.getElementById('habTableWrap').style.display = 'none';
+          document.getElementById('habEmptyState').style.display = 'block';
+          document.getElementById('habEmptyMsg').textContent = 'Todos los alumnos de este período ya aprobaron la materia en oportunidades anteriores.';
           return;
         }
 
@@ -2417,6 +2593,7 @@
         document.getElementById('habEmptyState').style.display = 'none';
         document.getElementById('habTableWrap').style.display = 'block';
         document.getElementById('btnGuardarHab').style.display = 'inline-flex';
+        document.getElementById('btnPdfHab').style.display = 'inline-flex';
 
       } finally {
         btn.disabled = false;
@@ -2454,6 +2631,7 @@
 
       try {
         const courseId = habCalendario.id_moodle;
+        const MOODLE = await getMoodle();
         const base = `${MOODLE.URL}/webservice/rest/server.php?wstoken=${MOODLE.TOKEN}&moodlewsrestformat=json`;
 
         // ── Llamada 1: notas del curso ────────────────────────────
@@ -2536,7 +2714,7 @@
           ? ((cp + ce) / 2).toFixed(1)
           : (r.nota_obtenida !== null ? r.nota_obtenida : '');
 
-        const aprobado = notaFinal !== '' && Number(notaFinal) >= 6;
+        const aprobado = notaFinal !== '' && Number(notaFinal) >= 2;
         const puedeAcad = r.hab_administrativo;
         const rowBg = r._moodle ? 'background:rgba(26,107,60,.05)' : r._dirty ? 'background:rgba(255,193,7,.06)' : '';
         const moodleBadge = r._moodle
@@ -2701,7 +2879,183 @@
       }
     });
 
-    // ── Docentes ──────────────────────────────────────────────────
+    // ── Exportar PDF planilla habilitados ─────────────────────
+    document.getElementById('btnPdfHab').addEventListener('click', () => {
+      if (!habPlanilla.length) { toast('Cargá la planilla primero', 'warning'); return; }
+
+      // Importar jsPDF dinámicamente
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      script.onload = () => generarPdfHab();
+      if (window.jspdf) { generarPdfHab(); return; }
+      document.head.appendChild(script);
+    });
+
+    function generarPdfHab() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      const materia = document.getElementById('habMateriaNombre')?.textContent || '—';
+      const periodo = document.getElementById('habPeriodoLabel')?.textContent || '—';
+      const opLabel = document.getElementById('habOportunidadLabel')?.textContent || '—';
+
+      // Solución para evitar .find() repetitivos y manejar el guión si falla
+      const cohorteId = habCalendario?.cohorte_id;
+      const cohorteEncontrada = cohorteId ? cohortes.find(c => c.id === cohorteId) : null;
+      const cohorteNombre = cohorteEncontrada
+        ? `${cohorteEncontrada.nro_cohorte}ª Cohorte ${cohorteEncontrada.anho_inicio}`
+        : '—';
+
+      const margenL = 20, margenR = 190, ancho = 170;
+
+      // ── FUNCIÓN INTERNA PARA DIBUJAR MARCA DE AGUA Y ENCABEZADO ──
+      function dibujarFondoYEncabezado(esPrimeraPagina = false) {
+        // 1. Marca de Agua (Descomentar cuando integres el archivo final)
+        /*
+        const imgWatermark = './assets/img/watermark.png';
+        if (imgWatermark) {
+          doc.saveGraphicsState();
+          doc.setGState(new doc.GState({ opacity: 0.04 }));
+          doc.addImage(imgWatermark, 'PNG', 35, 78, 140, 140); 
+          doc.restoreGraphicsState();
+        }
+        */
+
+        // 2. Membrete institucional
+        if (esPrimeraPagina) {
+          const imgMembrete = './assets/img/membrete.png';
+          if (imgMembrete) {
+            doc.addImage(imgMembrete, 'PNG', margenL, 12, ancho, 24);
+          }
+        }
+      }
+
+      // Ejecutamos la estructura inicial de la página 1
+      dibujarFondoYEncabezado(true);
+      let y = 44;
+
+      // ── Encabezado de Títulos ──────────────────────────────────────────
+      doc.setFontSize(13);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0);
+      doc.text('PLANILLA DE HABILITADOS ACADÉMICOS', 105, y, { align: 'center' });
+      y += 6;
+
+      // Línea separadora institucional
+      doc.setDrawColor(26, 107, 60);
+      doc.setLineWidth(0.6);
+      doc.line(margenL, y, margenR, y);
+      y += 6;
+
+      // Datos del examen en dos columnas balanceadas
+      doc.setTextColor(0);
+      doc.setFontSize(9);
+      const col1x = margenL, col2x = 115;
+
+      doc.setFont('helvetica', 'bold'); doc.text('Materia:', col1x, y);
+      doc.setFont('helvetica', 'normal'); doc.text('MODULO ' + materia, col1x + 16, y);
+      y += 6; // Bajamos al siguiente renglón
+
+      // Renglón 2: Cohorte y Oportunidad (en dos columnas ya que son textos cortos)
+      doc.setFont('helvetica', 'bold'); doc.text('Cohorte:', col1x, y);
+      doc.setFont('helvetica', 'normal'); doc.text(cohorteNombre, col1x + 16, y);
+
+      doc.setFont('helvetica', 'bold'); doc.text('Oportunidad:', col2x, y);
+      doc.setFont('helvetica', 'normal'); doc.text(opLabel, col2x + 23, y);
+      y += 6; // Bajamos al siguiente renglón
+
+      // Renglón 3: Habilitados y Fecha emisión
+      doc.setFont('helvetica', 'bold'); doc.text('Habilitados:', col1x, y);
+      const habCount = habPlanilla.filter(r => r.hab_academico).length;
+      doc.setFont('helvetica', 'normal'); doc.text(`${habCount} / ${habPlanilla.length}`, col1x + 20, y);
+
+      doc.setFont('helvetica', 'bold'); doc.text('Fecha emisión:', col2x, y);
+      doc.setFont('helvetica', 'normal'); doc.text(new Date().toLocaleDateString('es-PY'), col2x + 26, y);
+
+      // Espacio de separación antes de comenzar la tabla
+      y += 10;
+
+      // ── NUEVA DISTRIBUCIÓN DE COLUMNAS (Total 170mm) ──────────────────
+      const colNro = margenL;         // Posición: 20mm  (Ancho aprox: 15mm)
+      const colCI = margenL + 20;    // Posición: 40mm  (Ancho aprox: 45mm)
+      const colProc = margenL + 75;    // Posición: 95mm  (Ancho aprox: 45mm)
+      const colHabAcd = margenL + 130;   // Posición: 150mm (Ancho aprox: 40mm)
+
+      // Header tabla inicial
+      doc.setFillColor(26, 107, 60);
+      doc.rect(margenL, y, ancho, 7, 'F');
+      doc.setTextColor(255);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('N°', colNro + 2, y + 5);
+      doc.text('C.I.', colCI + 2, y + 5);
+      doc.text('Proceso', colProc + 2, y + 5);
+      doc.text('Habilitado', colHabAcd + 2, y + 5);
+      y += 7;
+
+      // Filas
+      doc.setTextColor(0);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+
+      let nro = 0;
+      habPlanilla.forEach((r) => {
+        // Salto de página seguro
+        if (y > 265) {
+          doc.addPage();
+          dibujarFondoYEncabezado(false);
+
+          y = 20;
+          // Repetir header en nueva página
+          doc.setFillColor(26, 107, 60);
+          doc.rect(margenL, y, ancho, 7, 'F');
+          doc.setTextColor(255);
+          doc.setFont('helvetica', 'bold');
+          doc.text('N°', colNro + 2, y + 5);
+          doc.text('C.I.', colCI + 2, y + 5);
+          doc.text('Proceso', colProc + 2, y + 5);
+          doc.text('Habilitado', colHabAcd + 2, y + 5);
+          doc.setTextColor(0);
+          doc.setFont('helvetica', 'normal');
+          y += 7;
+        }
+
+        nro++;
+        const rowH = 6.5;
+        const fillC = nro % 2 === 0 ? [245, 247, 250] : [255, 255, 255];
+        doc.setFillColor(...fillC);
+        doc.rect(margenL, y, ancho, rowH, 'F');
+
+        // Borde de la celda en gris sutil
+        doc.setDrawColor(230);
+        doc.setLineWidth(0.2);
+        doc.rect(margenL, y, ancho, rowH);
+
+        const cp = r.calif_proceso !== '' && r.calif_proceso != null ? r.calif_proceso : '—';
+
+        // Imprimir textos de datos comunes
+        doc.setTextColor(0);
+        doc.text(String(nro), colNro + 2, y + 4.5);
+        doc.text(String(r.alumno?.ci || '—'), colCI + 2, y + 4.5);
+        doc.text(String(cp), colProc + 2, y + 4.5);
+
+        // Condicional de color e indicador para el estado de Habilitación
+        const colAcdColor = r.hab_academico ? [26, 107, 60] : [180, 0, 0];
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...colAcdColor);
+        doc.text(r.hab_academico ? 'SÍ HABILITADO' : 'NO HABILITADO', colHabAcd + 2, y + 4.5);
+
+        doc.setFont('helvetica', 'normal');
+        y += rowH;
+      });
+
+
+      // ── Guardar Documento ─────────────────────────────────────
+      const fechaStr = new Date().toLocaleDateString('es-PY').replace(/\//g, '-');
+      const materiaSlug = materia.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+      doc.save(`HABILITADOS_MODULO_${materiaSlug}_${fechaStr}.pdf`);
+      toast('PDF generado con éxito', 'success');
+    }
     async function cargarDocentes() {
       const { data } = await supabase
         .from('docentes')
