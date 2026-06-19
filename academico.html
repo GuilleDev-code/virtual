@@ -57,6 +57,48 @@
       border-radius: 999px;
     }
 
+    .rep-modo-btn {
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .rep-modo-btn.active {
+      background: var(--verde);
+      color: #fff;
+      border-color: var(--verde);
+    }
+    .badge-aprobado {
+      background: rgba(26,107,60,.12);
+      color: var(--verde);
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: .76rem;
+    }
+    .badge-reprobado {
+      background: rgba(220,38,38,.1);
+      color: var(--danger);
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: .76rem;
+    }
+    .badge-ausente {
+      background: rgba(180,140,0,.1);
+      color: #92660a;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: .76rem;
+    }
+    .badge-cursando {
+      background: rgba(100,100,100,.1);
+      color: var(--txt-muted);
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: .76rem;
+    }
+
     .ac-content {
       flex: 1;
       overflow-y: auto;
@@ -389,6 +431,7 @@
           <button class="ac-tab" data-tab="habilitados">Habilitados académicos</button>
           <button class="ac-tab" data-tab="actas" data-requiere-rol="Admin,Academico">Corroboración de actas</button>
           <button class="ac-tab" data-tab="docentes" data-requiere-rol="Admin,Academico">Docentes</button>
+          <button class="ac-tab" data-tab="reportes">Reportes de exámenes</button>
         </div>
 
         <div class="ac-content">
@@ -670,15 +713,8 @@
                     <th>Alumno</th>
                     <th>CI</th>
                     <th style="text-align:center;min-width:100px">
-                      Calif. proceso<br><span style="font-weight:400;font-size:.65rem;color:var(--txt-muted)">(Moodle /
-                        manual)</span>
+                      Calif. proceso
                     </th>
-                    <th style="text-align:center;min-width:100px">
-                      Examen final<br><span
-                        style="font-weight:400;font-size:.65rem;color:var(--txt-muted)">(0–10)</span>
-                    </th>
-                    <th style="text-align:center">Nota final</th>
-                    <th style="text-align:center">Hab. admin.</th>
                     <th style="text-align:center">Hab. académico</th>
                   </tr>
                 </thead>
@@ -734,6 +770,122 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          <!-- ── REPORTES DE EXÁMENES ───────────────────────── -->
+          <div class="tab-section" id="tab-reportes">
+            <div class="toolbar">
+              <div class="rep-switch" style="display:flex;gap:6px">
+                <button class="btn btn-ghost btn-sm rep-modo-btn active" data-modo="examen" id="btnRepModoExamen">
+                  Por examen
+                </button>
+                <button class="btn btn-ghost btn-sm rep-modo-btn" data-modo="alumno" id="btnRepModoAlumno">
+                  Histórico por alumno
+                </button>
+              </div>
+            </div>
+
+            <!-- ═══ Vista A: Por examen puntual ═══ -->
+            <div id="repVistaExamen">
+              <div class="toolbar">
+                <select class="form-control" id="repCarrera" style="width:auto;min-width:200px">
+                  <option value="">— Seleccioná una carrera —</option>
+                </select>
+                <select class="form-control" id="repCohorte" style="width:auto" disabled>
+                  <option value="">— Cohorte —</option>
+                </select>
+                <select class="form-control" id="repAnho" style="width:auto" disabled>
+                  <option value="">— Año / Curso —</option>
+                </select>
+                <select class="form-control" id="repMateria" style="width:auto" disabled>
+                  <option value="">— Materia —</option>
+                </select>
+                <select class="form-control" id="repOportunidad" style="width:auto">
+                  <option value="">— Oportunidad —</option>
+                  <option value="1">1ª Oportunidad</option>
+                  <option value="2">2ª Oportunidad</option>
+                  <option value="3">3ª Oportunidad</option>
+                  <option value="4">Extraordinaria</option>
+                </select>
+                <button class="btn btn-primary btn-sm" id="btnCargarRepExamen" disabled>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  Cargar resultados
+                </button>
+                <button class="btn btn-ghost btn-sm" id="btnPdfRepExamen" style="display:none">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  Exportar PDF
+                </button>
+                <span id="repExamenTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
+              </div>
+
+              <div id="repExamenInfo" style="display:none;background:var(--verde-light);border:1px solid rgba(26,107,60,.2);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;font-size:.82rem;align-items:center;gap:20px;flex-wrap:wrap">
+                <div><span style="color:var(--txt-muted)">Materia:</span> <strong id="repExMateriaNombre">—</strong></div>
+                <div><span style="color:var(--txt-muted)">Oportunidad:</span> <strong id="repExOportunidadLabel">—</strong></div>
+                <div><span style="color:var(--txt-muted)">Aprobados:</span> <strong id="repExCountAprob" style="color:var(--verde)">0</strong></div>
+                <div><span style="color:var(--txt-muted)">Reprobados:</span> <strong id="repExCountReprob" style="color:var(--danger)">0</strong></div>
+              </div>
+
+              <div id="repExamenEmptyState" style="text-align:center;padding:60px;color:var(--txt-muted)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 12px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <p style="font-size:.88rem">Seleccioná carrera, cohorte, año, materia y oportunidad, luego presioná Cargar resultados</p>
+              </div>
+
+              <div class="table-wrapper" id="repExamenTableWrap" style="display:none">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Alumno</th>
+                      <th>CI</th>
+                      <th>Teléfono</th>
+                      <th style="text-align:center">Nota</th>
+                      <th style="text-align:center">Resultado</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyRepExamen"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- ═══ Vista B: Histórico por alumno ═══ -->
+            <div id="repVistaAlumno" style="display:none">
+              <div class="toolbar">
+                <div class="search-wrap" style="flex:1;max-width:380px">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  <input type="text" class="form-control" id="repBuscarAlumno" placeholder="Buscar alumno por nombre o CI...">
+                </div>
+                <button class="btn btn-ghost btn-sm" id="btnPdfRepAlumno" style="display:none">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  Exportar PDF
+                </button>
+              </div>
+
+              <div id="repAlumnoResultados" style="display:none;margin-bottom:10px"></div>
+
+              <div id="repAlumnoEmptyState" style="text-align:center;padding:60px;color:var(--txt-muted)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 12px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <p style="font-size:.88rem">Buscá un alumno para ver su historial completo de exámenes</p>
+              </div>
+
+              <div id="repAlumnoFichaWrap" style="display:none">
+                <div id="repAlumnoFicha" style="background:var(--verde-light);border:1px solid rgba(26,107,60,.2);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;font-size:.82rem;display:flex;align-items:center;gap:20px;flex-wrap:wrap"></div>
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Materia</th>
+                        <th style="text-align:center">Oportunidad</th>
+                        <th>Carrera / Cohorte</th>
+                        <th style="text-align:center">Nota</th>
+                        <th style="text-align:center">Resultado</th>
+                        <th>Fecha registro</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tbodyRepAlumno"></tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -893,6 +1045,10 @@
       // Tab habilitados
       const elHab = document.getElementById('filtroCarreraHab');
       if (elHab) elHab.innerHTML = `<option value="">— Seleccioná una carrera —</option>${optsPlain}`;
+
+      // Tab reportes
+      const elRep = document.getElementById('repCarrera');
+      if (elRep) elRep.innerHTML = `<option value="">— Seleccioná una carrera —</option>${optsPlain}`;
     }
 
     // ── Alumnos: filtros en cascada ───────────────────────────────
@@ -2039,7 +2195,7 @@
           const notaFinal = parseInt(fila.querySelector('.txt-nota-final')?.textContent) || 1;
 
           const badgeEstado = fila.querySelector('.td-estado .badge');
-          const estadoTexto = badgeEstado ? badgeEstado.textContent.trim() : 'Reprobado';
+          const estadoTexto = badgeEstado ? badgeEstado.textContent.trim().toUpperCase() : 'REPROBADO';
 
           registrosCierre.push({
             id: parseInt(idHistorial),
@@ -2519,33 +2675,9 @@
           q = q.in('cohorte_id', cIds.map(c => c.id));
         }
 
-        let { data: inscs } = await q;
+        const { data: inscs } = await q;
         if (!inscs?.length) {
           document.getElementById('habEmptyMsg').textContent = 'No hay alumnos activos para los filtros seleccionados.';
-          return;
-        }
-
-        // 🌟 NUEVO: 2.5 Buscar alumnos que YA APROBARON en oportunidades anteriores 🌟
-        // Buscamos en historial_examenes registros de esta materia con estado 'Aprobado' u 'Aprobada'
-        const { data: yaAprobados } = await supabase
-          .from('historial_examenes')
-          .select('inscripcion_id')
-          .eq('materia_id', Number(materiaId))
-          .eq('estado_materia', 'Aprobado'); // Cambiar a 'Aprobada' si guardas el string en femenino
-
-        if (yaAprobados?.length) {
-          // Creamos un Set con los IDs de las inscripciones que ya pasaron la materia
-          const aprobadosSet = new Set(yaAprobados.map(h => h.inscripcion_id));
-
-          // Filtramos la lista original para quedarnos SOLO con los que NO han aprobado aún
-          inscs = inscs.filter(i => !aprobadosSet.has(i.id));
-        }
-
-        // Si después de filtrar ya no quedan alumnos pendientes, frenamos la ejecución de forma limpia
-        if (!inscs.length) {
-          document.getElementById('habTableWrap').style.display = 'none';
-          document.getElementById('habEmptyState').style.display = 'block';
-          document.getElementById('habEmptyMsg').textContent = 'Todos los alumnos de este período ya aprobaron la materia en oportunidades anteriores.';
           return;
         }
 
@@ -2714,7 +2846,7 @@
           ? ((cp + ce) / 2).toFixed(1)
           : (r.nota_obtenida !== null ? r.nota_obtenida : '');
 
-        const aprobado = notaFinal !== '' && Number(notaFinal) >= 2;
+        const aprobado = notaFinal !== '' && Number(notaFinal) >= 6;
         const puedeAcad = r.hab_administrativo;
         const rowBg = r._moodle ? 'background:rgba(26,107,60,.05)' : r._dirty ? 'background:rgba(255,193,7,.06)' : '';
         const moodleBadge = r._moodle
@@ -2733,20 +2865,6 @@
             style="width:62px;text-align:center">
           ${moodleBadge}
         </div>
-      </td>
-      <td style="text-align:center">
-        <input type="number" class="nota-input" min="0" max="10" step="0.1"
-          value="${ce !== null ? ce : ''}" placeholder="—"
-          oninput="habCambiarCalif(${idx},'calif_examen_final',this.value)"
-          style="width:62px;text-align:center">
-      </td>
-      <td style="text-align:center;font-weight:700;font-family:var(--font-mono);color:${notaFinal !== '' ? (aprobado ? 'var(--verde)' : 'var(--danger)') : 'var(--txt-muted)'}" id="habNota${idx}">
-        ${notaFinal !== '' ? notaFinal : '—'}
-      </td>
-      <td style="text-align:center">
-        <span class="badge ${r.hab_administrativo ? 'badge-success' : 'badge-danger'}" style="font-size:.65rem">
-          ${r.hab_administrativo ? 'Habilitado' : 'No hab.'}
-        </span>
       </td>
       <td style="text-align:center">
   <label style="display:inline-flex; align-items:center; gap:5px; cursor:${puedeAcad ? 'pointer' : 'not-allowed'}; opacity:${puedeAcad ? 1 : .65}">
@@ -3342,6 +3460,571 @@
       await cargarDocentes();
       cerrarDrawer();
     };
+
+    // ════════════════════════════════════════════════════════════
+    // ── REPORTES DE EXÁMENES ───────────────────────────────────
+    // ════════════════════════════════════════════════════════════
+    const OP_LABEL_REP = { 1: '1ª Oportunidad', 2: '2ª Oportunidad', 3: '3ª Oportunidad', 4: 'Extraordinaria' };
+    let repExamenData = [];   // filas del reporte "por examen"
+    let repExamenInfo = {};   // { materiaNombre, oportunidad }
+    let repAlumnoData = [];   // filas del reporte "histórico por alumno"
+    let repAlumnoSel = null;  // alumno actualmente seleccionado
+
+    // ── Switch entre las dos vistas ────────────────────────────
+    document.getElementById('btnRepModoExamen').addEventListener('click', () => repCambiarModo('examen'));
+    document.getElementById('btnRepModoAlumno').addEventListener('click', () => repCambiarModo('alumno'));
+
+    function repCambiarModo(modo) {
+      document.querySelectorAll('.rep-modo-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(modo === 'examen' ? 'btnRepModoExamen' : 'btnRepModoAlumno').classList.add('active');
+      document.getElementById('repVistaExamen').style.display = modo === 'examen' ? '' : 'none';
+      document.getElementById('repVistaAlumno').style.display = modo === 'alumno' ? '' : 'none';
+    }
+
+    // ── Vista A: Por examen — cascada carrera → cohorte → año → materia ──
+    document.getElementById('repCarrera').addEventListener('change', async function () {
+      const carreraId = this.value;
+      const selCoh = document.getElementById('repCohorte');
+      const selAnho = document.getElementById('repAnho');
+      const selMat = document.getElementById('repMateria');
+
+      selCoh.innerHTML = '<option value="">— Cohorte —</option>'; selCoh.disabled = true;
+      selAnho.innerHTML = '<option value="">— Año / Curso —</option>'; selAnho.disabled = true;
+      selMat.innerHTML = '<option value="">— Materia —</option>'; selMat.disabled = true;
+      document.getElementById('btnCargarRepExamen').disabled = true;
+      repExamenResetUI();
+
+      if (!carreraId) return;
+
+      const { data: cohs } = await supabase
+        .from('cohortes').select('id,nro_cohorte,anho_inicio')
+        .eq('carrera_id', carreraId).order('anho_inicio', { ascending: false });
+
+      if (cohs?.length) {
+        const cohortesFiltrados = sesion.rol === 'Docente' ? cohs.filter(ch => cohortesDocente.includes(ch.id)) : cohs;
+        selCoh.innerHTML = '<option value="">— Todos los cohortes —</option>' +
+          cohortesFiltrados.map(c => `<option value="${c.id}">${c.nro_cohorte}ª Cohorte — ${c.anho_inicio}</option>`).join('');
+        selCoh.disabled = false;
+      }
+
+      const car = carreras.find(c => String(c.id) === carreraId);
+      const dur = car?.duracion_anhos || 4;
+      let opA = '<option value="">— Año / Curso —</option>';
+      for (let y = 1; y <= dur; y++) opA += `<option value="${y}">${y}º año</option>`;
+      selAnho.innerHTML = opA;
+      selAnho.disabled = false;
+    });
+
+    document.getElementById('repAnho').addEventListener('change', async function () {
+      const carreraId = document.getElementById('repCarrera').value;
+      const anho = this.value;
+      const selMat = document.getElementById('repMateria');
+      selMat.innerHTML = '<option value="">— Materia —</option>';
+      selMat.disabled = true;
+      document.getElementById('btnCargarRepExamen').disabled = true;
+      repExamenResetUI();
+
+      if (!carreraId || !anho) return;
+
+      const { data: mats } = await supabase.from('materias')
+        .select('id,nombre,codigo,modulo_nro').eq('carrera_id', carreraId)
+        .eq('anho_curricula', Number(anho)).eq('activa', true).order('modulo_nro');
+
+      selMat.innerHTML = '<option value="">— Materia —</option>' +
+        (mats || []).map(m => `<option value="${m.id}">${m.modulo_nro} - ${m.nombre}</option>`).join('');
+      selMat.disabled = false;
+    });
+
+    document.getElementById('repMateria').addEventListener('change', function () {
+      document.getElementById('btnCargarRepExamen').disabled = !this.value;
+      repExamenResetUI();
+    });
+
+    document.getElementById('repOportunidad').addEventListener('change', repExamenResetUI);
+
+    function repExamenResetUI() {
+      document.getElementById('repExamenInfo').style.display = 'none';
+      document.getElementById('repExamenTableWrap').style.display = 'none';
+      document.getElementById('repExamenEmptyState').style.display = '';
+      document.getElementById('btnPdfRepExamen').style.display = 'none';
+      document.getElementById('repExamenTotal').textContent = '';
+      repExamenData = [];
+    }
+
+    document.getElementById('btnCargarRepExamen').addEventListener('click', async () => {
+      const carreraId = document.getElementById('repCarrera').value;
+      const cohorteId = document.getElementById('repCohorte').value;
+      const anho = document.getElementById('repAnho').value;
+      const materiaId = document.getElementById('repMateria').value;
+      const opNro = Number(document.getElementById('repOportunidad').value);
+
+      if (!materiaId) { toast('Seleccioná una materia', 'warning'); return; }
+      if (!opNro) { toast('Seleccioná una oportunidad', 'warning'); return; }
+
+      const btn = document.getElementById('btnCargarRepExamen');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner" style="width:12px;height:12px;border-width:2px"></span> Cargando...`;
+
+      try {
+        // 1. Inscripciones del cohorte/año (mismo criterio que habilitados)
+        let q = supabase.from('inscripciones_anuales')
+          .select('id, alumno_id, anho_cursada, alumnos(nombres,apellidos,ci,telefono)')
+          .eq('estado', 'Activo')
+          .order('alumnos(apellidos)');
+
+        if (anho) q = q.eq('anho_cursada', Number(anho));
+
+        if (cohorteId) {
+          q = q.eq('cohorte_id', cohorteId);
+        } else {
+          const { data: cIds } = await supabase.from('cohortes').select('id').eq('carrera_id', carreraId);
+          if (!cIds?.length) { toast('Sin cohortes para esta carrera', 'warning'); repExamenResetUI(); return; }
+          q = q.in('cohorte_id', cIds.map(c => c.id));
+        }
+
+        const { data: inscs } = await q;
+        if (!inscs?.length) {
+          toast('No hay alumnos activos para los filtros seleccionados', 'warning');
+          repExamenResetUI();
+          return;
+        }
+
+        // 2. Resultados ya asentados en historial_examenes para esa materia/oportunidad
+        const inscIds = inscs.map(i => i.id);
+        const { data: hist } = await supabase.from('historial_examenes')
+          .select('inscripcion_id,estado_materia,nota_obtenida')
+          .in('inscripcion_id', inscIds)
+          .eq('materia_id', Number(materiaId))
+          .eq('oportunidad_nro', opNro);
+
+        const histMap = {};
+        (hist || []).forEach(h => { histMap[h.inscripcion_id] = h; });
+
+        // 3. Solo alumnos que ya tienen resultado registrado (aprobado/reprobado/ausente)
+        repExamenData = inscs
+          .filter(i => histMap[i.id] && histMap[i.id].estado_materia && histMap[i.id].estado_materia !== 'Cursando')
+          .map(i => ({
+            alumno: i.alumnos ? `${i.alumnos.apellidos}, ${i.alumnos.nombres}` : '—',
+            ci: i.alumnos?.ci || '—',
+            telefono: i.alumnos?.telefono || '—',
+            nota: histMap[i.id].nota_obtenida,
+            estado: histMap[i.id].estado_materia,
+          }))
+          .sort((a, b) => a.alumno.localeCompare(b.alumno));
+
+        const matNombre = document.getElementById('repMateria').selectedOptions[0]?.textContent || '—';
+        repExamenInfo = { materiaNombre: matNombre, oportunidad: OP_LABEL_REP[opNro] };
+
+        if (!repExamenData.length) {
+          toast('Aún no hay resultados registrados para este examen', 'warning');
+          repExamenResetUI();
+          return;
+        }
+
+        renderRepExamen();
+
+      } catch (err) {
+        console.error(err);
+        toast('Error al cargar el reporte: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Cargar resultados`;
+      }
+    });
+
+    function repBadgeEstado(estado) {
+      if (estado === 'Aprobado') return `<span class="badge-aprobado">Aprobado</span>`;
+      if (estado === 'Reprobado') return `<span class="badge-reprobado">Reprobado</span>`;
+      if (estado === 'Ausente') return `<span class="badge-ausente">Ausente</span>`;
+      return `<span class="badge-cursando">${estado || '—'}</span>`;
+    }
+
+    function renderRepExamen() {
+      const aprobados = repExamenData.filter(r => r.estado === 'Aprobado').length;
+      const reprobados = repExamenData.filter(r => r.estado !== 'Aprobado').length;
+
+      document.getElementById('repExMateriaNombre').textContent = repExamenInfo.materiaNombre;
+      document.getElementById('repExOportunidadLabel').textContent = repExamenInfo.oportunidad;
+      document.getElementById('repExCountAprob').textContent = aprobados;
+      document.getElementById('repExCountReprob').textContent = reprobados;
+      document.getElementById('repExamenInfo').style.display = 'flex';
+
+      document.getElementById('tbodyRepExamen').innerHTML = repExamenData.map((r, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${r.alumno}</td>
+          <td>${r.ci}</td>
+          <td>${r.telefono}</td>
+          <td style="text-align:center">${r.nota ?? '—'}</td>
+          <td style="text-align:center">${repBadgeEstado(r.estado)}</td>
+        </tr>`).join('');
+
+      document.getElementById('repExamenEmptyState').style.display = 'none';
+      document.getElementById('repExamenTableWrap').style.display = '';
+      document.getElementById('btnPdfRepExamen').style.display = 'inline-flex';
+      document.getElementById('repExamenTotal').textContent = `${repExamenData.length} resultado(s)`;
+    }
+
+    // ── Vista B: Histórico por alumno ───────────────────────────
+    let repBuscarTimeout = null;
+    document.getElementById('repBuscarAlumno').addEventListener('input', function () {
+      clearTimeout(repBuscarTimeout);
+      const term = this.value.trim();
+      if (term.length < 2) {
+        document.getElementById('repAlumnoResultados').style.display = 'none';
+        return;
+      }
+      repBuscarTimeout = setTimeout(() => repBuscarAlumnos(term), 350);
+    });
+
+    async function repBuscarAlumnos(term) {
+      const { data } = await supabase.from('alumnos')
+        .select('id,nombres,apellidos,ci,telefono')
+        .or(`nombres.ilike.%${term}%,apellidos.ilike.%${term}%,ci.ilike.%${term}%`)
+        .limit(10);
+
+      const cont = document.getElementById('repAlumnoResultados');
+      if (!data?.length) {
+        cont.innerHTML = `<div style="padding:10px 14px;color:var(--txt-muted);font-size:.82rem;border:1px solid var(--border);border-radius:var(--radius)">Sin coincidencias</div>`;
+        cont.style.display = '';
+        return;
+      }
+
+      cont.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        ${data.map(a => `
+          <div onclick='repSeleccionarAlumno(${JSON.stringify(a).replace(/'/g, "&#39;")})'
+            style="padding:9px 14px;cursor:pointer;font-size:.84rem;border-bottom:1px solid var(--border-light)"
+            onmouseover="this.style.background='var(--verde-light)'" onmouseout="this.style.background=''">
+            <strong>${a.apellidos}, ${a.nombres}</strong> <span style="color:var(--txt-muted)">— CI ${a.ci}</span>
+          </div>`).join('')}
+      </div>`;
+      cont.style.display = '';
+    }
+
+    window.repSeleccionarAlumno = async (alumno) => {
+      repAlumnoSel = alumno;
+      document.getElementById('repBuscarAlumno').value = `${alumno.apellidos}, ${alumno.nombres}`;
+      document.getElementById('repAlumnoResultados').style.display = 'none';
+      await cargarHistorialAlumno(alumno.id);
+    };
+
+    async function cargarHistorialAlumno(alumnoId) {
+      try {
+        const { data: inscs } = await supabase.from('inscripciones_anuales')
+          .select('id, anho_cursada, anho_lectivo, cohortes(nro_cohorte, anho_inicio, carreras(nombre))')
+          .eq('alumno_id', alumnoId);
+
+        const inscIds = (inscs || []).map(i => i.id);
+        if (!inscIds.length) {
+          repAlumnoData = [];
+          renderRepAlumno();
+          toast('El alumno no tiene inscripciones registradas', 'warning');
+          return;
+        }
+
+        const inscMap = {};
+        (inscs || []).forEach(i => { inscMap[i.id] = i; });
+
+        const { data: hist, error } = await supabase.from('historial_examenes')
+          .select('inscripcion_id,materia_id,oportunidad_nro,estado_materia,nota_obtenida,fecha_registro,materias(nombre)')
+          .in('inscripcion_id', inscIds)
+          .order('fecha_registro', { ascending: false });
+
+        if (error) throw error;
+
+        repAlumnoData = (hist || [])
+          .filter(h => h.estado_materia && h.estado_materia !== 'Cursando')
+          .map(h => {
+            const insc = inscMap[h.inscripcion_id];
+            const coh = insc?.cohortes;
+            return {
+              materia: h.materias?.nombre || '—',
+              oportunidad: OP_LABEL_REP[h.oportunidad_nro] || h.oportunidad_nro,
+              carreraCohorte: coh ? `${coh.carreras?.nombre || '—'} / ${coh.nro_cohorte}ª Coh. ${coh.anho_inicio}` : '—',
+              nota: h.nota_obtenida,
+              estado: h.estado_materia,
+              fecha: h.fecha_registro,
+            };
+          });
+
+        renderRepAlumno();
+
+      } catch (err) {
+        console.error(err);
+        toast('Error al cargar historial: ' + err.message, 'error');
+      }
+    }
+
+    function renderRepAlumno() {
+      document.getElementById('repAlumnoEmptyState').style.display = 'none';
+      document.getElementById('repAlumnoFichaWrap').style.display = '';
+
+      const aprobadas = repAlumnoData.filter(r => r.estado === 'Aprobado').length;
+      const reprobadas = repAlumnoData.filter(r => r.estado === 'Reprobado').length;
+      const ausentes = repAlumnoData.filter(r => r.estado === 'Ausente').length;
+
+      document.getElementById('repAlumnoFicha').innerHTML = `
+        <div><span style="color:var(--txt-muted)">Alumno:</span> <strong>${repAlumnoSel.apellidos}, ${repAlumnoSel.nombres}</strong></div>
+        <div><span style="color:var(--txt-muted)">CI:</span> <strong>${repAlumnoSel.ci}</strong></div>
+        <div><span style="color:var(--txt-muted)">Teléfono:</span> <strong>${repAlumnoSel.telefono || '—'}</strong></div>
+        <div><span style="color:var(--txt-muted)">Aprobadas:</span> <strong style="color:var(--verde)">${aprobadas}</strong></div>
+        <div><span style="color:var(--txt-muted)">Reprobadas:</span> <strong style="color:var(--danger)">${reprobadas}</strong></div>
+        <div><span style="color:var(--txt-muted)">Ausencias:</span> <strong style="color:#92660a">${ausentes}</strong></div>
+      `;
+
+      if (!repAlumnoData.length) {
+        document.getElementById('tbodyRepAlumno').innerHTML = `
+          <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--txt-muted)">Sin resultados de examen registrados aún.</td></tr>`;
+        document.getElementById('btnPdfRepAlumno').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('tbodyRepAlumno').innerHTML = repAlumnoData.map(r => `
+        <tr>
+          <td>${r.materia}</td>
+          <td style="text-align:center">${r.oportunidad}</td>
+          <td>${r.carreraCohorte}</td>
+          <td style="text-align:center">${r.nota ?? '—'}</td>
+          <td style="text-align:center">${repBadgeEstado(r.estado)}</td>
+          <td>${formatFechaHora(r.fecha)}</td>
+        </tr>`).join('');
+
+      document.getElementById('btnPdfRepAlumno').style.display = 'inline-flex';
+    }
+
+    // ── Exportar PDF — Por examen ────────────────────────────────
+    document.getElementById('btnPdfRepExamen').addEventListener('click', () => {
+      if (!repExamenData.length) { toast('Cargá un reporte primero', 'warning'); return; }
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      script.onload = () => generarPdfRepExamen();
+      if (window.jspdf) { generarPdfRepExamen(); return; }
+      document.head.appendChild(script);
+    });
+
+    function generarPdfRepExamen() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const margenL = 20, margenR = 190, ancho = 170;
+
+      function dibujarFondoYEncabezado(esPrimeraPagina = false) {
+        if (esPrimeraPagina) doc.addImage('./assets/img/membrete.png', 'PNG', margenL, 12, ancho, 24);
+      }
+
+      dibujarFondoYEncabezado(true);
+      let y = 44;
+
+      doc.setFontSize(13);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0);
+      doc.text('REPORTE DE RESULTADOS DE EXAMEN', 105, y, { align: 'center' });
+      y += 6;
+
+      doc.setDrawColor(26, 107, 60);
+      doc.setLineWidth(0.6);
+      doc.line(margenL, y, margenR, y);
+      y += 6;
+
+      doc.setFontSize(9);
+      const col1x = margenL, col2x = 115;
+      doc.setFont('helvetica', 'bold'); doc.text('Materia:', col1x, y);
+      doc.setFont('helvetica', 'normal'); doc.text(repExamenInfo.materiaNombre, col1x + 16, y);
+      doc.setFont('helvetica', 'bold'); doc.text('Oportunidad:', col2x, y);
+      doc.setFont('helvetica', 'normal'); doc.text(repExamenInfo.oportunidad, col2x + 23, y);
+      y += 6;
+
+      const aprobados = repExamenData.filter(r => r.estado === 'Aprobado').length;
+      const reprobados = repExamenData.length - aprobados;
+      doc.setFont('helvetica', 'bold'); doc.text('Aprobados:', col1x, y);
+      doc.setFont('helvetica', 'normal'); doc.text(String(aprobados), col1x + 19, y);
+      doc.setFont('helvetica', 'bold'); doc.text('Reprobados:', col2x, y);
+      doc.setFont('helvetica', 'normal'); doc.text(String(reprobados), col2x + 21, y);
+      y += 6;
+      doc.setFont('helvetica', 'bold'); doc.text('Fecha emisión:', col1x, y);
+      doc.setFont('helvetica', 'normal'); doc.text(new Date().toLocaleDateString('es-PY'), col1x + 26, y);
+      y += 10;
+
+      const colNro = margenL, colAlumno = margenL + 12, colCI = margenL + 80, colTel = margenL + 110, colNota = margenL + 142, colEstado = margenL + 155;
+
+      const dibujarHeader = () => {
+        doc.setFillColor(26, 107, 60);
+        doc.rect(margenL, y, ancho, 7, 'F');
+        doc.setTextColor(255);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text('N°', colNro + 2, y + 5);
+        doc.text('Alumno', colAlumno, y + 5);
+        doc.text('C.I.', colCI, y + 5);
+        doc.text('Teléfono', colTel, y + 5);
+        doc.text('Nota', colNota, y + 5);
+        doc.text('Resultado', colEstado, y + 5);
+        doc.setTextColor(0);
+        doc.setFont('helvetica', 'normal');
+        y += 7;
+      };
+
+      dibujarHeader();
+      doc.setFontSize(7.5);
+
+      repExamenData.forEach((r, idx) => {
+        if (y > 265) {
+          doc.addPage();
+          dibujarFondoYEncabezado(false);
+          y = 20;
+          dibujarHeader();
+        }
+        const rowH = 6.5;
+        doc.setFillColor(...(idx % 2 === 0 ? [255, 255, 255] : [245, 247, 250]));
+        doc.rect(margenL, y, ancho, rowH, 'F');
+        doc.setDrawColor(220);
+        doc.setLineWidth(0.2);
+        doc.rect(margenL, y, ancho, rowH);
+
+        doc.setTextColor(0);
+        doc.text(String(idx + 1), colNro + 2, y + 4.5);
+        doc.text(r.alumno.substring(0, 36), colAlumno, y + 4.5);
+        doc.text(String(r.ci), colCI, y + 4.5);
+        doc.text(String(r.telefono), colTel, y + 4.5);
+        doc.text(r.nota != null ? String(r.nota) : '—', colNota, y + 4.5);
+
+        doc.setTextColor(...(r.estado === 'Aprobado' ? [26, 107, 60] : r.estado === 'Ausente' ? [146, 102, 10] : [180, 0, 0]));
+        doc.text(r.estado || '—', colEstado, y + 4.5);
+        doc.setTextColor(0);
+        y += rowH;
+      });
+
+      y += 14;
+      if (y > 260) { doc.addPage(); y = 30; }
+      doc.setDrawColor(0);
+      doc.setLineWidth(0.4);
+      doc.line(margenL, y, margenL + 60, y);
+      doc.line(margenR - 60, y, margenR, y);
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text('Firma responsable académico', margenL, y + 4);
+      doc.text('Sello y firma autorizada', margenR - 60, y + 4);
+
+      const fechaStr = new Date().toLocaleDateString('es-PY').replace(/\//g, '-');
+      const materiaSlug = repExamenInfo.materiaNombre.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+      doc.save(`reporte_examen_${materiaSlug}_${fechaStr}.pdf`);
+      toast('PDF generado', 'success');
+    }
+
+    // ── Exportar PDF — Histórico por alumno ─────────────────────
+    document.getElementById('btnPdfRepAlumno').addEventListener('click', () => {
+      if (!repAlumnoData.length) { toast('Sin datos para exportar', 'warning'); return; }
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      script.onload = () => generarPdfRepAlumno();
+      if (window.jspdf) { generarPdfRepAlumno(); return; }
+      document.head.appendChild(script);
+    });
+
+    function generarPdfRepAlumno() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const margenL = 20, margenR = 190, ancho = 170;
+
+      function dibujarFondoYEncabezado(esPrimeraPagina = false) {
+        if (esPrimeraPagina) doc.addImage('./assets/img/membrete.png', 'PNG', margenL, 12, ancho, 24);
+      }
+
+      dibujarFondoYEncabezado(true);
+      let y = 44;
+
+      doc.setFontSize(13);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0);
+      doc.text('HISTORIAL DE EXÁMENES DEL ALUMNO', 105, y, { align: 'center' });
+      y += 6;
+
+      doc.setDrawColor(26, 107, 60);
+      doc.setLineWidth(0.6);
+      doc.line(margenL, y, margenR, y);
+      y += 6;
+
+      doc.setFontSize(9);
+      const col1x = margenL, col2x = 115;
+      doc.setFont('helvetica', 'bold'); doc.text('Alumno:', col1x, y);
+      doc.setFont('helvetica', 'normal'); doc.text(`${repAlumnoSel.apellidos}, ${repAlumnoSel.nombres}`, col1x + 16, y);
+      doc.setFont('helvetica', 'bold'); doc.text('C.I.:', col2x, y);
+      doc.setFont('helvetica', 'normal'); doc.text(String(repAlumnoSel.ci), col2x + 8, y);
+      y += 6;
+
+      const aprobadas = repAlumnoData.filter(r => r.estado === 'Aprobado').length;
+      const reprobadas = repAlumnoData.filter(r => r.estado === 'Reprobado').length;
+      doc.setFont('helvetica', 'bold'); doc.text('Aprobadas:', col1x, y);
+      doc.setFont('helvetica', 'normal'); doc.text(String(aprobadas), col1x + 19, y);
+      doc.setFont('helvetica', 'bold'); doc.text('Reprobadas:', col2x, y);
+      doc.setFont('helvetica', 'normal'); doc.text(String(reprobadas), col2x + 21, y);
+      y += 6;
+      doc.setFont('helvetica', 'bold'); doc.text('Fecha emisión:', col1x, y);
+      doc.setFont('helvetica', 'normal'); doc.text(new Date().toLocaleDateString('es-PY'), col1x + 26, y);
+      y += 10;
+
+      const colMat = margenL, colOp = margenL + 70, colCarr = margenL + 92, colNota = margenL + 145, colEstado = margenL + 157;
+
+      const dibujarHeader = () => {
+        doc.setFillColor(26, 107, 60);
+        doc.rect(margenL, y, ancho, 7, 'F');
+        doc.setTextColor(255);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Materia', colMat + 2, y + 5);
+        doc.text('Oport.', colOp, y + 5);
+        doc.text('Carrera / Cohorte', colCarr, y + 5);
+        doc.text('Nota', colNota, y + 5);
+        doc.text('Result.', colEstado, y + 5);
+        doc.setTextColor(0);
+        doc.setFont('helvetica', 'normal');
+        y += 7;
+      };
+
+      dibujarHeader();
+      doc.setFontSize(7.5);
+
+      repAlumnoData.forEach((r, idx) => {
+        if (y > 265) {
+          doc.addPage();
+          dibujarFondoYEncabezado(false);
+          y = 20;
+          dibujarHeader();
+        }
+        const rowH = 6.5;
+        doc.setFillColor(...(idx % 2 === 0 ? [255, 255, 255] : [245, 247, 250]));
+        doc.rect(margenL, y, ancho, rowH, 'F');
+        doc.setDrawColor(220);
+        doc.setLineWidth(0.2);
+        doc.rect(margenL, y, ancho, rowH);
+
+        doc.setTextColor(0);
+        doc.text(r.materia.substring(0, 30), colMat + 2, y + 4.5);
+        doc.text(String(r.oportunidad).substring(0, 12), colOp, y + 4.5);
+        doc.text(r.carreraCohorte.substring(0, 28), colCarr, y + 4.5);
+        doc.text(r.nota != null ? String(r.nota) : '—', colNota, y + 4.5);
+
+        doc.setTextColor(...(r.estado === 'Aprobado' ? [26, 107, 60] : r.estado === 'Ausente' ? [146, 102, 10] : [180, 0, 0]));
+        doc.text((r.estado || '—').substring(0, 10), colEstado, y + 4.5);
+        doc.setTextColor(0);
+        y += rowH;
+      });
+
+      y += 14;
+      if (y > 260) { doc.addPage(); y = 30; }
+      doc.setDrawColor(0);
+      doc.setLineWidth(0.4);
+      doc.line(margenL, y, margenL + 60, y);
+      doc.line(margenR - 60, y, margenR, y);
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text('Firma responsable académico', margenL, y + 4);
+      doc.text('Sello y firma autorizada', margenR - 60, y + 4);
+
+      const fechaStr = new Date().toLocaleDateString('es-PY').replace(/\//g, '-');
+      const ciSlug = String(repAlumnoSel.ci).replace(/[^a-zA-Z0-9]/g, '');
+      doc.save(`historial_examenes_${ciSlug}_${fechaStr}.pdf`);
+      toast('PDF generado', 'success');
+    }
 
     // ── Modal helpers ─────────────────────────────────────────────
     document.getElementById('btnModalGuardar').addEventListener('click', () => { if (modalGuardarFn) modalGuardarFn(); });

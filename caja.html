@@ -276,6 +276,9 @@
           Cola de Pendientes <span class="tab-count" id="tabCountCola">0</span>
         </button>
         <button class="caja-tab" data-tab="verif">En verificación</button>
+        <button class="caja-tab" data-tab="pagocaja">
+          Pago en Caja <span class="tab-count" id="tabCountCaja">0</span>
+        </button>
         <button class="caja-tab" data-tab="tandas">Historial de Tandas</button>
         <button class="caja-tab" data-tab="reportes">Reportes</button>
       </div>
@@ -375,6 +378,88 @@
                     Mandar a Verificación
                   </button>
                   <button class="btn btn-anular-comp" id="btnAnular">Anular comprobante</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PAGO EN CAJA ──────────────────────────────── -->
+        <div class="tab-pane" id="tab-pagocaja">
+          <div class="cola-layout">
+
+            <!-- Lista -->
+            <div class="cola-left">
+              <div class="cola-list-header">
+                <span class="cola-list-title">Pagos en Caja / Boleta</span>
+                <span id="cajaPendientesLabel" style="font-size:.78rem;color:var(--naranja);font-weight:600"></span>
+                <button class="btn btn-icon" id="btnRefrescarCaja" title="Actualizar">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                </button>
+              </div>
+              <div class="cola-list-body" id="cajaListBody"></div>
+              <div class="cola-pagination" id="cajaPagination"></div>
+            </div>
+
+            <!-- Panel derecho -->
+            <div class="proc-right" id="cajaProcRight">
+              <div class="proc-empty-state" id="cajaProcEmpty">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+                <p>Seleccioná un pago de caja<br>para verificarlo</p>
+              </div>
+
+              <div class="proc-right-inner" id="cajaProcInner" style="display:none">
+                <!-- Imagen factura -->
+                <div class="comp-img-box" id="cajaImgBox" onclick="abrirImagenCaja()">
+                  <span class="no-img">Sin imagen</span>
+                </div>
+
+                <!-- Monto declarado -->
+                <div class="monto-ia-box">
+                  <div>
+                    <div class="monto-ia-label">Monto declarado por el alumno</div>
+                    <div class="monto-ia-val" id="cajaMonto">—</div>
+                  </div>
+                  <span class="badge badge-naranja">CAJA</span>
+                </div>
+
+                <!-- Meta info alumno -->
+                <div style="font-size:.78rem;color:var(--txt-secondary);line-height:1.6;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px">
+                  <div><span style="color:var(--txt-muted)">Alumno:</span> <strong id="cajaAlumno">—</strong></div>
+                  <div><span style="color:var(--txt-muted)">Cédula:</span> <strong id="cajaCI">—</strong></div>
+                  <div><span style="color:var(--txt-muted)">Carrera:</span> <strong id="cajaCarrera">—</strong></div>
+                  <div><span style="color:var(--txt-muted)">Teléfono:</span> <strong id="cajaTel">—</strong></div>
+                  <div><span style="color:var(--txt-muted)">Recibido:</span> <strong id="cajaFecha">—</strong></div>
+                </div>
+
+                <!-- Conceptos seleccionados por el alumno -->
+                <div>
+                  <div class="proc-section-label">Conceptos a pagar (seleccionados por el alumno)</div>
+                  <div class="ms-list" id="cajaConceptosList" style="max-height:140px"></div>
+                </div>
+
+                <!-- Verificación manual de factura -->
+                <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:var(--radius);padding:10px 12px">
+                  <div class="proc-section-label" style="color:#92400e">Verificación en sistema de facturación</div>
+                  <p style="font-size:.76rem;color:#92400e;margin:0 0 8px">
+                    Buscá el comprobante en el sistema de facturación de la filial y confirmá que el N° y el monto coinciden con la imagen.
+                  </p>
+                  <input type="text" class="form-control" id="cajaNroFacturaConfirm" placeholder="N° de factura/boleta confirmado">
+                </div>
+
+                <!-- Motivo rechazo (oculto hasta usar) -->
+                <div id="cajaRechazoWrap" style="display:none">
+                  <div class="proc-section-label">Motivo de rechazo</div>
+                  <input type="text" class="form-control" id="cajaMotivoRechazo" placeholder="Ej: factura no encontrada, monto no coincide...">
+                </div>
+
+                <!-- Acciones -->
+                <div class="proc-actions">
+                  <button class="btn btn-verificar" id="btnAprobarCaja">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Confirmar pago y aplicar
+                  </button>
+                  <button class="btn btn-anular-comp" id="btnRechazarCaja">Rechazar pago</button>
                 </div>
               </div>
             </div>
@@ -618,30 +703,40 @@ document.querySelectorAll('.caja-tab').forEach(btn => {
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'verif')   cargarVerif();
     if (btn.dataset.tab === 'tandas')  cargarTandas();
+    if (btn.dataset.tab === 'pagocaja') cargarPagoCaja();
   });
 });
 
 // ── Init ─────────────────────────────────────────────────────
-await Promise.all([cargarKPIs(), cargarCola(), cargarBancos(), cargarAlumnos()]);
+await Promise.all([cargarKPIs(), cargarCola(), cargarBancos(), cargarAlumnos(), cargarKPICaja()]);
 
 // ── KPIs ─────────────────────────────────────────────────────
 async function cargarKPIs() {
   const hoy = new Date().toISOString().slice(0,10);
   const { data } = await supabase.from('comprobantes_pago')
-    .select('estado_procesamiento,monto_detectado,llego_a_las');
+    .select('estado_procesamiento,monto_detectado,llego_a_las,tipo_pago');
   if (!data) return;
 
   const hoyItems  = data.filter(r => r.llego_a_las?.slice(0,10) === hoy);
   const recibidos = hoyItems.length;
   const procesados = hoyItems.filter(r => ['Aplicado','En Verificación'].includes(r.estado_procesamiento));
   const total     = procesados.reduce((s,r) => s + (Number(r.monto_detectado)||0), 0);
-  const enCola    = data.filter(r => !['Aplicado','Procesando','Rechazado','En Verificación'].includes(r.estado_procesamiento)).length;
+  const enCola    = data.filter(r => r.tipo_pago !== 'caja' && !['Aplicado','Procesando','Rechazado','En Verificación'].includes(r.estado_procesamiento)).length;
 
   document.getElementById('kpiRecibidos').textContent  = recibidos + ' Comprobantes';
   document.getElementById('kpiProcesados').textContent = procesados.length + ' Facturados';
   document.getElementById('kpiTotal').textContent      = formatGs(total);
   document.getElementById('kpiCola').textContent       = enCola + ' Pendientes';
   document.getElementById('tabCountCola').textContent  = enCola;
+}
+
+// ── KPI Pago en Caja ───────────────────────────────────────────
+async function cargarKPICaja() {
+  const { data } = await supabase.from('comprobantes_pago')
+    .select('id')
+    .eq('tipo_pago', 'caja')
+    .eq('estado_procesamiento', 'En Verificación');
+  document.getElementById('tabCountCaja').textContent = (data || []).length;
 }
 
 // ── Cola de pendientes ────────────────────────────────────────
@@ -672,6 +767,7 @@ async function cargarColaDirecta() {
       )
     `)
     .not('estado_procesamiento', 'in', '("Aplicado","Procesando","Rechazado","En Verificación")')
+    .or('tipo_pago.is.null,tipo_pago.neq.caja')
     .order('id', { ascending: false });
 
   colaData = (data || []).map(r => {
@@ -1491,6 +1587,244 @@ document.getElementById('btnAprobarTanda').addEventListener('click', async () =>
   await cargarTandas();
 });
 
+// ── Pago en Caja ─────────────────────────────────────────────
+let cajaData       = [];
+let cajaActivo     = null;
+let cajaPaginaAct  = 1;
+
+async function cargarPagoCaja() {
+  const { data } = await supabase
+    .from('comprobantes_pago')
+    .select(`
+      id, titular_cuenta, monto_detectado, recibido_en, nro_comprobante,
+      ci_remitente, telefono_remitente, imagen_url,
+      inscripcion_id,
+      inscripciones_anuales(
+        id,
+        alumnos(nombres, apellidos, ci),
+        cohortes(carreras(nombre))
+      ),
+      detalles_pago_comprobante(id, concepto_tipo, referencia_id, monto_pactado)
+    `)
+    .eq('tipo_pago', 'caja')
+    .eq('estado_procesamiento', 'En Verificación')
+    .order('recibido_en', { ascending: false });
+
+  cajaData = data || [];
+  document.getElementById('tabCountCaja').textContent = cajaData.length;
+  renderColaCaja();
+}
+
+function renderColaCaja() {
+  const total  = cajaData.length;
+  const pages  = Math.ceil(total / PAGE_SIZE) || 1;
+  cajaPaginaAct = Math.min(cajaPaginaAct, pages);
+  const desde  = (cajaPaginaAct - 1) * PAGE_SIZE;
+  const items  = cajaData.slice(desde, desde + PAGE_SIZE);
+
+  document.getElementById('cajaPendientesLabel').textContent = total + ' pendientes';
+
+  const body = document.getElementById('cajaListBody');
+  if (!items.length) {
+    body.innerHTML = `<div class="proc-empty-state" style="flex:1">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+      <p>Sin pagos en caja pendientes</p></div>`;
+    return;
+  }
+
+  body.innerHTML = items.map(c => {
+    const insc   = c.inscripciones_anuales;
+    const alumno = insc?.alumnos;
+    const nombre = alumno ? `${alumno.nombres} ${alumno.apellidos}` : (c.titular_cuenta || 'Alumno');
+    const carrera = insc?.cohortes?.carreras?.nombre || 'Sin carrera';
+    const hace   = tiempoRelativo(c.recibido_en);
+
+    return `<div class="comp-item ${cajaActivo?.id === c.id ? 'active':''}" onclick="selCompCaja(${c.id})">
+      <div class="comp-item-top">
+        <div>
+          <div class="comp-item-nombre">${nombre}</div>
+          <div class="comp-item-carrera">${carrera}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span class="badge badge-naranja" style="font-size:.62rem">CAJA</span>
+          <span class="comp-item-monto">${formatGs(c.monto_detectado)}</span>
+        </div>
+      </div>
+      <div class="comp-item-meta">
+        <span>${c.ci_remitente || '—'}</span>
+        <span>${hace}</span>
+        ${c.nro_comprobante ? `<span>Nº ${c.nro_comprobante}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.selCompCaja = (id) => {
+  cajaActivo = cajaData.find(c => c.id === id) || null;
+  renderColaCaja();
+  if (!cajaActivo) return;
+
+  document.getElementById('cajaProcEmpty').style.display = 'none';
+  document.getElementById('cajaProcInner').style.display = 'flex';
+  document.getElementById('cajaProcInner').style.flexDirection = 'column';
+
+  const insc   = cajaActivo.inscripciones_anuales;
+  const alumno = insc?.alumnos;
+
+  // Imagen
+  const imgBox = document.getElementById('cajaImgBox');
+  imgBox.innerHTML = cajaActivo.imagen_url
+    ? `<img src="${cajaActivo.imagen_url}" alt="Factura">`
+    : `<span class="no-img">Sin imagen disponible</span>`;
+
+  document.getElementById('cajaMonto').textContent    = formatGs(cajaActivo.monto_detectado);
+  document.getElementById('cajaAlumno').textContent   = alumno ? `${alumno.nombres} ${alumno.apellidos}` : '—';
+  document.getElementById('cajaCI').textContent       = alumno?.ci || cajaActivo.ci_remitente || '—';
+  document.getElementById('cajaCarrera').textContent  = insc?.cohortes?.carreras?.nombre || '—';
+  document.getElementById('cajaTel').textContent      = cajaActivo.telefono_remitente || '—';
+  document.getElementById('cajaFecha').textContent    = formatFechaHora(cajaActivo.recibido_en);
+
+  // Reset campos
+  document.getElementById('cajaNroFacturaConfirm').value = cajaActivo.nro_comprobante || '';
+  document.getElementById('cajaMotivoRechazo').value = '';
+  document.getElementById('cajaRechazoWrap').style.display = 'none';
+
+  // Conceptos
+  const detalles = cajaActivo.detalles_pago_comprobante || [];
+  const list = document.getElementById('cajaConceptosList');
+  list.innerHTML = detalles.length
+    ? detalles.map(d => `
+        <div class="ms-item" style="cursor:default">
+          <span class="ms-item-label">${d.concepto_tipo}${d.referencia_id ? ' #'+d.referencia_id : ''}</span>
+          <span class="ms-item-monto">${d.monto_pactado ? formatGs(d.monto_pactado) : '—'}</span>
+        </div>`).join('')
+    : '<div class="ms-empty">Sin conceptos registrados</div>';
+};
+
+window.abrirImagenCaja = () => {
+  if (!cajaActivo?.imagen_url) return;
+  document.getElementById('modalImgBody').innerHTML = `<img src="${cajaActivo.imagen_url}" alt="Factura">`;
+  document.getElementById('modalImgOverlay').classList.add('open');
+};
+
+document.getElementById('btnRefrescarCaja').addEventListener('click', cargarPagoCaja);
+
+document.getElementById('btnAprobarCaja').addEventListener('click', async () => {
+  if (!cajaActivo) return;
+
+  const nroFacturaConfirm = document.getElementById('cajaNroFacturaConfirm').value.trim();
+  if (!nroFacturaConfirm) {
+    toast('Confirmá el N° de factura encontrado en el sistema de facturación', 'warning');
+    return;
+  }
+  if (!confirm('¿Confirmás que verificaste esta factura en el sistema de facturación y que es válida? Esta acción aplicará el pago de inmediato.')) return;
+
+  const btn = document.getElementById('btnAprobarCaja');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0"></div>';
+
+  try {
+    const detalles = cajaActivo.detalles_pago_comprobante || [];
+    const inscripcionId = cajaActivo.inscripcion_id;
+
+    // 1. Marcar cuotas seleccionadas como Pagado
+    const cuotaIds = detalles.filter(d => d.concepto_tipo === 'CUOTA' && d.referencia_id).map(d => d.referencia_id);
+    if (cuotaIds.length) {
+      const { error: errCuotas } = await supabase
+        .from('cuotas_pagos')
+        .update({ estado_pago: 'Pagado', fecha_pago: new Date().toISOString() })
+        .in('id', cuotaIds);
+      if (errCuotas) throw new Error('Error al actualizar cuotas: ' + errCuotas.message);
+    }
+
+    // 2. Generar derecho de examen + historial para cada examen seleccionado
+    const examenes = detalles.filter(d => d.concepto_tipo === 'EXAMEN' && d.referencia_id);
+    for (const d of examenes) {
+      const { data: cal } = await supabase
+        .from('calendario_examenes')
+        .select('materia_id, oportunidad_nro')
+        .eq('id', d.referencia_id)
+        .single();
+      if (!cal) continue;
+
+      const { data: derechoRec, error: errDerecho } = await supabase
+        .from('derechos_examen')
+        .insert({
+          inscripcion_id: inscripcionId,
+          materia_id: cal.materia_id,
+          oportunidad_nro: cal.oportunidad_nro,
+          monto_pagado: d.monto_pactado || null,
+          estado: 'CONFIRMADO',
+        })
+        .select('id')
+        .single();
+      if (errDerecho) throw new Error('Error al generar derecho de examen: ' + errDerecho.message);
+
+      await supabase.from('historial_examenes').insert({
+        inscripcion_id: inscripcionId,
+        materia_id: cal.materia_id,
+        oportunidad_nro: cal.oportunidad_nro,
+        estado_materia: 'Cursando',
+        hab_academico: true,
+        hab_administrativo: true,
+        derecho_examen_id: derechoRec.id,
+      });
+    }
+
+    // 3. Marcar el comprobante como Aplicado
+    const { error: errComp } = await supabase
+      .from('comprobantes_pago')
+      .update({
+        estado_procesamiento: 'Aplicado',
+        nro_comprobante: nroFacturaConfirm,
+        procesado_por: sesion.id,
+        procesado_en: new Date().toISOString(),
+      })
+      .eq('id', cajaActivo.id);
+    if (errComp) throw new Error('Error al actualizar comprobante: ' + errComp.message);
+
+    toast('Pago en caja confirmado y aplicado correctamente', 'success');
+    cajaActivo = null;
+    document.getElementById('cajaProcEmpty').style.display = 'flex';
+    document.getElementById('cajaProcInner').style.display = 'none';
+    await Promise.all([cargarPagoCaja(), cargarKPICaja()]);
+
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Confirmar pago y aplicar`;
+  }
+});
+
+document.getElementById('btnRechazarCaja').addEventListener('click', async () => {
+  if (!cajaActivo) return;
+
+  const wrap = document.getElementById('cajaRechazoWrap');
+  if (wrap.style.display === 'none') {
+    wrap.style.display = 'block';
+    document.getElementById('cajaMotivoRechazo').focus();
+    return;
+  }
+
+  const motivo = document.getElementById('cajaMotivoRechazo').value.trim();
+  if (!motivo) { toast('Indicá el motivo del rechazo', 'warning'); return; }
+  if (!confirm('¿Rechazar este pago de caja? El alumno deberá volver a cargar su comprobante.')) return;
+
+  await supabase.from('comprobantes_pago').update({
+    estado_procesamiento: 'Rechazado',
+    motivo_rechazo: motivo,
+    procesado_por: sesion.id,
+    procesado_en: new Date().toISOString(),
+  }).eq('id', cajaActivo.id);
+
+  toast('Pago de caja rechazado', 'warning');
+  cajaActivo = null;
+  document.getElementById('cajaProcEmpty').style.display = 'flex';
+  document.getElementById('cajaProcInner').style.display = 'none';
+  await Promise.all([cargarPagoCaja(), cargarKPICaja()]);
+});
+
 // ── Reportes ──────────────────────────────────────────────────
 function hoy()       { return new Date().toISOString().slice(0,10); }
 function diasAtras(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); }
@@ -1573,10 +1907,10 @@ supabase.channel('caja-rt')
     notif.className = 'rt-notify';
     notif.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       <div><div style="font-size:.78rem;opacity:.8">Nuevo comprobante recibido</div><div>${formatGs(nuevo.monto_detectado)}</div></div>`;
-    notif.onclick = async () => { notif.remove(); await Promise.all([cargarCola(),cargarKPIs()]); };
+    notif.onclick = async () => { notif.remove(); await Promise.all([cargarCola(),cargarKPIs(),cargarKPICaja()]); };
     document.body.appendChild(notif);
     setTimeout(()=>notif.remove(), 7000);
-    await Promise.all([cargarCola(), cargarKPIs()]);
+    await Promise.all([cargarCola(), cargarKPIs(), cargarKPICaja()]);
   })
   .subscribe(status => {
     const el = document.getElementById('rtStatus');
