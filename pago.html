@@ -2068,7 +2068,7 @@
                     monto_detectado: state.seleccion.reduce((s, x) => s + (x.monto || 0), 0),
                     banco_origen: 'CAJA',
                     banco_receptor: null,
-                    tipo_pago:'caja',
+                    tipo_pago: 'caja',
                     nro_comprobante: null,
                     estado_procesamiento: 'En Verificación',
                     recibido_en: new Date().toISOString(),
@@ -2259,7 +2259,9 @@
 
             try {
                 if (!state.archivoFile) throw new Error('Por favor, selecciona un comprobante.');
-
+                if (state.metodoPago !== 'qr' && (!state.cuentaBancariaSel || !state.cuentaBancariaSel.id)) {
+                    throw new Error('Por favor, selecciona un banco destino.');
+                }
                 // 1. Subir imagen al servidor local (Carpeta comprobantes)
                 const formData = new FormData();
                 formData.append('comprobante', state.archivoFile);
