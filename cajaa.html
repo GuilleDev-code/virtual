@@ -161,6 +161,40 @@
     /* ── En Verificación ────────────────────────────────────── */
     .verif-layout { flex-direction: column; padding: 16px 24px; overflow-y: auto; gap: 14px; }
     .verif-toolbar { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+    .canal-chips { display: flex; gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
+    .canal-chip {
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--txt-secondary);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: .8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .canal-chip:hover { border-color: var(--verde); color: var(--verde); }
+    .canal-chip.active { background: var(--verde); border-color: var(--verde); color: #fff; }
+    .canal-chip .chip-count {
+      background: rgba(0,0,0,.08);
+      border-radius: 999px;
+      padding: 1px 7px;
+      font-size: .7rem;
+    }
+    .canal-chip.active .chip-count { background: rgba(255,255,255,.25); }
+
+    .td-img-mini {
+      width: 38px; height: 38px; border-radius: 6px; object-fit: cover;
+      cursor: pointer; border: 1px solid var(--border); display: block;
+    }
+    .td-img-mini.empty {
+      width: 38px; height: 38px; border-radius: 6px; border: 1px dashed var(--border);
+      display: flex; align-items: center; justify-content: center; color: var(--txt-muted); font-size: .65rem;
+    }
     .search-input-wrap { position: relative; flex: 1; max-width: 280px; }
     .search-input-wrap svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--txt-muted); pointer-events: none; }
     .search-input-wrap input { padding-left: 30px; }
@@ -169,27 +203,6 @@
     .generic-layout { flex-direction: column; padding: 16px 24px; overflow-y: auto; gap: 14px; }
     .date-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .date-bar .form-control { width: 160px; }
-
-    /* ── Corregir cuotas ─────────────────────────────────────── */
-    .cc-card {
-      background: var(--surface); border: 1.5px solid var(--border);
-      border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
-      display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;
-    }
-    .cc-card.generando { opacity: .5; pointer-events: none; }
-    .cc-info { flex: 1; min-width: 220px; }
-    .cc-nombre { font-weight: 600; font-size: .9rem; }
-    .cc-meta { font-size: .76rem; color: var(--txt-muted); margin-top: 2px; display: flex; gap: 10px; flex-wrap: wrap; }
-    .cc-fields { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
-    .cc-field { display: flex; flex-direction: column; gap: 3px; }
-    .cc-field label { font-size: .66rem; font-weight: 700; color: var(--txt-muted); text-transform: uppercase; letter-spacing: .05em; }
-    .cc-field input { width: 110px; padding: 6px 8px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: .82rem; }
-    .cc-field input.short { width: 70px; }
-    .cc-warn { font-size: .72rem; color: var(--warning); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
-    .cc-warn.sin-precio { color: var(--danger); }
-    .cc-actions-row { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
-    .cc-empty { text-align: center; padding: 50px 20px; color: var(--txt-muted); }
-    .cc-empty svg { width: 40px; height: 40px; opacity: .25; margin-bottom: 10px; }
 
     /* ── Realtime badge ─────────────────────────────────────── */
     .rt-notify {
@@ -297,11 +310,12 @@
           Cola de Pendientes <span class="tab-count" id="tabCountCola">0</span>
         </button>
         <button class="caja-tab" data-tab="verif">En verificación</button>
+        <button class="caja-tab" data-tab="anular">Anular / Editar</button>
+        <button class="caja-tab" data-tab="pagocaja">
+          Pago en Caja <span class="tab-count" id="tabCountCaja">0</span>
+        </button>
         <button class="caja-tab" data-tab="tandas">Historial de Tandas</button>
         <button class="caja-tab" data-tab="reportes">Reportes</button>
-        <button class="caja-tab" data-tab="corregir">
-          Corregir cuotas <span class="tab-count" id="tabCountCorregir">0</span>
-        </button>
       </div>
 
       <div class="tab-content">
@@ -405,9 +419,96 @@
           </div>
         </div>
 
+        <!-- ── PAGO EN CAJA ──────────────────────────────── -->
+        <div class="tab-pane" id="tab-pagocaja">
+          <div class="cola-layout">
+
+            <!-- Lista -->
+            <div class="cola-left">
+              <div class="cola-list-header">
+                <span class="cola-list-title">Pagos en Caja / Boleta</span>
+                <span id="cajaPendientesLabel" style="font-size:.78rem;color:var(--naranja);font-weight:600"></span>
+                <button class="btn btn-icon" id="btnRefrescarCaja" title="Actualizar">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                </button>
+              </div>
+              <div class="cola-list-body" id="cajaListBody"></div>
+              <div class="cola-pagination" id="cajaPagination"></div>
+            </div>
+
+            <!-- Panel derecho -->
+            <div class="proc-right" id="cajaProcRight">
+              <div class="proc-empty-state" id="cajaProcEmpty">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+                <p>Seleccioná un pago de caja<br>para verificarlo</p>
+              </div>
+
+              <div class="proc-right-inner" id="cajaProcInner" style="display:none">
+                <!-- Imagen factura -->
+                <div class="comp-img-box" id="cajaImgBox" onclick="abrirImagenCaja()">
+                  <span class="no-img">Sin imagen</span>
+                </div>
+
+                <!-- Monto declarado -->
+                <div class="monto-ia-box">
+                  <div>
+                    <div class="monto-ia-label">Monto declarado por el alumno</div>
+                    <div class="monto-ia-val" id="cajaMonto">—</div>
+                  </div>
+                  <span class="badge badge-naranja">CAJA</span>
+                </div>
+
+                <!-- Meta info alumno -->
+                <div style="font-size:.78rem;color:var(--txt-secondary);line-height:1.6;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px">
+                  <div><span style="color:var(--txt-muted)">Alumno:</span> <strong id="cajaAlumno">—</strong></div>
+                  <div><span style="color:var(--txt-muted)">Cédula:</span> <strong id="cajaCI">—</strong></div>
+                  <div><span style="color:var(--txt-muted)">Carrera:</span> <strong id="cajaCarrera">—</strong></div>
+                  <div><span style="color:var(--txt-muted)">Teléfono:</span> <strong id="cajaTel">—</strong></div>
+                  <div><span style="color:var(--txt-muted)">Recibido:</span> <strong id="cajaFecha">—</strong></div>
+                </div>
+
+                <!-- Conceptos seleccionados por el alumno -->
+                <div>
+                  <div class="proc-section-label">Conceptos a pagar (seleccionados por el alumno)</div>
+                  <div class="ms-list" id="cajaConceptosList" style="max-height:140px"></div>
+                </div>
+
+                <!-- Verificación manual de factura -->
+                <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:var(--radius);padding:10px 12px">
+                  <div class="proc-section-label" style="color:#92400e">Verificación en sistema de facturación</div>
+                  <p style="font-size:.76rem;color:#92400e;margin:0 0 8px">
+                    Buscá el comprobante en el sistema de facturación de la filial y confirmá que el N° y el monto coinciden con la imagen.
+                  </p>
+                  <input type="text" class="form-control" id="cajaNroFacturaConfirm" placeholder="N° de factura/boleta confirmado">
+                </div>
+
+                <!-- Motivo rechazo (oculto hasta usar) -->
+                <div id="cajaRechazoWrap" style="display:none">
+                  <div class="proc-section-label">Motivo de rechazo</div>
+                  <input type="text" class="form-control" id="cajaMotivoRechazo" placeholder="Ej: factura no encontrada, monto no coincide...">
+                </div>
+
+                <!-- Acciones -->
+                <div class="proc-actions">
+                  <button class="btn btn-verificar" id="btnAprobarCaja">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Confirmar pago y aplicar
+                  </button>
+                  <button class="btn btn-anular-comp" id="btnRechazarCaja">Rechazar pago</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- ── EN VERIFICACIÓN ───────────────────────────── -->
         <div class="tab-pane" id="tab-verif">
           <div class="verif-layout">
+            <div class="canal-chips" id="canalChips">
+              <button class="canal-chip active" data-canal="todos">Todos <span class="chip-count" id="chipCountTodos">0</span></button>
+              <button class="canal-chip" data-canal="WhatsApp">WhatsApp <span class="chip-count" id="chipCountWhatsApp">0</span></button>
+              <button class="canal-chip" data-canal="Portal">Portal <span class="chip-count" id="chipCountPortal">0</span></button>
+            </div>
             <div class="verif-toolbar">
               <div class="search-input-wrap">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -415,6 +516,10 @@
               </div>
               <span id="verifCount" style="font-size:.8rem;color:var(--txt-muted)">0 Records</span>
               <div style="margin-left:auto;display:flex;gap:8px">
+                <button class="btn btn-ghost btn-sm" id="btnDescargarZip">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Descargar imágenes (ZIP)
+                </button>
                 <button class="btn btn-ghost btn-sm" id="btnActualizarVerif">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                   Actualizar
@@ -430,6 +535,8 @@
                 <thead>
                   <tr>
                     <th>Nº</th>
+                    <th>Img</th>
+                    <th>CANAL</th>
                     <th>ENTIDAD BANCARIA BENEFICIARIA</th>
                     <th>Nº DE CUENTA BANCARIA</th>
                     <th>TITULAR DE LA CUENTA</th>
@@ -445,9 +552,84 @@
                   </tr>
                 </thead>
                 <tbody id="tbodyVerif">
-                  <tr><td colspan="13" class="text-center" style="padding:32px;color:var(--txt-muted)">Cargando...</td></tr>
+                  <tr><td colspan="15" class="text-center" style="padding:32px;color:var(--txt-muted)">Cargando...</td></tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── ANULAR / EDITAR ────────────────────────────── -->
+        <div class="tab-pane" id="tab-anular">
+          <div class="verif-layout">
+            <div class="verif-toolbar">
+              <div class="search-input-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" class="form-control" id="searchAnular" placeholder="Search...">
+              </div>
+              <span id="anularCount" style="font-size:.8rem;color:var(--txt-muted)">0 Records</span>
+              <div style="margin-left:auto;display:flex;gap:8px">
+                <button class="btn btn-ghost btn-sm" id="btnActualizarAnular">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  Actualizar
+                </button>
+              </div>
+            </div>
+            <p style="font-size:.78rem;color:var(--txt-muted);margin:0 0 4px">
+              Listado completo (todos los canales) de pagos "En Verificación". Usá esto para corregir cargas duplicadas o datos erróneos del alumno antes de que entren a una tanda.
+            </p>
+            <div class="table-wrapper">
+              <table id="tblAnular">
+                <thead>
+                  <tr>
+                    <th>Nº</th>
+                    <th>Img</th>
+                    <th>CANAL</th>
+                    <th>FECHA</th>
+                    <th>ALUMNO</th>
+                    <th>CÉDULA</th>
+                    <th class="text-right">MONTO</th>
+                    <th>Nº COMPROBANTE</th>
+                    <th>OBSERVACIÓN</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyAnular">
+                  <tr><td colspan="10" class="text-center" style="padding:32px;color:var(--txt-muted)">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal editar comprobante -->
+        <div class="modal-overlay" id="modalEditarOverlay">
+          <div class="modal-box" style="max-width:480px">
+            <div class="modal-header">
+              <span class="modal-title">Editar comprobante</span>
+              <button class="modal-close" id="btnCerrarEditar">&times;</button>
+            </div>
+            <div class="modal-body" style="display:flex;flex-direction:column;gap:12px">
+              <div>
+                <label class="form-label">Monto</label>
+                <input type="number" class="form-control" id="editMonto">
+              </div>
+              <div>
+                <label class="form-label">Nº de comprobante</label>
+                <input type="text" class="form-control" id="editNroComprobante">
+              </div>
+              <div>
+                <label class="form-label">Cédula del remitente</label>
+                <input type="text" class="form-control" id="editCedula">
+              </div>
+              <div>
+                <label class="form-label">Teléfono del remitente</label>
+                <input type="text" class="form-control" id="editTelefono">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-ghost btn-sm" id="btnCancelarEditar">Cancelar</button>
+              <button class="btn btn-primary btn-sm" id="btnGuardarEditar">Guardar cambios</button>
             </div>
           </div>
         </div>
@@ -527,29 +709,6 @@
                 <thead><tr><th>Fecha/hora</th><th>Alumno</th><th>CI</th><th>Banco origen</th><th class="text-right">Monto</th><th>Estado</th><th>Procesado por</th></tr></thead>
                 <tbody id="tbodyReportes"><tr><td colspan="7" class="text-center" style="padding:32px;color:var(--txt-muted)">Seleccioná un período</td></tr></tbody>
               </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── CORREGIR CUOTAS ────────────────────────────── -->
-        <div class="tab-pane" id="tab-corregir">
-          <div class="generic-layout">
-            <div class="cc-actions-row">
-              <button class="btn btn-ghost btn-sm" id="btnBuscarSinCuotas">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                Buscar inscripciones sin cuotas
-              </button>
-              <button class="btn btn-primary btn-sm" id="btnGenerarTodas" style="display:none">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                Generar cuotas para todas
-              </button>
-              <span style="font-size:.78rem;color:var(--txt-muted)" id="ccStatusText"></span>
-            </div>
-            <div id="ccContent">
-              <div class="cc-empty">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                <p>Hacé clic en "Buscar inscripciones sin cuotas" para revisar el sistema.</p>
-              </div>
             </div>
           </div>
         </div>
@@ -638,7 +797,7 @@
 <div id="toast-container"></div>
 
 <script type="module">
-import { supabase, formatGs, formatFecha, formatFechaHora, toast } from './assets/supabase.js';
+import { supabase, formatGs, formatFechaHora, toast } from './assets/supabase.js';
 import { requireAuth } from './assets/auth.js';
 import { initSidebar } from './assets/sidebar.js';
 
@@ -665,30 +824,40 @@ document.querySelectorAll('.caja-tab').forEach(btn => {
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'verif')   cargarVerif();
     if (btn.dataset.tab === 'tandas')  cargarTandas();
+    if (btn.dataset.tab === 'pagocaja') cargarPagoCaja();
   });
 });
 
 // ── Init ─────────────────────────────────────────────────────
-await Promise.all([cargarKPIs(), cargarCola(), cargarBancos(), cargarAlumnos()]);
+await Promise.all([cargarKPIs(), cargarCola(), cargarBancos(), cargarAlumnos(), cargarKPICaja()]);
 
 // ── KPIs ─────────────────────────────────────────────────────
 async function cargarKPIs() {
   const hoy = new Date().toISOString().slice(0,10);
   const { data } = await supabase.from('comprobantes_pago')
-    .select('estado_procesamiento,monto_detectado,llego_a_las');
+    .select('estado_procesamiento,monto_detectado,llego_a_las,tipo_pago');
   if (!data) return;
 
   const hoyItems  = data.filter(r => r.llego_a_las?.slice(0,10) === hoy);
   const recibidos = hoyItems.length;
   const procesados = hoyItems.filter(r => ['Aplicado','En Verificación'].includes(r.estado_procesamiento));
   const total     = procesados.reduce((s,r) => s + (Number(r.monto_detectado)||0), 0);
-  const enCola    = data.filter(r => !['Aplicado','Procesando','Rechazado','En Verificación'].includes(r.estado_procesamiento)).length;
+  const enCola    = data.filter(r => r.tipo_pago !== 'caja' && !['Aplicado','Procesando','Rechazado','En Verificación'].includes(r.estado_procesamiento)).length;
 
   document.getElementById('kpiRecibidos').textContent  = recibidos + ' Comprobantes';
   document.getElementById('kpiProcesados').textContent = procesados.length + ' Facturados';
   document.getElementById('kpiTotal').textContent      = formatGs(total);
   document.getElementById('kpiCola').textContent       = enCola + ' Pendientes';
   document.getElementById('tabCountCola').textContent  = enCola;
+}
+
+// ── KPI Pago en Caja ───────────────────────────────────────────
+async function cargarKPICaja() {
+  const { data } = await supabase.from('comprobantes_pago')
+    .select('id')
+    .eq('tipo_pago', 'caja')
+    .eq('estado_procesamiento', 'En Verificación');
+  document.getElementById('tabCountCaja').textContent = (data || []).length;
 }
 
 // ── Cola de pendientes ────────────────────────────────────────
@@ -719,6 +888,7 @@ async function cargarColaDirecta() {
       )
     `)
     .not('estado_procesamiento', 'in', '("Aplicado","Procesando","Rechazado","En Verificación")')
+    .or('tipo_pago.is.null,tipo_pago.neq.caja')
     .order('id', { ascending: false });
 
   colaData = (data || []).map(r => {
@@ -1538,6 +1708,244 @@ document.getElementById('btnAprobarTanda').addEventListener('click', async () =>
   await cargarTandas();
 });
 
+// ── Pago en Caja ─────────────────────────────────────────────
+let cajaData       = [];
+let cajaActivo     = null;
+let cajaPaginaAct  = 1;
+
+async function cargarPagoCaja() {
+  const { data } = await supabase
+    .from('comprobantes_pago')
+    .select(`
+      id, titular_cuenta, monto_detectado, recibido_en, nro_comprobante,
+      ci_remitente, telefono_remitente, imagen_url,
+      inscripcion_id,
+      inscripciones_anuales(
+        id,
+        alumnos(nombres, apellidos, ci),
+        cohortes(carreras(nombre))
+      ),
+      detalles_pago_comprobante(id, concepto_tipo, referencia_id, monto_pactado)
+    `)
+    .eq('tipo_pago', 'caja')
+    .eq('estado_procesamiento', 'En Verificación')
+    .order('recibido_en', { ascending: false });
+
+  cajaData = data || [];
+  document.getElementById('tabCountCaja').textContent = cajaData.length;
+  renderColaCaja();
+}
+
+function renderColaCaja() {
+  const total  = cajaData.length;
+  const pages  = Math.ceil(total / PAGE_SIZE) || 1;
+  cajaPaginaAct = Math.min(cajaPaginaAct, pages);
+  const desde  = (cajaPaginaAct - 1) * PAGE_SIZE;
+  const items  = cajaData.slice(desde, desde + PAGE_SIZE);
+
+  document.getElementById('cajaPendientesLabel').textContent = total + ' pendientes';
+
+  const body = document.getElementById('cajaListBody');
+  if (!items.length) {
+    body.innerHTML = `<div class="proc-empty-state" style="flex:1">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+      <p>Sin pagos en caja pendientes</p></div>`;
+    return;
+  }
+
+  body.innerHTML = items.map(c => {
+    const insc   = c.inscripciones_anuales;
+    const alumno = insc?.alumnos;
+    const nombre = alumno ? `${alumno.nombres} ${alumno.apellidos}` : (c.titular_cuenta || 'Alumno');
+    const carrera = insc?.cohortes?.carreras?.nombre || 'Sin carrera';
+    const hace   = tiempoRelativo(c.recibido_en);
+
+    return `<div class="comp-item ${cajaActivo?.id === c.id ? 'active':''}" onclick="selCompCaja(${c.id})">
+      <div class="comp-item-top">
+        <div>
+          <div class="comp-item-nombre">${nombre}</div>
+          <div class="comp-item-carrera">${carrera}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span class="badge badge-naranja" style="font-size:.62rem">CAJA</span>
+          <span class="comp-item-monto">${formatGs(c.monto_detectado)}</span>
+        </div>
+      </div>
+      <div class="comp-item-meta">
+        <span>${c.ci_remitente || '—'}</span>
+        <span>${hace}</span>
+        ${c.nro_comprobante ? `<span>Nº ${c.nro_comprobante}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.selCompCaja = (id) => {
+  cajaActivo = cajaData.find(c => c.id === id) || null;
+  renderColaCaja();
+  if (!cajaActivo) return;
+
+  document.getElementById('cajaProcEmpty').style.display = 'none';
+  document.getElementById('cajaProcInner').style.display = 'flex';
+  document.getElementById('cajaProcInner').style.flexDirection = 'column';
+
+  const insc   = cajaActivo.inscripciones_anuales;
+  const alumno = insc?.alumnos;
+
+  // Imagen
+  const imgBox = document.getElementById('cajaImgBox');
+  imgBox.innerHTML = cajaActivo.imagen_url
+    ? `<img src="${cajaActivo.imagen_url}" alt="Factura">`
+    : `<span class="no-img">Sin imagen disponible</span>`;
+
+  document.getElementById('cajaMonto').textContent    = formatGs(cajaActivo.monto_detectado);
+  document.getElementById('cajaAlumno').textContent   = alumno ? `${alumno.nombres} ${alumno.apellidos}` : '—';
+  document.getElementById('cajaCI').textContent       = alumno?.ci || cajaActivo.ci_remitente || '—';
+  document.getElementById('cajaCarrera').textContent  = insc?.cohortes?.carreras?.nombre || '—';
+  document.getElementById('cajaTel').textContent      = cajaActivo.telefono_remitente || '—';
+  document.getElementById('cajaFecha').textContent    = formatFechaHora(cajaActivo.recibido_en);
+
+  // Reset campos
+  document.getElementById('cajaNroFacturaConfirm').value = cajaActivo.nro_comprobante || '';
+  document.getElementById('cajaMotivoRechazo').value = '';
+  document.getElementById('cajaRechazoWrap').style.display = 'none';
+
+  // Conceptos
+  const detalles = cajaActivo.detalles_pago_comprobante || [];
+  const list = document.getElementById('cajaConceptosList');
+  list.innerHTML = detalles.length
+    ? detalles.map(d => `
+        <div class="ms-item" style="cursor:default">
+          <span class="ms-item-label">${d.concepto_tipo}${d.referencia_id ? ' #'+d.referencia_id : ''}</span>
+          <span class="ms-item-monto">${d.monto_pactado ? formatGs(d.monto_pactado) : '—'}</span>
+        </div>`).join('')
+    : '<div class="ms-empty">Sin conceptos registrados</div>';
+};
+
+window.abrirImagenCaja = () => {
+  if (!cajaActivo?.imagen_url) return;
+  document.getElementById('modalImgBody').innerHTML = `<img src="${cajaActivo.imagen_url}" alt="Factura">`;
+  document.getElementById('modalImgOverlay').classList.add('open');
+};
+
+document.getElementById('btnRefrescarCaja').addEventListener('click', cargarPagoCaja);
+
+document.getElementById('btnAprobarCaja').addEventListener('click', async () => {
+  if (!cajaActivo) return;
+
+  const nroFacturaConfirm = document.getElementById('cajaNroFacturaConfirm').value.trim();
+  if (!nroFacturaConfirm) {
+    toast('Confirmá el N° de factura encontrado en el sistema de facturación', 'warning');
+    return;
+  }
+  if (!confirm('¿Confirmás que verificaste esta factura en el sistema de facturación y que es válida? Esta acción aplicará el pago de inmediato.')) return;
+
+  const btn = document.getElementById('btnAprobarCaja');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0"></div>';
+
+  try {
+    const detalles = cajaActivo.detalles_pago_comprobante || [];
+    const inscripcionId = cajaActivo.inscripcion_id;
+
+    // 1. Marcar cuotas seleccionadas como Pagado
+    const cuotaIds = detalles.filter(d => d.concepto_tipo === 'CUOTA' && d.referencia_id).map(d => d.referencia_id);
+    if (cuotaIds.length) {
+      const { error: errCuotas } = await supabase
+        .from('cuotas_pagos')
+        .update({ estado_pago: 'Pagado', fecha_pago: new Date().toISOString() })
+        .in('id', cuotaIds);
+      if (errCuotas) throw new Error('Error al actualizar cuotas: ' + errCuotas.message);
+    }
+
+    // 2. Generar derecho de examen + historial para cada examen seleccionado
+    const examenes = detalles.filter(d => d.concepto_tipo === 'EXAMEN' && d.referencia_id);
+    for (const d of examenes) {
+      const { data: cal } = await supabase
+        .from('calendario_examenes')
+        .select('materia_id, oportunidad_nro')
+        .eq('id', d.referencia_id)
+        .single();
+      if (!cal) continue;
+
+      const { data: derechoRec, error: errDerecho } = await supabase
+        .from('derechos_examen')
+        .insert({
+          inscripcion_id: inscripcionId,
+          materia_id: cal.materia_id,
+          oportunidad_nro: cal.oportunidad_nro,
+          monto_pagado: d.monto_pactado || null,
+          estado: 'CONFIRMADO',
+        })
+        .select('id')
+        .single();
+      if (errDerecho) throw new Error('Error al generar derecho de examen: ' + errDerecho.message);
+
+      await supabase.from('historial_examenes').insert({
+        inscripcion_id: inscripcionId,
+        materia_id: cal.materia_id,
+        oportunidad_nro: cal.oportunidad_nro,
+        estado_materia: 'Cursando',
+        hab_academico: true,
+        hab_administrativo: true,
+        derecho_examen_id: derechoRec.id,
+      });
+    }
+
+    // 3. Marcar el comprobante como Aplicado
+    const { error: errComp } = await supabase
+      .from('comprobantes_pago')
+      .update({
+        estado_procesamiento: 'Aplicado',
+        nro_comprobante: nroFacturaConfirm,
+        procesado_por: sesion.id,
+        procesado_en: new Date().toISOString(),
+      })
+      .eq('id', cajaActivo.id);
+    if (errComp) throw new Error('Error al actualizar comprobante: ' + errComp.message);
+
+    toast('Pago en caja confirmado y aplicado correctamente', 'success');
+    cajaActivo = null;
+    document.getElementById('cajaProcEmpty').style.display = 'flex';
+    document.getElementById('cajaProcInner').style.display = 'none';
+    await Promise.all([cargarPagoCaja(), cargarKPICaja()]);
+
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Confirmar pago y aplicar`;
+  }
+});
+
+document.getElementById('btnRechazarCaja').addEventListener('click', async () => {
+  if (!cajaActivo) return;
+
+  const wrap = document.getElementById('cajaRechazoWrap');
+  if (wrap.style.display === 'none') {
+    wrap.style.display = 'block';
+    document.getElementById('cajaMotivoRechazo').focus();
+    return;
+  }
+
+  const motivo = document.getElementById('cajaMotivoRechazo').value.trim();
+  if (!motivo) { toast('Indicá el motivo del rechazo', 'warning'); return; }
+  if (!confirm('¿Rechazar este pago de caja? El alumno deberá volver a cargar su comprobante.')) return;
+
+  await supabase.from('comprobantes_pago').update({
+    estado_procesamiento: 'Rechazado',
+    motivo_rechazo: motivo,
+    procesado_por: sesion.id,
+    procesado_en: new Date().toISOString(),
+  }).eq('id', cajaActivo.id);
+
+  toast('Pago de caja rechazado', 'warning');
+  cajaActivo = null;
+  document.getElementById('cajaProcEmpty').style.display = 'flex';
+  document.getElementById('cajaProcInner').style.display = 'none';
+  await Promise.all([cargarPagoCaja(), cargarKPICaja()]);
+});
+
 // ── Reportes ──────────────────────────────────────────────────
 function hoy()       { return new Date().toISOString().slice(0,10); }
 function diasAtras(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); }
@@ -1612,243 +2020,6 @@ function tiempoRelativo(iso) {
   return `hace ${Math.floor(h/24)} días`;
 }
 
-// ── CORREGIR CUOTAS — inscripciones sin cuotas_pagos ──────────
-let ccItems = [];
-
-document.getElementById('btnBuscarSinCuotas').addEventListener('click', buscarInscripcionesSinCuotas);
-document.getElementById('btnGenerarTodas').addEventListener('click', generarCuotasTodas);
-
-async function buscarInscripcionesSinCuotas() {
-  const btn = document.getElementById('btnBuscarSinCuotas');
-  const statusEl = document.getElementById('ccStatusText');
-  btn.disabled = true;
-  statusEl.textContent = 'Buscando...';
-  document.getElementById('ccContent').innerHTML =
-    '<div style="text-align:center;padding:40px;color:var(--txt-muted)">Revisando inscripciones activas...</div>';
-
-  try {
-    // 1. Todas las inscripciones activas con su alumno y cohorte/carrera
-    const { data: inscs, error: errInsc } = await supabase
-      .from('inscripciones_anuales')
-      .select(`
-        id, alumno_id, cohorte_id, anho_cursada, anho_lectivo, fecha_inscripcion,
-        monto_cuota_base, monto_cuota_final, porcentaje_beca,
-        alumnos(nombres,apellidos,ci),
-        cohortes(nro_cohorte, anho_inicio, carrera_id, carreras(id,nombre))
-      `)
-      .eq('estado', 'Activo');
-
-    if (errInsc) throw errInsc;
-    if (!inscs?.length) {
-      ccItems = [];
-      renderCorregirCuotas();
-      statusEl.textContent = 'Sin inscripciones activas en el sistema.';
-      return;
-    }
-
-    // 2. Todas las cuotas existentes para esas inscripciones (para detectar cuáles ya tienen)
-    const inscIds = inscs.map(i => i.id);
-    const { data: cuotasExistentes, error: errCuotas } = await supabase
-      .from('cuotas_pagos')
-      .select('inscripcion_id')
-      .in('inscripcion_id', inscIds);
-
-    if (errCuotas) throw errCuotas;
-    const conCuotas = new Set((cuotasExistentes || []).map(c => c.inscripcion_id));
-
-    const sinCuotas = inscs.filter(i => !conCuotas.has(i.id));
-
-    if (!sinCuotas.length) {
-      ccItems = [];
-      renderCorregirCuotas();
-      statusEl.textContent = `Revisadas ${inscs.length} inscripciones activas. Todas tienen cuotas generadas.`;
-      return;
-    }
-
-    // 3. Traer configuracion_precios necesarias (carrera + año lectivo + año cursada)
-    const carrerasIds = [...new Set(sinCuotas.map(i => i.cohortes?.carrera_id).filter(Boolean))];
-    const { data: precios, error: errPrecios } = await supabase
-      .from('configuracion_precios')
-      .select('carrera_id,anho_lectivo,anho_cursada,monto_cuota_base,cantidad_cuotas')
-      .in('carrera_id', carrerasIds);
-
-    if (errPrecios) throw errPrecios;
-
-    const precioMap = {};
-    (precios || []).forEach(p => {
-      precioMap[`${p.carrera_id}_${p.anho_lectivo}_${p.anho_cursada}`] = p;
-    });
-
-    ccItems = sinCuotas.map(i => {
-      const carreraId = i.cohortes?.carrera_id;
-      const precio = precioMap[`${carreraId}_${i.anho_lectivo}_${i.anho_cursada}`];
-      const beca = Number(i.porcentaje_beca) || 0;
-      const montoBaseSugerido = precio?.monto_cuota_base ?? i.monto_cuota_base ?? 0;
-      const cantCuotasSugerida = precio?.cantidad_cuotas ?? 0;
-      const montoFinalSugerido = Math.round(montoBaseSugerido * (1 - beca / 100));
-      return {
-        inscripcion_id: i.id,
-        alumno: i.alumnos ? `${i.alumnos.nombres} ${i.alumnos.apellidos}` : '—',
-        ci: i.alumnos?.ci || '—',
-        carrera: i.cohortes?.carreras?.nombre || '—',
-        cohorte: i.cohortes ? `${i.cohortes.nro_cohorte}ª Cohorte ${i.cohortes.anho_inicio}` : '—',
-        anho_cursada: i.anho_cursada,
-        anho_lectivo: i.anho_lectivo,
-        fecha_inscripcion: i.fecha_inscripcion,
-        sin_precio_config: !precio,
-        monto_base: montoBaseSugerido,
-        monto_final: montoFinalSugerido,
-        porcentaje_beca: beca,
-        cant_cuotas: cantCuotasSugerida,
-      };
-    });
-
-    renderCorregirCuotas();
-    statusEl.textContent = `Revisadas ${inscs.length} inscripciones activas. ${sinCuotas.length} sin cuotas generadas.`;
-
-  } catch (err) {
-    console.error(err);
-    toast('Error al buscar: ' + err.message, 'error');
-    statusEl.textContent = '';
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-function renderCorregirCuotas() {
-  document.getElementById('tabCountCorregir').textContent = ccItems.length;
-  document.getElementById('btnGenerarTodas').style.display = ccItems.length ? '' : 'none';
-
-  if (!ccItems.length) {
-    document.getElementById('ccContent').innerHTML = `
-      <div class="cc-empty">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
-        <p>No se encontraron inscripciones activas sin cuotas.</p>
-      </div>`;
-    return;
-  }
-
-  document.getElementById('ccContent').innerHTML = ccItems.map((it, idx) => `
-    <div class="cc-card" id="ccCard_${idx}">
-      <div class="cc-info">
-        <div class="cc-nombre">${it.alumno} <span style="color:var(--txt-muted);font-weight:400">— CI ${it.ci}</span></div>
-        <div class="cc-meta">
-          <span>${it.carrera}</span>
-          <span>${it.cohorte}</span>
-          <span>Año cursada: ${it.anho_cursada}</span>
-          <span>Inscrito: ${formatFecha(it.fecha_inscripcion)}</span>
-        </div>
-        ${it.sin_precio_config ? `
-          <div class="cc-warn sin-precio">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            No se encontró configuración de precios para esta carrera/año/año-cursada. Revisá los valores antes de generar.
-          </div>` : ''}
-      </div>
-      <div class="cc-fields">
-        <div class="cc-field">
-          <label>Monto cuota</label>
-          <input type="number" id="ccMonto_${idx}" value="${it.monto_final}" min="0">
-        </div>
-        <div class="cc-field">
-          <label>Cant. cuotas</label>
-          <input type="number" class="short" id="ccCant_${idx}" value="${it.cant_cuotas}" min="1" max="100">
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="generarCuotasItem(${idx})">
-          Generar
-        </button>
-      </div>
-    </div>`).join('');
-}
-
-/**
- * Genera el array de cuotas a insertar para un ítem, basado en su fecha_inscripcion real.
- * Mismo criterio que admision.html (día 10, monto fijo por cuota) pero el mes de arranque
- * es el mes siguiente a la fecha de inscripción real del alumno (no la fecha de hoy).
- */
-function construirCuotas(inscripcionId, fechaInscripcionISO, montoBase, montoFinal, cantCuotas) {
-  const base = fechaInscripcionISO ? new Date(fechaInscripcionISO) : new Date();
-  return Array.from({ length: cantCuotas }, (_, i) => {
-    const venc = new Date(base.getFullYear(), base.getMonth() + 1 + i, 10);
-    return {
-      inscripcion_id:    inscripcionId,
-      nro_cuota:         i + 1,
-      fecha_vencimiento: venc.toISOString().split('T')[0],
-      monto_original:    montoBase,
-      monto_final:       montoFinal,
-      estado_pago:       'Pendiente',
-    };
-  });
-}
-
-window.generarCuotasItem = async (idx) => {
-  const it = ccItems[idx];
-  if (!it) return;
-  const card = document.getElementById(`ccCard_${idx}`);
-  const monto = Number(document.getElementById(`ccMonto_${idx}`).value);
-  const cant  = Number(document.getElementById(`ccCant_${idx}`).value);
-
-  if (!monto || !cant) { toast('Completá monto y cantidad de cuotas', 'warning'); return; }
-
-  card.classList.add('generando');
-  try {
-    const cuotas = construirCuotas(it.inscripcion_id, it.fecha_inscripcion, it.monto_base || monto, monto, cant);
-    const { error } = await supabase.from('cuotas_pagos').insert(cuotas);
-    if (error) throw error;
-
-    toast(`${cant} cuota${cant > 1 ? 's' : ''} generada${cant > 1 ? 's' : ''} para ${it.alumno}`, 'success');
-    ccItems.splice(idx, 1);
-    renderCorregirCuotas();
-  } catch (err) {
-    console.error(err);
-    toast('Error al generar: ' + err.message, 'error');
-    card.classList.remove('generando');
-  }
-};
-
-async function generarCuotasTodas() {
-  if (!ccItems.length) return;
-  if (!confirm(`¿Generar cuotas para las ${ccItems.length} inscripciones listadas? Se usarán los montos/cantidades mostrados en cada fila.`)) return;
-
-  const btn = document.getElementById('btnGenerarTodas');
-  btn.disabled = true;
-  btn.textContent = 'Generando...';
-
-  let okCount = 0;
-  let errCount = 0;
-
-  // Recorremos de atrás hacia adelante para poder ir removiendo de ccItems sin romper índices
-  for (let idx = ccItems.length - 1; idx >= 0; idx--) {
-    const it = ccItems[idx];
-    const montoInput = document.getElementById(`ccMonto_${idx}`);
-    const cantInput  = document.getElementById(`ccCant_${idx}`);
-    const monto = Number(montoInput?.value ?? it.monto_final);
-    const cant  = Number(cantInput?.value ?? it.cant_cuotas);
-
-    if (!monto || !cant) { errCount++; continue; }
-
-    try {
-      const cuotas = construirCuotas(it.inscripcion_id, it.fecha_inscripcion, it.monto_base || monto, monto, cant);
-      const { error } = await supabase.from('cuotas_pagos').insert(cuotas);
-      if (error) throw error;
-      ccItems.splice(idx, 1);
-      okCount++;
-    } catch (err) {
-      console.error(err);
-      errCount++;
-    }
-  }
-
-  renderCorregirCuotas();
-  btn.disabled = false;
-  btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Generar cuotas para todas`;
-
-  if (errCount === 0) {
-    toast(`Cuotas generadas para ${okCount} inscripciones`, 'success');
-  } else {
-    toast(`${okCount} generadas correctamente, ${errCount} con error o sin datos válidos`, 'warning');
-  }
-}
-
 // ── Supabase Realtime ─────────────────────────────────────────
 supabase.channel('caja-rt')
   .on('postgres_changes',{ event:'INSERT', schema:'public', table:'comprobantes_pago' }, async (payload) => {
@@ -1857,10 +2028,10 @@ supabase.channel('caja-rt')
     notif.className = 'rt-notify';
     notif.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       <div><div style="font-size:.78rem;opacity:.8">Nuevo comprobante recibido</div><div>${formatGs(nuevo.monto_detectado)}</div></div>`;
-    notif.onclick = async () => { notif.remove(); await Promise.all([cargarCola(),cargarKPIs()]); };
+    notif.onclick = async () => { notif.remove(); await Promise.all([cargarCola(),cargarKPIs(),cargarKPICaja()]); };
     document.body.appendChild(notif);
     setTimeout(()=>notif.remove(), 7000);
-    await Promise.all([cargarCola(), cargarKPIs()]);
+    await Promise.all([cargarCola(), cargarKPIs(), cargarKPICaja()]);
   })
   .subscribe(status => {
     const el = document.getElementById('rtStatus');
