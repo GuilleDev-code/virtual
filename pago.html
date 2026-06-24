@@ -2134,31 +2134,15 @@
                                     estado: 'EN VERIFICACION',
                                 });
                             } else {
-                                const derechoRec = await sbPost('derechos_examen', {
+                                await sbPost('derechos_examen', {
                                     inscripcion_id: state.inscripcionSel.id,
                                     materia_id: cal.materia_id,
                                     oportunidad_nro: cal.oportunidad_nro,
                                     monto_pagado: item.monto || null,
                                     estado: 'EN VERIFICACION',
                                 });
-                                derechoId = derechoRec[0]?.id || null;
                             }
 
-                            if (derechoId) {
-                                // Evitar también duplicar el historial si ya existe uno para ese derecho
-                                const histExistente = await sbGet('historial_examenes',
-                                    `?derecho_examen_id=eq.${derechoId}&select=id`);
-                                if (!histExistente.length) {
-                                    await sbPost('historial_examenes', {
-                                        inscripcion_id: state.inscripcionSel.id,
-                                        materia_id: cal.materia_id,
-                                        oportunidad_nro: cal.oportunidad_nro,
-                                        estado_materia: 'Cursando',
-                                        hab_academico: false,
-                                        hab_administrativo: false
-                                    });
-                                }
-                            }
                         }
                     }
                 }
