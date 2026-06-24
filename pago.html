@@ -1763,13 +1763,13 @@
         <div class="form-field" style="margin-bottom:0">
           <label class="form-label">Foto del comprobante</label>
           <div class="upload-zone" id="uploadZone">
-            <input type="file" id="fileInput" accept="image/*,application/pdf"
+            <input type="file" id="fileInput" accept="image/*"
               capture="environment" onchange="onFileChange(event)">
             <div class="upload-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </div>
             <div class="upload-title">Subir comprobante</div>
-            <div class="upload-sub">Foto o captura de pantalla del pago · JPG, PNG, PDF</div>
+            <div class="upload-sub">Foto o captura de pantalla del pago · JPG, PNG</div>
           </div>
           <div class="upload-preview" id="uploadPreview">
             <img id="previewImg" src="" alt="Comprobante">
@@ -1838,13 +1838,13 @@
         <div class="form-field" style="margin-bottom:0">
           <label class="form-label">Captura del comprobante QR</label>
           <div class="upload-zone" id="uploadZone">
-            <input type="file" id="fileInput" accept="image/*,application/pdf"
+            <input type="file" id="fileInput" accept="image/*"
               capture="environment" onchange="onFileChange(event)">
             <div class="upload-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </div>
             <div class="upload-title">Subir captura</div>
-            <div class="upload-sub">Foto o captura del comprobante · JPG, PNG, PDF</div>
+            <div class="upload-sub">Foto o captura del comprobante · JPG, PNG</div>
           </div>
           <div class="upload-preview" id="uploadPreview">
             <img id="previewImg" src="" alt="Comprobante QR">
@@ -1943,13 +1943,13 @@
         <div class="form-field" style="margin-bottom:0">
           <label class="form-label">Foto de la factura</label>
           <div class="upload-zone" id="uploadZone">
-            <input type="file" id="fileInput" accept="image/*,application/pdf"
+            <input type="file" id="fileInput" accept="image/*"
               capture="environment" onchange="onFileChange(event)">
             <div class="upload-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </div>
             <div class="upload-title">Subir factura</div>
-            <div class="upload-sub">Foto de la factura de caja · JPG, PNG, PDF</div>
+            <div class="upload-sub">Foto de la factura de caja · JPG, PNG</div>
           </div>
           <div class="upload-preview" id="uploadPreview">
             <img id="previewImg" src="" alt="factura">
@@ -2060,6 +2060,23 @@
                 }
 
                 // 2. Insertar comprobante directamente en Supabase (sin n8n, sin análisis IA)
+
+                // Guard anti-duplicado: si en los últimos 2 minutos ya se registró un
+                // comprobante de caja con la misma cédula y el mismo monto, no insertar de nuevo
+                const montoTotal = state.seleccion.reduce((s, x) => s + (x.monto || 0), 0);
+                const dosMinAtras = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+                const recientes = await sbGet('comprobantes_pago',
+                    `?ci_remitente=eq.${state.alumno.ci}` +
+                    `&tipo_pago=eq.caja` +
+                    `&monto_detectado=eq.${montoTotal}` +
+                    `&recibido_en=gte.${dosMinAtras}` +
+                    `&select=id`);
+
+                if (recientes.length) {
+                    renderExito();
+                    return;
+                }
+
                 const compRec = await sbPost('comprobantes_pago', {
                     inscripcion_id: state.inscripcionSel.id,
                     telefono_remitente: state.telefono,
@@ -2069,6 +2086,7 @@
                     banco_origen: 'CAJA',
                     banco_receptor: null,
                     tipo_pago: 'caja',
+                    canal:'Portal',
                     nro_comprobante: null,
                     estado_procesamiento: 'En Verificación',
                     recibido_en: new Date().toISOString(),
@@ -2097,24 +2115,50 @@
                             `?id=eq.${item.id}&select=materia_id,oportunidad_nro`);
                         const cal = calRows[0];
                         if (cal) {
-                            const derechoRec = await sbPost('derechos_examen', {
-                                inscripcion_id: state.inscripcionSel.id,
-                                materia_id: cal.materia_id,
-                                oportunidad_nro: cal.oportunidad_nro,
-                                monto_pagado: item.monto || null,
-                                estado: 'EN VERIFICACION',
-                            });
-                            const derechoId = derechoRec[0]?.id;
+                            // Verificar si ya existe un derecho para esta combinación
+                            // (inscripcion_id, materia_id, oportunidad_nro) antes de insertar,
+                            // ya que la tabla tiene una restricción única sobre esos campos.
+                            // Esto evita el error 409 cuando el alumno reintenta el envío.
+                            const existentes = await sbGet('derechos_examen',
+                                `?inscripcion_id=eq.${state.inscripcionSel.id}` +
+                                `&materia_id=eq.${cal.materia_id}` +
+                                `&oportunidad_nro=eq.${cal.oportunidad_nro}` +
+                                `&select=id,estado`);
+
+                            let derechoId = existentes[0]?.id || null;
+
                             if (derechoId) {
-                                await sbPost('historial_examenes', {
+                                // Ya existe: solo actualizamos monto y estado, no insertamos de nuevo
+                                await sbPatch('derechos_examen', `?id=eq.${derechoId}`, {
+                                    monto_pagado: item.monto || null,
+                                    estado: 'EN VERIFICACION',
+                                });
+                            } else {
+                                const derechoRec = await sbPost('derechos_examen', {
                                     inscripcion_id: state.inscripcionSel.id,
                                     materia_id: cal.materia_id,
                                     oportunidad_nro: cal.oportunidad_nro,
-                                    estado_materia: 'Cursando',
-                                    hab_academico: false,
-                                    hab_administrativo: false,
-                                    derecho_examen_id: derechoId,
+                                    monto_pagado: item.monto || null,
+                                    estado: 'EN VERIFICACION',
                                 });
+                                derechoId = derechoRec[0]?.id || null;
+                            }
+
+                            if (derechoId) {
+                                // Evitar también duplicar el historial si ya existe uno para ese derecho
+                                const histExistente = await sbGet('historial_examenes',
+                                    `?derecho_examen_id=eq.${derechoId}&select=id`);
+                                if (!histExistente.length) {
+                                    await sbPost('historial_examenes', {
+                                        inscripcion_id: state.inscripcionSel.id,
+                                        materia_id: cal.materia_id,
+                                        oportunidad_nro: cal.oportunidad_nro,
+                                        estado_materia: 'Cursando',
+                                        hab_academico: false,
+                                        hab_administrativo: false,
+                                        derecho_examen_id: derechoId,
+                                    });
+                                }
                             }
                         }
                     }
@@ -2133,6 +2177,15 @@
         window.onFileChange = (e) => {
             const file = e.target.files[0];
             if (!file) return;
+
+            // Solo se aceptan imágenes — algunos navegadores permiten elegir
+            // "todos los archivos" incluso con el atributo accept restringido
+            if (!file.type.startsWith('image/')) {
+                alert('Por favor, subí una foto del comprobante (JPG o PNG). No se aceptan archivos PDF.');
+                e.target.value = '';
+                return;
+            }
+
             state.archivoFile = file;
 
             const zone = document.getElementById('uploadZone');
@@ -2144,15 +2197,9 @@
             preview.classList.add('show');
             name.textContent = file.name;
 
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = ev => { img.src = ev.target.result; };
-                reader.readAsDataURL(file);
-            } else {
-                img.src = '';
-                img.style.display = 'none';
-                preview.style.padding = '14px';
-            }
+            const reader = new FileReader();
+            reader.onload = ev => { img.src = ev.target.result; };
+            reader.readAsDataURL(file);
 
             checkBtnConfirmar();
         };

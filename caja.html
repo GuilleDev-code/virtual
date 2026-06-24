@@ -6,6 +6,7 @@
   <title>Caja — Sistema UPG</title>
   <link rel="stylesheet" href="assets/styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link rel="icon" type="image/png" href="assets/logo.png">
   <style>
     /* ── Layout idéntico a Appsmith ─────────────────────────── */
@@ -45,8 +46,8 @@
       padding: 1px 6px; border-radius: 999px; min-width: 18px; text-align: center;
     }
 
-    .tab-content { flex: 1; overflow: hidden; }
-    .tab-pane { display: none; height: 100%; }
+    .tab-content { flex: 1; overflow: hidden; min-width: 0; }
+    .tab-pane { display: none; height: 100%; min-width: 0; overflow: hidden; }
     .tab-pane.active { display: flex; }
 
     /* ── Cola de pendientes ─────────────────────────────────── */
@@ -159,8 +160,68 @@
     .btn-anular-comp:hover { background: var(--danger); color: #fff; }
 
     /* ── En Verificación ────────────────────────────────────── */
-    .verif-layout { flex-direction: column; padding: 16px 24px; overflow-y: auto; gap: 14px; }
+    .verif-layout { flex-direction: column; padding: 16px 24px; overflow-y: auto; gap: 14px; max-width: 100%; min-width: 0; }
     .verif-toolbar { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+    /* Forzamos el scroll horizontal a quedar contenido dentro del wrapper
+       en vez de empujar el ancho de toda la página */
+    #tab-verif .table-wrapper,
+    #tab-anular .table-wrapper {
+      overflow-x: auto;
+      max-width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    #tblVerif, #tblAnular {
+      width: max-content;
+      min-width: 100%;
+    }
+    #tblVerif th, #tblVerif td,
+    #tblAnular th, #tblAnular td {
+      white-space: nowrap;
+      padding: 8px 10px;
+      font-size: .82rem;
+    }
+    #tblVerif th, #tblAnular th {
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      z-index: 1;
+    }
+
+    .canal-chips { display: flex; gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
+    .canal-chip {
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--txt-secondary);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: .8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .canal-chip:hover { border-color: var(--verde); color: var(--verde); }
+    .canal-chip.active { background: var(--verde); border-color: var(--verde); color: #fff; }
+    .canal-chip .chip-count {
+      background: rgba(0,0,0,.08);
+      border-radius: 999px;
+      padding: 1px 7px;
+      font-size: .7rem;
+    }
+    .canal-chip.active .chip-count { background: rgba(255,255,255,.25); }
+
+    .td-img-mini {
+      width: 38px; height: 38px; border-radius: 6px; object-fit: cover;
+      cursor: pointer; border: 1px solid var(--border); display: block;
+    }
+    .td-img-mini.empty {
+      width: 38px; height: 38px; border-radius: 6px; border: 1px dashed var(--border);
+      display: flex; align-items: center; justify-content: center; color: var(--txt-muted); font-size: .65rem;
+    }
     .search-input-wrap { position: relative; flex: 1; max-width: 280px; }
     .search-input-wrap svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--txt-muted); pointer-events: none; }
     .search-input-wrap input { padding-left: 30px; }
@@ -276,6 +337,7 @@
           Cola de Pendientes <span class="tab-count" id="tabCountCola">0</span>
         </button>
         <button class="caja-tab" data-tab="verif">En verificación</button>
+        <button class="caja-tab" data-tab="anular">Anular / Editar</button>
         <button class="caja-tab" data-tab="pagocaja">
           Pago en Caja <span class="tab-count" id="tabCountCaja">0</span>
         </button>
@@ -469,6 +531,11 @@
         <!-- ── EN VERIFICACIÓN ───────────────────────────── -->
         <div class="tab-pane" id="tab-verif">
           <div class="verif-layout">
+            <div class="canal-chips" id="canalChips">
+              <button class="canal-chip active" data-canal="todos">Todos <span class="chip-count" id="chipCountTodos">0</span></button>
+              <button class="canal-chip" data-canal="WhatsApp">WhatsApp <span class="chip-count" id="chipCountWhatsApp">0</span></button>
+              <button class="canal-chip" data-canal="Portal">Portal <span class="chip-count" id="chipCountPortal">0</span></button>
+            </div>
             <div class="verif-toolbar">
               <div class="search-input-wrap">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -476,6 +543,10 @@
               </div>
               <span id="verifCount" style="font-size:.8rem;color:var(--txt-muted)">0 Records</span>
               <div style="margin-left:auto;display:flex;gap:8px">
+                <button class="btn btn-ghost btn-sm" id="btnDescargarZip">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Descargar imágenes (ZIP)
+                </button>
                 <button class="btn btn-ghost btn-sm" id="btnActualizarVerif">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                   Actualizar
@@ -491,6 +562,8 @@
                 <thead>
                   <tr>
                     <th>Nº</th>
+                    <th>Img</th>
+                    <th>CANAL</th>
                     <th>ENTIDAD BANCARIA BENEFICIARIA</th>
                     <th>Nº DE CUENTA BANCARIA</th>
                     <th>TITULAR DE LA CUENTA</th>
@@ -506,9 +579,84 @@
                   </tr>
                 </thead>
                 <tbody id="tbodyVerif">
-                  <tr><td colspan="13" class="text-center" style="padding:32px;color:var(--txt-muted)">Cargando...</td></tr>
+                  <tr><td colspan="15" class="text-center" style="padding:32px;color:var(--txt-muted)">Cargando...</td></tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── ANULAR / EDITAR ────────────────────────────── -->
+        <div class="tab-pane" id="tab-anular">
+          <div class="verif-layout">
+            <div class="verif-toolbar">
+              <div class="search-input-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" class="form-control" id="searchAnular" placeholder="Search...">
+              </div>
+              <span id="anularCount" style="font-size:.8rem;color:var(--txt-muted)">0 Records</span>
+              <div style="margin-left:auto;display:flex;gap:8px">
+                <button class="btn btn-ghost btn-sm" id="btnActualizarAnular">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  Actualizar
+                </button>
+              </div>
+            </div>
+            <p style="font-size:.78rem;color:var(--txt-muted);margin:0 0 4px">
+              Listado completo (todos los canales) de pagos "En Verificación". Usá esto para corregir cargas duplicadas o datos erróneos del alumno antes de que entren a una tanda.
+            </p>
+            <div class="table-wrapper">
+              <table id="tblAnular">
+                <thead>
+                  <tr>
+                    <th>Nº</th>
+                    <th>Img</th>
+                    <th>CANAL</th>
+                    <th>FECHA</th>
+                    <th>ALUMNO</th>
+                    <th>CÉDULA</th>
+                    <th class="text-right">MONTO</th>
+                    <th>Nº COMPROBANTE</th>
+                    <th>OBSERVACIÓN</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyAnular">
+                  <tr><td colspan="10" class="text-center" style="padding:32px;color:var(--txt-muted)">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal editar comprobante -->
+        <div class="modal-overlay" id="modalEditarOverlay">
+          <div class="modal-box" style="max-width:480px">
+            <div class="modal-header">
+              <span class="modal-title">Editar comprobante</span>
+              <button class="modal-close" id="btnCerrarEditar">&times;</button>
+            </div>
+            <div class="modal-body" style="display:flex;flex-direction:column;gap:12px;text-align:left">
+              <div>
+                <label class="form-label">Monto</label>
+                <input type="number" class="form-control" id="editMonto">
+              </div>
+              <div>
+                <label class="form-label">Nº de comprobante</label>
+                <input type="text" class="form-control" id="editNroComprobante">
+              </div>
+              <div>
+                <label class="form-label">Cédula del remitente</label>
+                <input type="text" class="form-control" id="editCedula">
+              </div>
+              <div>
+                <label class="form-label">Teléfono del remitente</label>
+                <input type="text" class="form-control" id="editTelefono">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-ghost btn-sm" id="btnCancelarEditar">Cancelar</button>
+              <button class="btn btn-primary btn-sm" id="btnGuardarEditar">Guardar cambios</button>
             </div>
           </div>
         </div>
@@ -704,6 +852,7 @@ document.querySelectorAll('.caja-tab').forEach(btn => {
     if (btn.dataset.tab === 'verif')   cargarVerif();
     if (btn.dataset.tab === 'tandas')  cargarTandas();
     if (btn.dataset.tab === 'pagocaja') cargarPagoCaja();
+    if (btn.dataset.tab === 'anular')  cargarAnular();
   });
 });
 
@@ -1181,12 +1330,15 @@ document.getElementById('btnAnular').addEventListener('click', async () => {
 });
 
 // ── En verificación ───────────────────────────────────────────
+let canalActivo = 'todos';
+
 async function cargarVerif() {
   // Capturamos el 'error' que devuelve Supabase
   const { data, error } = await supabase
     .from('comprobantes_pago')
     .select(`
       id, titular_cuenta, monto_detectado, recibido_en, banco_origen, nro_comprobante,
+      canal, imagen_url, tipo_pago,
       cuentas_bancarias(entidad, nombre),
       alumnos:ci_remitente(nombres, apellidos, ci),
       telefono_remitente,
@@ -1195,6 +1347,7 @@ async function cargarVerif() {
     `)
     .eq('estado_procesamiento','En Verificación')
     .is('tanda_id', null)
+    .or('tipo_pago.is.null,tipo_pago.neq.caja')
     .order('recibido_en');
 
   // ¡ESTO TE VA A DECIR EL MOTIVO REAL!
@@ -1204,14 +1357,33 @@ async function cargarVerif() {
   }
 
   verifData = data || [];
-  document.getElementById('verifCount').textContent = verifData.length + ' Records';
-  renderVerif(verifData);
+
+  // Contadores por canal para los chips
+  document.getElementById('chipCountTodos').textContent    = verifData.length;
+  document.getElementById('chipCountWhatsApp').textContent = verifData.filter(r => r.canal === 'WhatsApp').length;
+  document.getElementById('chipCountPortal').textContent   = verifData.filter(r => r.canal === 'Portal').length;
+
+  aplicarFiltroVerif();
+}
+
+function getVerifFiltrado() {
+  let items = verifData;
+  if (canalActivo !== 'todos') items = items.filter(r => r.canal === canalActivo);
+  const q = document.getElementById('searchVerif').value.toLowerCase();
+  if (q) items = items.filter(r => JSON.stringify(r).toLowerCase().includes(q));
+  return items;
+}
+
+function aplicarFiltroVerif() {
+  const items = getVerifFiltrado();
+  document.getElementById('verifCount').textContent = items.length + ' Records';
+  renderVerif(items);
 }
 
 function renderVerif(items) {
   const tbody = document.getElementById('tbodyVerif');
   if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="13" class="text-center" style="padding:32px;color:var(--txt-muted)">Sin registros en verificación</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="15" class="text-center" style="padding:32px;color:var(--txt-muted)">Sin registros en verificación</td></tr>`;
     return;
   }
   tbody.innerHTML = items.map((r,i) => {
@@ -1220,8 +1392,16 @@ function renderVerif(items) {
     const carr = r.inscripciones_anuales?.cohortes?.carreras?.nombre || '—';
     // alumnos join por ci_remitente puede ser array
     const al = Array.isArray(r.alumnos) ? r.alumnos[0] : r.alumnos;
+    const canalBadge = r.canal === 'Portal'
+      ? '<span class="badge badge-info" style="font-size:.65rem">Portal</span>'
+      : '<span class="badge badge-success" style="font-size:.65rem">WhatsApp</span>';
+    const imgCell = r.imagen_url
+      ? `<img src="${r.imagen_url}" class="td-img-mini" onclick="abrirImagenVerif('${r.imagen_url}')">`
+      : `<span class="td-img-mini empty">—</span>`;
     return `<tr>
       <td class="td-mono">${i+1}</td>
+      <td>${imgCell}</td>
+      <td>${canalBadge}</td>
       <td>${cb?.entidad||'—'}</td>
       <td class="td-mono" style="font-size:.75rem">${cb?.nombre||'—'}</td>
       <td>${r.titular_cuenta||'—'}</td>
@@ -1238,36 +1418,88 @@ function renderVerif(items) {
   }).join('');
 }
 
-// Búsqueda en tabla verificación
-document.getElementById('searchVerif').addEventListener('input', (e) => {
-  const q = e.target.value.toLowerCase();
-  const filtrado = q ? verifData.filter(r => JSON.stringify(r).toLowerCase().includes(q)) : verifData;
-  renderVerif(filtrado);
-  document.getElementById('verifCount').textContent = filtrado.length + ' Records';
+window.abrirImagenVerif = (url) => {
+  document.getElementById('modalImgBody').innerHTML = `<img src="${url}" alt="Comprobante">`;
+  document.getElementById('modalImgOverlay').classList.add('open');
+};
+
+// Chips de canal
+document.querySelectorAll('#canalChips .canal-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('#canalChips .canal-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    canalActivo = chip.dataset.canal;
+    aplicarFiltroVerif();
+  });
 });
+
+// Búsqueda en tabla verificación
+document.getElementById('searchVerif').addEventListener('input', aplicarFiltroVerif);
 
 document.getElementById('btnActualizarVerif').addEventListener('click', cargarVerif);
 
+// ── Descargar imágenes en ZIP ──────────────────────────────────
+document.getElementById('btnDescargarZip').addEventListener('click', async () => {
+  const items = getVerifFiltrado().filter(r => r.imagen_url);
+  if (!items.length) { toast('No hay imágenes para descargar en esta vista', 'warning'); return; }
+
+  const btn = document.getElementById('btnDescargarZip');
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;margin:0"></div> Empaquetando...';
+
+  try {
+    const zip = new JSZip();
+    await Promise.all(items.map(async (r, idx) => {
+      try {
+        const resp = await fetch(r.imagen_url);
+        const blob = await resp.blob();
+        const ext = (r.imagen_url.split('.').pop() || 'jpg').split('?')[0].slice(0,4);
+        const al = Array.isArray(r.alumnos) ? r.alumnos[0] : r.alumnos;
+        const nombreArchivo = `${idx+1}_${(al?.ci||r.ci_remitente||'sinci')}_${r.id}.${ext}`;
+        zip.file(nombreArchivo, blob);
+      } catch (e) {
+        console.warn('No se pudo descargar imagen', r.id, e);
+      }
+    }));
+    const blobZip = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blobZip);
+    a.download = `comprobantes_${canalActivo}_${new Date().toISOString().slice(0,10)}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast('Imágenes descargadas', 'success');
+  } catch (e) {
+    toast('Error al generar el ZIP: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+});
+
 // ── Generar planilla (Excel) ──────────────────────────────────
 document.getElementById('btnGenerarPlanilla').addEventListener('click', async () => {
-  if (!verifData.length) { toast('Sin datos en la tabla','warning'); return; }
-  if (!confirm(`¿Generar tanda y descargar planilla con ${verifData.length} registros?`)) return;
+  const itemsPlanilla = getVerifFiltrado();
+  if (!itemsPlanilla.length) { toast('Sin datos en la tabla','warning'); return; }
+  const etiquetaCanal = canalActivo === 'todos' ? 'todos los canales' : canalActivo;
+  if (!confirm(`¿Generar tanda y descargar planilla con ${itemsPlanilla.length} registros (${etiquetaCanal})?`)) return;
 
   try {
     // 1. Crear tanda
     const { data: tanda } = await supabase
       .from('tandas_tesoreria')
-      .insert({ fecha_envio: new Date().toISOString(), enviado_por: sesion.id, total_registros: verifData.length, estado: 'ENVIADO' })
+      .insert({ fecha_envio: new Date().toISOString(), enviado_por: sesion.id, total_registros: itemsPlanilla.length, estado: 'ENVIADO' })
       .select().single();
 
     // 2. Vincular comprobantes
-    const ids = verifData.map(r => r.id);
+    const ids = itemsPlanilla.map(r => r.id);
     await supabase.from('comprobantes_pago')
       .update({ tanda_id: tanda.id, estado_tesoreria: 'Enviado a Tesorería' })
       .in('id', ids);
 
     // 3. Preparar datos para Excel (mismas columnas que Appsmith)
-    const rows = verifData.map((r, i) => {
+    const rows = itemsPlanilla.map((r, i) => {
       const cb = r.cuentas_bancarias;
       const al = Array.isArray(r.alumnos) ? r.alumnos[0] : r.alumnos;
       const obs = r.detalles_pago_comprobante?.map(d=>d.concepto_tipo).join(' y ') || '';
@@ -1823,6 +2055,137 @@ document.getElementById('btnRechazarCaja').addEventListener('click', async () =>
   document.getElementById('cajaProcEmpty').style.display = 'flex';
   document.getElementById('cajaProcInner').style.display = 'none';
   await Promise.all([cargarPagoCaja(), cargarKPICaja()]);
+});
+
+// ── Anular / Editar ──────────────────────────────────────────
+let anularData   = [];
+let anularActivoId = null;
+
+async function cargarAnular() {
+  const { data, error } = await supabase
+    .from('comprobantes_pago')
+    .select(`
+      id, titular_cuenta, monto_detectado, recibido_en, nro_comprobante,
+      canal, imagen_url, ci_remitente, telefono_remitente,
+      alumnos:ci_remitente(nombres, apellidos, ci),
+      detalles_pago_comprobante(concepto_tipo)
+    `)
+    .eq('estado_procesamiento', 'En Verificación')
+    .order('recibido_en', { ascending: false });
+
+  if (error) {
+    console.error('Error cargando Anular/Editar:', error.message);
+    return;
+  }
+
+  anularData = data || [];
+  aplicarFiltroAnular();
+}
+
+function aplicarFiltroAnular() {
+  const q = document.getElementById('searchAnular').value.toLowerCase();
+  const items = q ? anularData.filter(r => JSON.stringify(r).toLowerCase().includes(q)) : anularData;
+  document.getElementById('anularCount').textContent = items.length + ' Records';
+  renderAnular(items);
+}
+
+function renderAnular(items) {
+  const tbody = document.getElementById('tbodyAnular');
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center" style="padding:32px;color:var(--txt-muted)">Sin registros en verificación</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = items.map((r, i) => {
+    const al = Array.isArray(r.alumnos) ? r.alumnos[0] : r.alumnos;
+    const obs = r.detalles_pago_comprobante?.map(d => d.concepto_tipo).join(' y ') || '—';
+    const canalBadge = r.canal === 'Portal'
+      ? '<span class="badge badge-info" style="font-size:.65rem">Portal</span>'
+      : '<span class="badge badge-success" style="font-size:.65rem">WhatsApp</span>';
+    const imgCell = r.imagen_url
+      ? `<img src="${r.imagen_url}" class="td-img-mini" onclick="abrirImagenVerif('${r.imagen_url}')">`
+      : `<span class="td-img-mini empty">—</span>`;
+    return `<tr>
+      <td class="td-mono">${i+1}</td>
+      <td>${imgCell}</td>
+      <td>${canalBadge}</td>
+      <td class="td-mono" style="font-size:.78rem">${r.recibido_en ? new Date(r.recibido_en).toLocaleString('es-PY') : '—'}</td>
+      <td>${al ? al.nombres+' '+al.apellidos : (r.titular_cuenta || '—')}</td>
+      <td class="td-mono">${al?.ci || r.ci_remitente || '—'}</td>
+      <td class="text-right td-mono">${formatGs(r.monto_detectado)}</td>
+      <td class="td-mono" style="font-size:.75rem">${r.nro_comprobante || '—'}</td>
+      <td>${obs}</td>
+      <td style="white-space:nowrap;display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="abrirEditar(${r.id})" title="Editar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn btn-anular-comp btn-sm" style="width:auto" onclick="anularComprobante(${r.id})" title="Anular">
+          Anular
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('searchAnular').addEventListener('input', aplicarFiltroAnular);
+document.getElementById('btnActualizarAnular').addEventListener('click', cargarAnular);
+
+window.anularComprobante = async (id) => {
+  const motivo = prompt('Motivo de la anulación (ej: carga duplicada, error del alumno):');
+  if (motivo === null) return; // cancelado
+  if (!motivo.trim()) { toast('Tenés que indicar un motivo', 'warning'); return; }
+  if (!confirm('¿Anular este comprobante? El alumno deberá volver a cargarlo si corresponde.')) return;
+
+  const { error } = await supabase.from('comprobantes_pago').update({
+    estado_procesamiento: 'Rechazado',
+    motivo_rechazo: motivo.trim(),
+    procesado_por: sesion.id,
+    procesado_en: new Date().toISOString(),
+  }).eq('id', id);
+
+  if (error) { toast('Error al anular: ' + error.message, 'error'); return; }
+  toast('Comprobante anulado', 'success');
+  await Promise.all([cargarAnular(), cargarVerif(), cargarKPIs(), cargarKPICaja()]);
+};
+
+window.abrirEditar = (id) => {
+  const r = anularData.find(x => x.id === id);
+  if (!r) return;
+  anularActivoId = id;
+  document.getElementById('editMonto').value = r.monto_detectado || '';
+  document.getElementById('editNroComprobante').value = r.nro_comprobante || '';
+  document.getElementById('editCedula').value = r.ci_remitente || '';
+  document.getElementById('editTelefono').value = r.telefono_remitente || '';
+  document.getElementById('modalEditarOverlay').classList.add('open');
+};
+
+document.getElementById('btnCerrarEditar').addEventListener('click', () => {
+  document.getElementById('modalEditarOverlay').classList.remove('open');
+});
+document.getElementById('btnCancelarEditar').addEventListener('click', () => {
+  document.getElementById('modalEditarOverlay').classList.remove('open');
+});
+
+document.getElementById('btnGuardarEditar').addEventListener('click', async () => {
+  if (!anularActivoId) return;
+
+  const monto = Number(document.getElementById('editMonto').value) || null;
+  const nro   = document.getElementById('editNroComprobante').value.trim() || null;
+  const ci    = document.getElementById('editCedula').value.trim() || null;
+  const tel   = document.getElementById('editTelefono').value.trim() || null;
+
+  const { error } = await supabase.from('comprobantes_pago').update({
+    monto_detectado: monto,
+    nro_comprobante: nro,
+    ci_remitente: ci,
+    telefono_remitente: tel,
+  }).eq('id', anularActivoId);
+
+  if (error) { toast('Error al guardar: ' + error.message, 'error'); return; }
+
+  toast('Comprobante actualizado', 'success');
+  document.getElementById('modalEditarOverlay').classList.remove('open');
+  anularActivoId = null;
+  await Promise.all([cargarAnular(), cargarVerif()]);
 });
 
 // ── Reportes ──────────────────────────────────────────────────
