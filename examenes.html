@@ -468,7 +468,6 @@ async function cargarLista() {
     .eq('cohorte_id', cohorteIdCal)
     .in('inscripcion_id', inscIds);
   console.log(histPrev)
-
   const histMap = {};
   (histPrev||[]).forEach(h => { histMap[h.inscripcion_id] = h; });
 

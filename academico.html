@@ -2959,6 +2959,7 @@
     };
 
     // ── Guardar planilla (upsert historial_examenes) ──────────────
+// ── Guardar planilla (upsert historial_examenes) ──────────────
     document.getElementById('btnGuardarHab').addEventListener('click', async () => {
       const sucios = habPlanilla.filter(r => r._dirty);
       if (!sucios.length) { toast('Sin cambios para guardar', 'info'); return; }
@@ -2976,11 +2977,15 @@
           // Cálculo de nota basándonos en tus reglas
           const nota = (cp !== null && ce !== null) ? (cp + ce) / 2 : (r.nota_obtenida !== undefined ? r.nota_obtenida : null);
           const est = 'Cursando';
+          const cohorteIdHab = document.getElementById('filtroCohorteHab').value;
 
-          const item = {
+          // 💡 SE REMOVIÓ EL BLOQUE QUE INYECTABA item.id
+          // Dejamos que Supabase haga el match exclusivamente usando el onConflict
+          return {
             inscripcion_id: parseInt(r.inscripcion_id),
             materia_id: parseInt(r.materia_id),
             oportunidad_nro: parseInt(r.oportunidad_nro),
+            cohorte_id: cohorteIdHab,
             calif_proceso: cp,
             calif_examen_final: ce,
             nota_obtenida: nota,
@@ -2989,13 +2994,6 @@
             registrado_por: sesion.id
             // Omitimos fecha_registro para que use el CURRENT_TIMESTAMP por defecto de tu BD
           };
-
-          // Si ya conocemos el ID primario, se lo incluimos para asegurar el matching rápido
-          if (r.historial_id !== undefined && r.historial_id !== null && r.historial_id !== '') {
-            item.id = Number(r.historial_id); // Nos aseguramos de que sea un número y no un string o null
-          }
-
-          return item;
         });
 
         // 2. EJECUTAMOS EL UPSERT MASIVO EN UNA SOLA OPERACIÓN
@@ -3018,7 +3016,7 @@
               r.oportunidad_nro === ins.oportunidad_nro
             );
             if (registroLocal) {
-              registroLocal.historial_id = ins.id; // Guardamos el ID autogenerado
+              registroLocal.historial_id = ins.id; // Guardamos el ID real devuelto por la BD
             }
           });
         }

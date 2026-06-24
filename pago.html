@@ -1940,25 +1940,25 @@
           <div class="form-hint">Acá te enviamos la confirmación de tu pago. Verifica que tu numero sea el correcto, si esta mal podes cambiar sin problemas</div>
         </div>
 
-        <div class="form-field" style="margin-bottom:0">
-          <label class="form-label">Foto de la factura</label>
-          <div class="upload-zone" id="uploadZone">
-            <input type="file" id="fileInput" accept="image/*"
-             onchange="onFileChange(event)">
-            <div class="upload-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            </div>
-            <div class="upload-title">Subir factura</div>
-            <div class="upload-sub">Foto de la factura de caja · JPG, PNG</div>
-          </div>
-          <div class="upload-preview" id="uploadPreview">
-            <img id="previewImg" src="" alt="factura">
-            <div class="preview-overlay">
-              <span class="preview-name" id="previewName"></span>
-              <button class="preview-change" onclick="cambiarArchivo()">Cambiar</button>
-            </div>
-          </div>
-        </div>
+       <div class="form-field" style="margin-bottom:0">
+  <label class="form-label">Foto o PDF de la factura</label>
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept="image/jpeg, image/png, image/heic, image/heif, application/pdf"
+           onchange="onFileChange(event)">
+    <div class="upload-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    </div>
+    <div class="upload-title">Subir factura o comprobante</div>
+    <div class="upload-sub">Formatos permitidos · JPG, PNG, HEIC o PDF</div>
+  </div>
+  <div class="upload-preview" id="uploadPreview">
+    <img id="previewImg" src="" alt="factura">
+    <div class="preview-overlay">
+      <span class="preview-name" id="previewName"></span>
+      <button class="preview-change" onclick="cambiarArchivo()">Cambiar</button>
+    </div>
+  </div>
+</div>
       </div>
     </div>
 
@@ -2086,7 +2086,7 @@
                     banco_origen: 'CAJA',
                     banco_receptor: null,
                     tipo_pago: 'caja',
-                    canal:'Portal',
+                    canal: 'Portal',
                     nro_comprobante: null,
                     estado_procesamiento: 'En Verificación',
                     recibido_en: new Date().toISOString(),
@@ -2178,10 +2178,18 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            // Solo se aceptan imágenes — algunos navegadores permiten elegir
-            // "todos los archivos" incluso con el atributo accept restringido
-            if (!file.type.startsWith('image/')) {
-                alert('Por favor, subí una foto del comprobante (JPG o PNG). No se aceptan archivos PDF.');
+            const allowedMimeTypes = [
+                'image/jpeg',
+                'image/png',
+                'application/pdf',
+                'image/heic',
+                'image/heic-sequence',
+                'image/heif'
+            ];
+            const ext = file.name.split('.').pop().toLowerCase();
+            const isHeicExtension = ['heic', 'heif'].includes(ext);
+            if (!allowedMimeTypes.includes(file.type) && !isHeicExtension) {
+                alert('Por favor, subí una foto (JPG, PNG, HEIC) o un archivo PDF válido.');
                 e.target.value = '';
                 return;
             }
@@ -2197,9 +2205,19 @@
             preview.classList.add('show');
             name.textContent = file.name;
 
-            const reader = new FileReader();
-            reader.onload = ev => { img.src = ev.target.result; };
-            reader.readAsDataURL(file);
+            if (file.type === 'application/pdf' || ext === 'pdf') {
+                // Si es PDF, mostramos una imagen genérica o icono de PDF
+                img.src = 'https://cdn-icons-png.flaticon.com/512/337/337946.png'; // O usa una ruta local a un icono tuyo
+            } else if (isHeicExtension || file.type.includes('heic') || file.type.includes('heif')) {
+                // Los navegadores web no pueden renderizar HEIC de forma nativa directamente en un <img>.
+                // Para evitar que se vea roto, ponemos un icono de imagen genérico.
+                img.src = 'https://cdn-icons-png.flaticon.com/512/3342/3342137.png';
+            } else {
+                // Imágenes normales (JPG, PNG) se procesan con el visor normal
+                const reader = new FileReader();
+                reader.onload = ev => { img.src = ev.target.result; };
+                reader.readAsDataURL(file);
+            }
 
             checkBtnConfirmar();
         };
@@ -2345,7 +2363,7 @@
                         banco_destino_nombre: state.metodoPago === 'qr'
                             ? QR_CUENTA_ID
                             : (state.cuentaBancariaSel?.id || 'No seleccionado'),
-                        tipo_pago:state.metodoPago,
+                        tipo_pago: state.metodoPago,
                         // Enviamos la selección completa para que n8n genere los detalles_pago_comprobante
                         items_seleccionados: state.seleccion.map(x => ({
                             concepto_tipo: x.tipo,

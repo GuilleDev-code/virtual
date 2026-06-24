@@ -41,10 +41,10 @@ $originalName = $file['name'];
 $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
 // Validar extensiones permitidas por seguridad (imágenes y PDFs)
-$allowedTypes = ['jpg', 'jpeg', 'png', 'pdf'];
+$allowedTypes = ['jpg', 'jpeg', 'png', 'pdf', 'heic', 'heif'];
 if (!in_array($ext, $allowedTypes)) {
     http_response_code(400);
-    echo json_encode(["error" => "Formato de archivo no permitido. Solo JPG, PNG o PDF."]);
+    echo json_encode(["error" => "Formato de archivo no permitido. Solo JPG, PNG o PDF o HEIC (iPhone)."]);
     exit();
 }
 
