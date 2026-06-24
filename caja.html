@@ -1986,38 +1986,48 @@ document.getElementById('btnAprobarCaja').addEventListener('click', async () => 
     }
 
     // 2. Generar derecho de examen + historial para cada examen seleccionado
-    const examenes = detalles.filter(d => d.concepto_tipo === 'EXAMEN' && d.referencia_id);
-    for (const d of examenes) {
-      const { data: cal } = await supabase
-        .from('calendario_examenes')
-        .select('materia_id, oportunidad_nro')
-        .eq('id', d.referencia_id)
-        .single();
-      if (!cal) continue;
+const examenes = detalles.filter(d => d.concepto_tipo === 'EXAMEN' && d.referencia_id);
+  for (const d of examenes) {
+    const { data: cal } = await supabase
+      .from('calendario_examenes')
+      .select('materia_id, oportunidad_nro')
+      .eq('id', d.referencia_id)
+      .single();
+    if (!cal) continue;
 
-      const { data: derechoRec, error: errDerecho } = await supabase
-        .from('derechos_examen')
-        .insert({
-          inscripcion_id: inscripcionId,
-          materia_id: cal.materia_id,
-          oportunidad_nro: cal.oportunidad_nro,
-          monto_pagado: d.monto_pactado || null,
-          estado: 'CONFIRMADO',
-        })
-        .select('id')
-        .single();
-      if (errDerecho) throw new Error('Error al generar derecho de examen: ' + errDerecho.message);
+    // 🔄 CORRECCIÓN: Cambiado .insert() por .upsert() con onConflict
+    const { data: derechoRec, error: errDerecho } = await supabase
+      .from('derechos_examen')
+      .upsert({
+        inscripcion_id: inscripcionId,
+        materia_id: cal.materia_id,
+        oportunidad_nro: cal.oportunidad_nro,
+        monto_pagado: d.monto_pactado || null,
+        estado: 'CONFIRMADO', // Cambia de 'EN VERIFICACION' a 'CONFIRMADO' (o 'PAGADO' según requieras)
+      }, {
+        onConflict: 'inscripcion_id,materia_id,oportunidad_nro'
+      })
+      .select('id')
+      .single();
+      
+    if (errDerecho) throw new Error('Error al actualizar derecho de examen: ' + errDerecho.message);
 
-      await supabase.from('historial_examenes').insert({
+    // 🔄 CORRECCIÓN: Cambiado .insert() por .upsert() para el historial para evitar duplicados
+    const { error: errHistorial } = await supabase
+      .from('historial_examenes')
+      .upsert({
         inscripcion_id: inscripcionId,
         materia_id: cal.materia_id,
         oportunidad_nro: cal.oportunidad_nro,
         estado_materia: 'Cursando',
         hab_academico: true,
-        hab_administrativo: true,
-        derecho_examen_id: derechoRec.id,
+        hab_administrativo: true
+      }, {
+        onConflict: 'inscripcion_id,materia_id,oportunidad_nro'
       });
-    }
+
+    if (errHistorial) throw new Error('Error al actualizar historial de examen: ' + errHistorial.message);
+  }
 
     // 3. Marcar el comprobante como Aplicado
     const { error: errComp } = await supabase
