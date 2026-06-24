@@ -173,8 +173,7 @@
       border-radius: var(--radius);
     }
     #tblVerif, #tblAnular {
-      width: max-content;
-      min-width: 100%;
+      width: auto;
     }
     #tblVerif th, #tblVerif td,
     #tblAnular th, #tblAnular td {
@@ -1450,18 +1449,32 @@ document.getElementById('btnDescargarZip').addEventListener('click', async () =>
 
   try {
     const zip = new JSZip();
+    let exitos = 0;
+    let fallos = 0;
+
     await Promise.all(items.map(async (r, idx) => {
       try {
-        const resp = await fetch(r.imagen_url);
+        const resp = await fetch(r.imagen_url, { mode: 'cors' });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const blob = await resp.blob();
+        if (!blob || blob.size === 0) throw new Error('Imagen vacía');
+
         const ext = (r.imagen_url.split('.').pop() || 'jpg').split('?')[0].slice(0,4);
         const al = Array.isArray(r.alumnos) ? r.alumnos[0] : r.alumnos;
         const nombreArchivo = `${idx+1}_${(al?.ci||r.ci_remitente||'sinci')}_${r.id}.${ext}`;
         zip.file(nombreArchivo, blob);
+        exitos++;
       } catch (e) {
-        console.warn('No se pudo descargar imagen', r.id, e);
+        fallos++;
+        console.warn('No se pudo descargar imagen', r.id, r.imagen_url, e.message);
       }
     }));
+
+    if (exitos === 0) {
+      toast(`No se pudo descargar ninguna imagen (${fallos} fallidas). Puede ser un problema de CORS en el servidor de imágenes — revisá la consola.`, 'error');
+      return;
+    }
+
     const blobZip = await zip.generateAsync({ type: 'blob' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blobZip);
@@ -1469,7 +1482,10 @@ document.getElementById('btnDescargarZip').addEventListener('click', async () =>
     document.body.appendChild(a);
     a.click();
     a.remove();
-    toast('Imágenes descargadas', 'success');
+
+    toast(fallos
+      ? `ZIP generado con ${exitos} imágenes (${fallos} no se pudieron descargar)`
+      : `ZIP generado con ${exitos} imágenes`, fallos ? 'warning' : 'success');
   } catch (e) {
     toast('Error al generar el ZIP: ' + e.message, 'error');
   } finally {

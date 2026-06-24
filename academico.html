@@ -61,37 +61,42 @@
       border: 1.5px solid var(--border);
       border-radius: var(--radius-sm);
     }
+
     .rep-modo-btn.active {
       background: var(--verde);
       color: #fff;
       border-color: var(--verde);
     }
+
     .badge-aprobado {
-      background: rgba(26,107,60,.12);
+      background: rgba(26, 107, 60, .12);
       color: var(--verde);
       font-weight: 700;
       padding: 3px 10px;
       border-radius: 999px;
       font-size: .76rem;
     }
+
     .badge-reprobado {
-      background: rgba(220,38,38,.1);
+      background: rgba(220, 38, 38, .1);
       color: var(--danger);
       font-weight: 700;
       padding: 3px 10px;
       border-radius: 999px;
       font-size: .76rem;
     }
+
     .badge-ausente {
-      background: rgba(180,140,0,.1);
+      background: rgba(180, 140, 0, .1);
       color: #92660a;
       font-weight: 700;
       padding: 3px 10px;
       border-radius: 999px;
       font-size: .76rem;
     }
+
     .badge-cursando {
-      background: rgba(100,100,100,.1);
+      background: rgba(100, 100, 100, .1);
       color: var(--txt-muted);
       font-weight: 600;
       padding: 3px 10px;
@@ -809,26 +814,47 @@
                   <option value="4">Extraordinaria</option>
                 </select>
                 <button class="btn btn-primary btn-sm" id="btnCargarRepExamen" disabled>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                  </svg>
                   Cargar resultados
                 </button>
                 <button class="btn btn-ghost btn-sm" id="btnPdfRepExamen" style="display:none">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10 9 9 9 8 9" />
+                  </svg>
                   Exportar PDF
                 </button>
                 <span id="repExamenTotal" style="font-size:.78rem;color:var(--txt-muted);margin-left:auto"></span>
               </div>
 
-              <div id="repExamenInfo" style="display:none;background:var(--verde-light);border:1px solid rgba(26,107,60,.2);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;font-size:.82rem;align-items:center;gap:20px;flex-wrap:wrap">
-                <div><span style="color:var(--txt-muted)">Materia:</span> <strong id="repExMateriaNombre">—</strong></div>
-                <div><span style="color:var(--txt-muted)">Oportunidad:</span> <strong id="repExOportunidadLabel">—</strong></div>
-                <div><span style="color:var(--txt-muted)">Aprobados:</span> <strong id="repExCountAprob" style="color:var(--verde)">0</strong></div>
-                <div><span style="color:var(--txt-muted)">Reprobados:</span> <strong id="repExCountReprob" style="color:var(--danger)">0</strong></div>
+              <div id="repExamenInfo"
+                style="display:none;background:var(--verde-light);border:1px solid rgba(26,107,60,.2);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;font-size:.82rem;align-items:center;gap:20px;flex-wrap:wrap">
+                <div><span style="color:var(--txt-muted)">Materia:</span> <strong id="repExMateriaNombre">—</strong>
+                </div>
+                <div><span style="color:var(--txt-muted)">Oportunidad:</span> <strong
+                    id="repExOportunidadLabel">—</strong></div>
+                <div><span style="color:var(--txt-muted)">Aprobados:</span> <strong id="repExCountAprob"
+                    style="color:var(--verde)">0</strong></div>
+                <div><span style="color:var(--txt-muted)">Reprobados:</span> <strong id="repExCountReprob"
+                    style="color:var(--danger)">0</strong></div>
               </div>
 
               <div id="repExamenEmptyState" style="text-align:center;padding:60px;color:var(--txt-muted)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 12px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                <p style="font-size:.88rem">Seleccioná carrera, cohorte, año, materia y oportunidad, luego presioná Cargar resultados</p>
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 12px">
+                  <path d="M9 11l3 3L22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+                <p style="font-size:.88rem">Seleccioná carrera, cohorte, año, materia y oportunidad, luego presioná
+                  Cargar resultados</p>
               </div>
 
               <div class="table-wrapper" id="repExamenTableWrap" style="display:none">
@@ -852,11 +878,23 @@
             <div id="repVistaAlumno" style="display:none">
               <div class="toolbar">
                 <div class="search-wrap" style="flex:1;max-width:380px">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                  <input type="text" class="form-control" id="repBuscarAlumno" placeholder="Buscar alumno por nombre o CI...">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
+                  </svg>
+                  <input type="text" class="form-control" id="repBuscarAlumno"
+                    placeholder="Buscar alumno por nombre o CI...">
                 </div>
                 <button class="btn btn-ghost btn-sm" id="btnPdfRepAlumno" style="display:none">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10 9 9 9 8 9" />
+                  </svg>
                   Exportar PDF
                 </button>
               </div>
@@ -864,12 +902,18 @@
               <div id="repAlumnoResultados" style="display:none;margin-bottom:10px"></div>
 
               <div id="repAlumnoEmptyState" style="text-align:center;padding:60px;color:var(--txt-muted)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 12px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 12px">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                </svg>
                 <p style="font-size:.88rem">Buscá un alumno para ver su historial completo de exámenes</p>
               </div>
 
               <div id="repAlumnoFichaWrap" style="display:none">
-                <div id="repAlumnoFicha" style="background:var(--verde-light);border:1px solid rgba(26,107,60,.2);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;font-size:.82rem;display:flex;align-items:center;gap:20px;flex-wrap:wrap"></div>
+                <div id="repAlumnoFicha"
+                  style="background:var(--verde-light);border:1px solid rgba(26,107,60,.2);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;font-size:.82rem;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+                </div>
                 <div class="table-wrapper">
                   <table>
                     <thead>
@@ -2947,8 +2991,8 @@
           };
 
           // Si ya conocemos el ID primario, se lo incluimos para asegurar el matching rápido
-          if (r.historial_id) {
-            item.id = r.historial_id;
+          if (r.historial_id !== undefined && r.historial_id !== null && r.historial_id !== '') {
+            item.id = Number(r.historial_id); // Nos aseguramos de que sea un número y no un string o null
           }
 
           return item;
