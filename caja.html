@@ -162,6 +162,13 @@
     /* ── En Verificación ────────────────────────────────────── */
     .verif-layout { flex-direction: column; padding: 16px 24px; overflow-y: auto; gap: 14px; max-width: 100%; min-width: 0; }
     .verif-toolbar { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Forzamos que el layout principal respete el ancho del viewport
+       y no permita que la tabla empuje toda la página hacia la derecha */
+    .app-layout { display: flex; width: 100vw; max-width: 100vw; overflow: hidden; }
+    .main { flex: 1 1 auto; min-width: 0; max-width: 100%; overflow: hidden; display: flex; flex-direction: column; }
+    .caja-wrap { min-width: 0; max-width: 100%; overflow: hidden; flex: 1; display: flex; flex-direction: column; }
 
     /* Forzamos el scroll horizontal a quedar contenido dentro del wrapper
        en vez de empujar el ancho de toda la página */
@@ -540,6 +547,9 @@
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 <input type="text" class="form-control" id="searchVerif" placeholder="Search...">
               </div>
+              <input type="date" class="form-control" id="verifFechaDesde" style="width:140px" title="Desde">
+              <input type="date" class="form-control" id="verifFechaHasta" style="width:140px" title="Hasta">
+              <button class="btn btn-ghost btn-sm" id="btnLimpiarFechaVerif">Limpiar fechas</button>
               <span id="verifCount" style="font-size:.8rem;color:var(--txt-muted)">0 Records</span>
               <div style="margin-left:auto;display:flex;gap:8px">
                 <button class="btn btn-ghost btn-sm" id="btnDescargarZip">
@@ -550,9 +560,9 @@
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                   Actualizar
                 </button>
-                <button class="btn btn-primary btn-sm" id="btnGenerarPlanilla">
+                <button class="btn btn-primary btn-sm" id="btnGenerarPlanilla" disabled>
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  Generar planilla
+                  Generar planilla (<span id="btnGenerarCount">0</span> seleccionados)
                 </button>
               </div>
             </div>
@@ -560,6 +570,7 @@
               <table id="tblVerif">
                 <thead>
                   <tr>
+                    <th><input type="checkbox" id="chkSelTodosVerif"></th>
                     <th>Nº</th>
                     <th>Img</th>
                     <th>CANAL</th>
@@ -578,7 +589,7 @@
                   </tr>
                 </thead>
                 <tbody id="tbodyVerif">
-                  <tr><td colspan="15" class="text-center" style="padding:32px;color:var(--txt-muted)">Cargando...</td></tr>
+                  <tr><td colspan="16" class="text-center" style="padding:32px;color:var(--txt-muted)">Cargando...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1331,6 +1342,8 @@ document.getElementById('btnAnular').addEventListener('click', async () => {
 // ── En verificación ───────────────────────────────────────────
 let canalActivo = 'todos';
 
+let verifSeleccionados = new Set();
+
 async function cargarVerif() {
   // Capturamos el 'error' que devuelve Supabase
   const { data, error } = await supabase
@@ -1356,6 +1369,7 @@ async function cargarVerif() {
   }
 
   verifData = data || [];
+  verifSeleccionados.clear();
 
   // Contadores por canal para los chips
   document.getElementById('chipCountTodos').textContent    = verifData.length;
@@ -1368,6 +1382,12 @@ async function cargarVerif() {
 function getVerifFiltrado() {
   let items = verifData;
   if (canalActivo !== 'todos') items = items.filter(r => r.canal === canalActivo);
+
+  const desde = document.getElementById('verifFechaDesde').value;
+  const hasta = document.getElementById('verifFechaHasta').value;
+  if (desde) items = items.filter(r => r.recibido_en && r.recibido_en.slice(0,10) >= desde);
+  if (hasta) items = items.filter(r => r.recibido_en && r.recibido_en.slice(0,10) <= hasta);
+
   const q = document.getElementById('searchVerif').value.toLowerCase();
   if (q) items = items.filter(r => JSON.stringify(r).toLowerCase().includes(q));
   return items;
@@ -1377,12 +1397,20 @@ function aplicarFiltroVerif() {
   const items = getVerifFiltrado();
   document.getElementById('verifCount').textContent = items.length + ' Records';
   renderVerif(items);
+  actualizarContadorSeleccionVerif();
+}
+
+function actualizarContadorSeleccionVerif() {
+  document.getElementById('btnGenerarCount').textContent = verifSeleccionados.size;
+  const btn = document.getElementById('btnGenerarPlanilla');
+  btn.disabled = verifSeleccionados.size === 0;
 }
 
 function renderVerif(items) {
   const tbody = document.getElementById('tbodyVerif');
   if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="15" class="text-center" style="padding:32px;color:var(--txt-muted)">Sin registros en verificación</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="16" class="text-center" style="padding:32px;color:var(--txt-muted)">Sin registros en verificación</td></tr>`;
+    document.getElementById('chkSelTodosVerif').checked = false;
     return;
   }
   tbody.innerHTML = items.map((r,i) => {
@@ -1397,7 +1425,9 @@ function renderVerif(items) {
     const imgCell = r.imagen_url
       ? `<img src="${r.imagen_url}" class="td-img-mini" onclick="abrirImagenVerif('${r.imagen_url}')">`
       : `<span class="td-img-mini empty">—</span>`;
+    const checked = verifSeleccionados.has(r.id) ? 'checked' : '';
     return `<tr>
+      <td><input type="checkbox" class="chk-verif-row" data-id="${r.id}" ${checked}></td>
       <td class="td-mono">${i+1}</td>
       <td>${imgCell}</td>
       <td>${canalBadge}</td>
@@ -1415,7 +1445,43 @@ function renderVerif(items) {
       <td>${carr}</td>
     </tr>`;
   }).join('');
+
+  // Listeners de checkboxes por fila
+  document.querySelectorAll('.chk-verif-row').forEach(chk => {
+    chk.addEventListener('change', () => {
+      const id = Number(chk.dataset.id);
+      if (chk.checked) verifSeleccionados.add(id);
+      else verifSeleccionados.delete(id);
+      sincronizarCheckTodosVerif(items);
+      actualizarContadorSeleccionVerif();
+    });
+  });
+
+  sincronizarCheckTodosVerif(items);
 }
+
+function sincronizarCheckTodosVerif(items) {
+  const chkTodos = document.getElementById('chkSelTodosVerif');
+  const visibles = items.map(r => r.id);
+  const todosMarcados = visibles.length > 0 && visibles.every(id => verifSeleccionados.has(id));
+  chkTodos.checked = todosMarcados;
+}
+
+document.getElementById('chkSelTodosVerif').addEventListener('change', (e) => {
+  const items = getVerifFiltrado();
+  if (e.target.checked) items.forEach(r => verifSeleccionados.add(r.id));
+  else items.forEach(r => verifSeleccionados.delete(r.id));
+  renderVerif(items);
+  actualizarContadorSeleccionVerif();
+});
+
+document.getElementById('verifFechaDesde').addEventListener('change', aplicarFiltroVerif);
+document.getElementById('verifFechaHasta').addEventListener('change', aplicarFiltroVerif);
+document.getElementById('btnLimpiarFechaVerif').addEventListener('click', () => {
+  document.getElementById('verifFechaDesde').value = '';
+  document.getElementById('verifFechaHasta').value = '';
+  aplicarFiltroVerif();
+});
 
 window.abrirImagenVerif = (url) => {
   document.getElementById('modalImgBody').innerHTML = `<img src="${url}" alt="Comprobante">`;
@@ -1496,10 +1562,9 @@ document.getElementById('btnDescargarZip').addEventListener('click', async () =>
 
 // ── Generar planilla (Excel) ──────────────────────────────────
 document.getElementById('btnGenerarPlanilla').addEventListener('click', async () => {
-  const itemsPlanilla = getVerifFiltrado();
-  if (!itemsPlanilla.length) { toast('Sin datos en la tabla','warning'); return; }
-  const etiquetaCanal = canalActivo === 'todos' ? 'todos los canales' : canalActivo;
-  if (!confirm(`¿Generar tanda y descargar planilla con ${itemsPlanilla.length} registros (${etiquetaCanal})?`)) return;
+  const itemsPlanilla = verifData.filter(r => verifSeleccionados.has(r.id));
+  if (!itemsPlanilla.length) { toast('Seleccioná al menos un comprobante con el checkbox','warning'); return; }
+  if (!confirm(`¿Generar tanda y descargar planilla con ${itemsPlanilla.length} registros seleccionados?`)) return;
 
   try {
     // 1. Crear tanda
@@ -1541,7 +1606,8 @@ document.getElementById('btnGenerarPlanilla').addEventListener('click', async ()
     // 4. Generar Excel (mismo estilo que Appsmith)
     generarExcelTanda(rows, tanda.id);
 
-    toast(`Tanda #${tanda.id} generada con ${verifData.length} registros`, 'success');
+    toast(`Tanda #${tanda.id} generada con ${itemsPlanilla.length} registros`, 'success');
+    verifSeleccionados.clear();
     await cargarVerif();
 
   } catch(err) { toast('Error: '+err.message,'error'); }
@@ -1774,6 +1840,7 @@ try {
     // 1. Actualizar estado a Procesando
     await supabase.from('comprobantes_pago').update({
       estado_procesamiento: 'Procesando',
+      estado_tesoreria: 'Aprobado por Tesorería',
       procesado_en:         new Date().toISOString(),
     }).eq('id', _itemActivo.id);
 
@@ -1985,49 +2052,54 @@ document.getElementById('btnAprobarCaja').addEventListener('click', async () => 
       if (errCuotas) throw new Error('Error al actualizar cuotas: ' + errCuotas.message);
     }
 
-    // 2. Generar derecho de examen + historial para cada examen seleccionado
-const examenes = detalles.filter(d => d.concepto_tipo === 'EXAMEN' && d.referencia_id);
-  for (const d of examenes) {
-    const { data: cal } = await supabase
-      .from('calendario_examenes')
-      .select('materia_id, oportunidad_nro')
-      .eq('id', d.referencia_id)
-      .single();
-    if (!cal) continue;
+    // 2. Generar derecho de examen + historial para cada examen seleccionado.
+    // Usamos upsert porque puede que ya exista un derecho_examen previo para esta
+    // combinación (ej. el alumno intentó pagar antes); evita el error 409 de duplicado.
+    const examenes = detalles.filter(d => d.concepto_tipo === 'EXAMEN' && d.referencia_id);
+    for (const d of examenes) {
+      const { data: cal } = await supabase
+        .from('calendario_examenes')
+        .select('materia_id, oportunidad_nro')
+        .eq('id', d.referencia_id)
+        .single();
+      if (!cal) continue;
 
-    // 🔄 CORRECCIÓN: Cambiado .insert() por .upsert() con onConflict
-    const { data: derechoRec, error: errDerecho } = await supabase
-      .from('derechos_examen')
-      .upsert({
-        inscripcion_id: inscripcionId,
-        materia_id: cal.materia_id,
-        oportunidad_nro: cal.oportunidad_nro,
-        monto_pagado: d.monto_pactado || null,
-        estado: 'CONFIRMADO', // Cambia de 'EN VERIFICACION' a 'CONFIRMADO' (o 'PAGADO' según requieras)
-      }, {
-        onConflict: 'inscripcion_id,materia_id,oportunidad_nro'
-      })
-      .select('id')
-      .single();
-      
-    if (errDerecho) throw new Error('Error al actualizar derecho de examen: ' + errDerecho.message);
+      // Pago en caja: no pasa por tesorería, así que el derecho queda PAGADO de inmediato
+      // (a diferencia de transferencia/QR, que quedan EN VERIFICACION hasta que se aprueba la tanda)
+      const { data: derechoRec, error: errDerecho } = await supabase
+        .from('derechos_examen')
+        .upsert({
+          inscripcion_id: inscripcionId,
+          materia_id: cal.materia_id,
+          oportunidad_nro: cal.oportunidad_nro,
+          monto_pagado: d.monto_pactado || null,
+          estado: 'PAGADO',
+        }, {
+          onConflict: 'inscripcion_id,materia_id,oportunidad_nro'
+        })
+        .select('id')
+        .single();
 
-    // 🔄 CORRECCIÓN: Cambiado .insert() por .upsert() para el historial para evitar duplicados
-    const { error: errHistorial } = await supabase
-      .from('historial_examenes')
-      .upsert({
-        inscripcion_id: inscripcionId,
-        materia_id: cal.materia_id,
-        oportunidad_nro: cal.oportunidad_nro,
-        estado_materia: 'Cursando',
-        hab_academico: true,
-        hab_administrativo: true
-      }, {
-        onConflict: 'inscripcion_id,materia_id,oportunidad_nro'
-      });
+      if (errDerecho) throw new Error('Error al actualizar derecho de examen: ' + errDerecho.message);
 
-    if (errHistorial) throw new Error('Error al actualizar historial de examen: ' + errHistorial.message);
-  }
+      // El historial se vincula por (inscripcion_id, materia_id, oportunidad_nro)
+      // — esa combinación tiene UNIQUE en historial_examenes, así que el upsert
+      // evita duplicar el historial si el alumno ya había intentado pagar antes
+      const { error: errHistorial } = await supabase
+        .from('historial_examenes')
+        .upsert({
+          inscripcion_id: inscripcionId,
+          materia_id: cal.materia_id,
+          oportunidad_nro: cal.oportunidad_nro,
+          estado_materia: 'Cursando',
+          hab_academico: true,
+          hab_administrativo: true,
+        }, {
+          onConflict: 'inscripcion_id,materia_id,oportunidad_nro'
+        });
+
+      if (errHistorial) throw new Error('Error al actualizar historial de examen: ' + errHistorial.message);
+    }
 
     // 3. Marcar el comprobante como Aplicado
     const { error: errComp } = await supabase
