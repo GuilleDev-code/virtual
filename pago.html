@@ -1539,10 +1539,29 @@
       </div>`;
 
 
-            const examenesHTML = state.examenesHabilitados.length
-                ? state.examenesHabilitados.map(e => {
-                    const hasta = new Date(e.fecha_hasta + 'T23:59:00');
-                    const diff = Math.round((hasta - new Date()) / 86400000);
+            // Exámenes: ocultar los que ya llegaron al viernes (sábado - 1 día)
+            const now = new Date();
+            const examenesVisibles = state.examenesHabilitados.filter(e => {
+                // fecha_hasta = sábado del examen. Viernes 00:00 = sábado - 1 día
+                const sabado = new Date(e.fecha_hasta + 'T00:00:00');
+                const viernes = new Date(sabado);
+                viernes.setDate(viernes.getDate() - 1);
+                return now < viernes; // ocultar si ya llegó el viernes
+            });
+
+            const examenesHTML = examenesVisibles.length
+                ? examenesVisibles.map(e => {
+                    const sabado = new Date(e.fecha_hasta + 'T00:00:00');
+                    // Miércoles 23:59 = sábado - 3 días, 23:59
+                    const limiteTransf = new Date(sabado);
+                    limiteTransf.setDate(limiteTransf.getDate() - 3);
+                    limiteTransf.setHours(23, 59, 0, 0);
+                    const transfVencio = now > limiteTransf;
+
+                    const diff = Math.round((sabado - now) / 86400000);
+                    const subTxt = transfVencio
+                        ? `⚠️ Solo pago en caja hasta el jueves · Examen el ${sabado.toLocaleDateString('es-PY', { weekday: 'long', day: '2-digit', month: 'long' })}`
+                        : `Habilitado · examen en ${diff} día${diff !== 1 ? 's' : ''}`;
                     return `<label class="item-pago" >
           <input type="checkbox" value="examen_${e.id}"
             data-tipo="examen" data-id="${e.id}"
@@ -1550,13 +1569,14 @@
             data-monto="${e.monto_final}" 
             data-materia-id="${e.materia_id}"
             data-oportunidad="${e.oportunidad_nro}"
+            data-fecha-hasta="${e.fecha_hasta}"
             >
           <div class="item-info">
             <div class="item-label">
               ${e.materias?.nombre || '?'}
               <span class="badge-examen">${e.oportunidad_nro}ª oport.</span>
             </div>
-            <div class="item-sub">Habilitado · cierra en ${diff} día${diff !== 1 ? 's' : ''}</div>
+            <div class="item-sub ${transfVencio ? 'vencido-txt' : ''}">${subTxt}</div>
           </div>
           <div class="item-monto">${fmt(e.monto_final)}</div>
         </label>`;
@@ -1659,6 +1679,35 @@
             renderMetodoPago();
         };
 
+        // ── Helper: calcular límites de pago según exámenes seleccionados ──
+        function calcularLimitePago() {
+            const examenes = state.seleccion.filter(x => x.tipo === 'examen');
+            if (!examenes.length) return { limiteTransfQR: null, limiteCaja: null };
+
+            const fechasHasta = examenes.map(ex => {
+                const exData = state.examenesHabilitados.find(e => e.id === ex.id);
+                return exData ? exData.fecha_hasta : null;
+            }).filter(Boolean);
+
+            if (!fechasHasta.length) return { limiteTransfQR: null, limiteCaja: null };
+
+            // La más próxima (más restrictiva)
+            fechasHasta.sort();
+            const sabado = new Date(fechasHasta[0] + 'T00:00:00');
+
+            // Miércoles 23:59 = sábado - 3 días
+            const limiteTransfQR = new Date(sabado);
+            limiteTransfQR.setDate(limiteTransfQR.getDate() - 3);
+            limiteTransfQR.setHours(23, 59, 0, 0);
+
+            // Jueves 23:59 = sábado - 2 días
+            const limiteCaja = new Date(sabado);
+            limiteCaja.setDate(limiteCaja.getDate() - 2);
+            limiteCaja.setHours(23, 59, 0, 0);
+
+            return { limiteTransfQR, limiteCaja };
+        }
+
         // ── PASO 2b: Selección de método de pago ──────────────────────
         function renderMetodoPago() {
             setStep(3);
@@ -1668,6 +1717,56 @@
             const ins = state.inscripcionSel;
             const carreraNombre = ins.cohortes?.carreras?.nombre || '—';
             const total = state.seleccion.reduce((s, x) => s + (x.monto || 0), 0);
+
+            const { limiteTransfQR, limiteCaja } = calcularLimitePago();
+            const now = new Date();
+
+            const transfVencio = limiteTransfQR && now > limiteTransfQR;
+            const cajaVencio   = limiteCaja    && now > limiteCaja;
+
+            // Formatear fechas límite para mostrar al usuario
+            const fmtFecha = d => d.toLocaleDateString('es-PY', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' });
+
+            // Construir cada tarjeta de método — ocultar si ya venció su plazo
+            const cardTransf = transfVencio ? '' : `
+          <div class="metodo-card ${state.metodoPago === 'transferencia' ? 'selected' : ''}" onclick="selMetodo('transferencia')">
+            <div class="metodo-icon">📲</div>
+            <div class="metodo-titulo">Transferencia</div>
+            <div class="metodo-sub">Depósito o transferencia bancaria</div>
+            ${limiteTransfQR ? `<div style="font-size:.65rem;color:var(--naranja);margin-top:4px;font-weight:600">Cierra ${fmtFecha(limiteTransfQR)}</div>` : ''}
+          </div>`;
+
+            const cardQR = transfVencio ? '' : `
+          <div class="metodo-card ${state.metodoPago === 'qr' ? 'selected' : ''}" onclick="selMetodo('qr')">
+            <div class="metodo-icon">📷</div>
+            <div class="metodo-titulo">Pago QR</div>
+            <div class="metodo-sub">Escaneá y pagá desde tu celular</div>
+            ${limiteTransfQR ? `<div style="font-size:.65rem;color:var(--naranja);margin-top:4px;font-weight:600">Cierra ${fmtFecha(limiteTransfQR)}</div>` : ''}
+          </div>`;
+
+            const cardCaja = cajaVencio ? '' : `
+          <div class="metodo-card ${state.metodoPago === 'caja' ? 'selected' : ''}" onclick="selMetodo('caja')">
+            <div class="metodo-icon">🏦</div>
+            <div class="metodo-titulo">Caja/Factura</div>
+            <div class="metodo-sub">Pagaste en caja o tenés una factura</div>
+            ${limiteCaja ? `<div style="font-size:.65rem;color:var(--naranja);margin-top:4px;font-weight:600">Cierra ${fmtFecha(limiteCaja)}</div>` : ''}
+          </div>`;
+
+            // Aviso si algún método ya no está disponible
+            const hayMetodosOcultos = transfVencio || cajaVencio;
+            const avisoHTML = hayMetodosOcultos ? `
+        <div style="background:var(--naranja-l);border:1.5px solid #f0c09a;border-radius:var(--radius-sm);padding:11px 14px;font-size:.78rem;color:#a04010;margin-bottom:14px;display:flex;gap:8px;align-items:flex-start">
+          <span>⏰</span>
+          <span>${transfVencio && cajaVencio
+                    ? 'Ya no hay métodos de pago disponibles para los exámenes seleccionados. El plazo de pago venció.'
+                    : transfVencio
+                        ? 'El plazo para pagar por transferencia o QR ya venció (miércoles 23:59). Solo podés cargar la factura de caja.'
+                        : 'El plazo para pagar en caja ya venció (jueves 23:59).'
+                }</span>
+        </div>` : '';
+
+            // Si ya no queda ningún método disponible, mostrar mensaje y solo botón volver
+            const noHayMetodos = !cardTransf && !cardQR && !cardCaja;
 
             root.innerHTML = `
     <div class="alumno-pill">
@@ -1683,23 +1782,14 @@
         <div class="card-title">¿Cómo vas a pagar?</div>
       </div>
       <div class="card-body">
-        <div class="metodo-grid">
-          <div class="metodo-card ${state.metodoPago === 'transferencia' ? 'selected' : ''}" onclick="selMetodo('transferencia')">
-            <div class="metodo-icon">📲</div>
-            <div class="metodo-titulo">Transferencia</div>
-            <div class="metodo-sub">Depósito o transferencia bancaria</div>
-          </div>
-          <div class="metodo-card ${state.metodoPago === 'qr' ? 'selected' : ''}" onclick="selMetodo('qr')">
-            <div class="metodo-icon">📷</div>
-            <div class="metodo-titulo">Pago QR</div>
-            <div class="metodo-sub">Escaneá y pagá desde tu celular</div>
-          </div>
-          <div class="metodo-card ${state.metodoPago === 'caja' ? 'selected' : ''}" onclick="selMetodo('caja')">
-            <div class="metodo-icon">🏦</div>
-            <div class="metodo-titulo">Caja/Factura</div>
-            <div class="metodo-sub">Pagaste en caja o tenés una factura</div>
-          </div>
-        </div>
+        ${avisoHTML}
+        ${noHayMetodos
+                ? `<div style="text-align:center;padding:20px 0;font-size:.88rem;color:var(--ink-3)">
+            Los plazos de pago para los exámenes seleccionados han vencido.<br>
+            <strong style="color:var(--ink)">Podés igual pagar cuotas</strong> si deseleccionás los exámenes.
+          </div>`
+                : `<div class="metodo-grid">${cardTransf}${cardQR}${cardCaja}</div>`
+            }
       </div>
     </div>
     <button class="btn btn-ghost" onclick="volverPaso2()">← Volver a la selección</button>`;
