@@ -2169,6 +2169,8 @@ async function cargarAnular() {
       detalles_pago_comprobante(concepto_tipo)
     `)
     .eq('estado_procesamiento', 'En Verificación')
+    .eq('tipo_pago', 'Transferencia')
+    .eq('estado_tesoreria','PENDIENTE')
     .order('recibido_en', { ascending: false });
 
   if (error) {

@@ -1470,12 +1470,27 @@
                 );
 
                 // 4. Verificar cuáles ya tienen pagos de derecho de examen (para no duplicar)
+                //    Y al mismo tiempo traer el hab_academico del historial
                 let derechosYaPagados = new Set();
+                let habAcademicoMap = new Map(); // key: "materia_id_oportunidad_nro" → true|false|null
+
                 if (examenesCarrera.length) {
-                    const derechos = await sbGet('derechos_examen',
-                        `?inscripcion_id=eq.${inscId}&select=materia_id,oportunidad_nro`
-                    );
+                    const [derechos, historial] = await Promise.all([
+                        sbGet('derechos_examen',
+                            `?inscripcion_id=eq.${inscId}&select=materia_id,oportunidad_nro`
+                        ),
+                        sbGet('historial_examenes',
+                            `?inscripcion_id=eq.${inscId}&select=materia_id,oportunidad_nro,hab_academico`
+                        )
+                    ]);
+
                     derechos.forEach(d => derechosYaPagados.add(`${d.materia_id}_${d.oportunidad_nro}`));
+
+                    // Guardar hab_academico por combinación materia+oportunidad
+                    // null = no registrado aún en el historial → no bloqueamos
+                    historial.forEach(h => {
+                        habAcademicoMap.set(`${h.materia_id}_${h.oportunidad_nro}`, h.hab_academico);
+                    });
                 }
 
                 state.cuotasPendientes = cuotas;
@@ -1485,7 +1500,7 @@
                     e => !derechosYaPagados.has(`${e.materia_id}_${e.oportunidad_nro}`)
                 );
 
-                // Mapeamos los precios correspondientes evaluando la oportunidad
+                // Mapeamos los precios y el estado académico correspondientes
                 state.examenesHabilitados = examenesNoPagados.map(ex => {
                     let montoExamen = 0;
 
@@ -1494,9 +1509,15 @@
                     else if (ex.oportunidad_nro === 3) montoExamen = precios.monto_examen_3ra;
                     else if (ex.oportunidad_nro === 4) montoExamen = precios.monto_examen_extraordinario;
 
+                    // hab_academico: true = habilitado, false = NO habilitado, null/undefined = sin registro (no bloqueamos)
+                    const habAcad = habAcademicoMap.has(`${ex.materia_id}_${ex.oportunidad_nro}`)
+                        ? habAcademicoMap.get(`${ex.materia_id}_${ex.oportunidad_nro}`)
+                        : null;
+
                     return {
                         ...ex,
-                        monto_final: montoExamen // Se inyecta dinámicamente el precio de forma limpia
+                        monto_final: montoExamen,
+                        hab_academico: habAcad
                     };
                 });
 
@@ -1557,8 +1578,26 @@
                     limiteTransf.setDate(limiteTransf.getDate() - 3);
                     limiteTransf.setHours(23, 59, 0, 0);
                     const transfVencio = now > limiteTransf;
-
                     const diff = Math.round((sabado - now) / 86400000);
+
+                    // ── Caso: NO habilitado académicamente (hab_academico === false explícito) ──
+                    if (e.hab_academico === false) {
+                        return `<div class="item-pago" style="opacity:.7;cursor:default;background:#fafafa;">
+          <div style="width:18px;height:18px;flex-shrink:0;border:2px solid #ddd;border-radius:4px;margin-top:1px;background:#f0f0f0"></div>
+          <div class="item-info">
+            <div class="item-label" style="color:var(--ink-3)">
+              ${e.materias?.nombre || '?'}
+              <span class="badge-examen" style="background:#f0e0e0;color:#c0392b">${e.oportunidad_nro}ª oport.</span>
+            </div>
+            <div class="item-sub" style="color:var(--danger);font-weight:600">
+              🚫 No habilitado académicamente — consultá con Coordinación
+            </div>
+          </div>
+          <div class="item-monto" style="color:var(--ink-3);font-size:.8rem">—</div>
+        </div>`;
+                    }
+
+                    // ── Caso: habilitado (true) o sin registro aún (null) → seleccionable ──
                     const subTxt = transfVencio
                         ? `⚠️ Solo pago en caja hasta el jueves · Examen el ${sabado.toLocaleDateString('es-PY', { weekday: 'long', day: '2-digit', month: 'long' })}`
                         : `Habilitado · examen en ${diff} día${diff !== 1 ? 's' : ''}`;

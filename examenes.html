@@ -440,6 +440,7 @@ async function cargarLista() {
     .in('inscripcion_id', inscIds);
 
   const derechoSet = new Set((derechos||[]).map(d => d.inscripcion_id));
+  console.log(derechoSet)
 
   // 4b. Precio del derecho de examen según oportunidad
   const { data: precioConf } = await supabase.from('configuracion_precios')
