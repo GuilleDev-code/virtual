@@ -1278,38 +1278,7 @@
       </table></div>` : '<div style="color:var(--txt-muted);font-size:.82rem;text-align:center;padding:16px">Sin historial de exámenes</div>'}
     </div>
 
-    <!-- Cargar nota -->
-    ${sesion.rol !== 'Cajero' ? `<div>
-      <div style="font-size:.72rem;font-weight:700;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Registrar resultado de examen</div>
-      <div class="form-row" style="gap:10px">
-        <div class="form-group" style="margin:0">
-          <label class="form-label">Materia</label>
-          <select class="form-control" id="drwMateria"></select>
-        </div>
-        <div class="form-group" style="margin:0">
-          <label class="form-label">Oportunidad</label>
-          <select class="form-control" id="drwOp">
-            <option value="1">1ª</option><option value="2">2ª</option>
-            <option value="3">3ª</option><option value="4">Extraordinaria</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row" style="gap:10px;margin-top:10px">
-        <div class="form-group" style="margin:0">
-          <label class="form-label">Estado</label>
-          <select class="form-control" id="drwEstMat">
-            <option value="Aprobado">Aprobado</option>
-            <option value="Reprobado">Reprobado</option>
-            <option value="Ausente">Ausente</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin:0">
-          <label class="form-label">Nota (0–10)</label>
-          <input type="number" class="form-control nota-input" id="drwNota" min="0" max="10" step="0.5" style="width:100%">
-        </div>
-      </div>
-      <button class="btn btn-primary btn-sm" style="margin-top:10px;width:100%" onclick="registrarNota(${inscId})">Registrar</button>
-    </div>`: ''}`;
+    `;
 
       // Cargar materias en el select
       if (sesion.rol !== 'Cajero') {
