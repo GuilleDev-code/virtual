@@ -554,15 +554,19 @@
               <div style="margin-left:auto;display:flex;gap:8px">
                 <button class="btn btn-ghost btn-sm" id="btnDescargarZip">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Descargar imágenes (ZIP)
+                  Descargar imágenes
                 </button>
                 <button class="btn btn-ghost btn-sm" id="btnActualizarVerif">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                   Actualizar
                 </button>
-                <button class="btn btn-primary btn-sm" id="btnGenerarPlanilla" disabled>
+                <button class="btn btn-ghost btn-sm" id="btnGenerarPlanilla" disabled>
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  Generar planilla (<span id="btnGenerarCount">0</span> seleccionados)
+                  Generar planilla (<span id="btnGenerarCount">0</span>)
+                </button>
+                <button class="btn btn-primary btn-sm" id="btnGuardarBD" disabled title="Crea la tanda y marca estos comprobantes como enviados a Tesorería">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  Guardar en base de datos (<span id="btnGuardarCount">0</span>)
                 </button>
               </div>
             </div>
@@ -1402,8 +1406,9 @@ function aplicarFiltroVerif() {
 
 function actualizarContadorSeleccionVerif() {
   document.getElementById('btnGenerarCount').textContent = verifSeleccionados.size;
-  const btn = document.getElementById('btnGenerarPlanilla');
-  btn.disabled = verifSeleccionados.size === 0;
+  document.getElementById('btnGuardarCount').textContent = verifSeleccionados.size;
+  document.getElementById('btnGenerarPlanilla').disabled = verifSeleccionados.size === 0;
+  document.getElementById('btnGuardarBD').disabled = verifSeleccionados.size === 0;
 }
 
 function renderVerif(items) {
@@ -1505,8 +1510,9 @@ document.getElementById('btnActualizarVerif').addEventListener('click', cargarVe
 
 // ── Descargar imágenes en ZIP ──────────────────────────────────
 document.getElementById('btnDescargarZip').addEventListener('click', async () => {
-  const items = getVerifFiltrado().filter(r => r.imagen_url);
-  if (!items.length) { toast('No hay imágenes para descargar en esta vista', 'warning'); return; }
+  const items = verifData.filter(r => verifSeleccionados.has(r.id) && r.imagen_url);
+  if (!verifSeleccionados.size) { toast('Seleccioná al menos un comprobante con el checkbox', 'warning'); return; }
+  if (!items.length) { toast('Los comprobantes seleccionados no tienen imagen', 'warning'); return; }
 
   const btn = document.getElementById('btnDescargarZip');
   const original = btn.innerHTML;
@@ -1560,57 +1566,84 @@ document.getElementById('btnDescargarZip').addEventListener('click', async () =>
   }
 });
 
-// ── Generar planilla (Excel) ──────────────────────────────────
-document.getElementById('btnGenerarPlanilla').addEventListener('click', async () => {
+// ── Preparar filas de la planilla (compartido por ambos botones) ────
+function construirFilasPlanilla(itemsPlanilla) {
+  return itemsPlanilla.map((r, i) => {
+    const cb = r.cuentas_bancarias;
+    const al = Array.isArray(r.alumnos) ? r.alumnos[0] : r.alumnos;
+    const obs = r.detalles_pago_comprobante?.map(d=>d.concepto_tipo).join(' y ') || '';
+    const carr = r.inscripciones_anuales?.cohortes?.carreras?.nombre || '';
+    return {
+      'id': r.id,
+      'Nº': i+1,
+      'ENTIDAD BANCARIA BENEFICIARIA': cb?.entidad||'',
+      'Nº DE CUENTA BANCARIA BENEFICIARIA': cb?.nombre||'',
+      'TITULAR DE LA CUENTA': r.titular_cuenta||'',
+      'MONTO': `Gs. ${Number(r.monto_detectado||0).toLocaleString('es-PY')}`,
+      'FECHA DE DEPOSITO': r.recibido_en ? new Date(r.recibido_en).toLocaleDateString('es-PY') : '',
+      'BANCO DE ORIGEN': r.banco_origen||'',
+      'Nº DE COMPROBANTE': r.nro_comprobante||'',
+      'OBSERVACIÓN': obs,
+      'ALUMNO/A': al ? al.nombres+' '+al.apellidos : '',
+      'NUMERO': al?.telefono||'',
+      'CEDULA': al?.ci||r.ci_remitente||'',
+      'CARRERA': carr,
+    };
+  });
+}
+
+// ── Generar planilla (Excel) — SOLO descarga el archivo, no toca la base de datos ──
+// Se puede usar tantas veces como se quiera para revisar los datos antes de guardar.
+document.getElementById('btnGenerarPlanilla').addEventListener('click', () => {
   const itemsPlanilla = verifData.filter(r => verifSeleccionados.has(r.id));
   if (!itemsPlanilla.length) { toast('Seleccioná al menos un comprobante con el checkbox','warning'); return; }
-  if (!confirm(`¿Generar tanda y descargar planilla con ${itemsPlanilla.length} registros seleccionados?`)) return;
+
+  const rows = construirFilasPlanilla(itemsPlanilla);
+  generarExcelTanda(rows, 'BORRADOR');
+  toast(`Planilla generada con ${itemsPlanilla.length} registros. Todavía NO se guardó nada en la base de datos — revisá los datos y, si está todo bien, usá "Guardar en base de datos".`, 'success');
+});
+
+// ── Guardar en base de datos — crea la tanda y vincula los comprobantes ──
+// Esta es la acción que efectivamente modifica la base de datos (irreversible desde acá).
+document.getElementById('btnGuardarBD').addEventListener('click', async () => {
+  const itemsPlanilla = verifData.filter(r => verifSeleccionados.has(r.id));
+  if (!itemsPlanilla.length) { toast('Seleccioná al menos un comprobante con el checkbox','warning'); return; }
+  if (!confirm(`¿Guardar en la base de datos y crear la tanda con ${itemsPlanilla.length} registros seleccionados?\n\nEsto los marca como "Enviado a Tesorería" y ya no vas a poder deshacerlo desde acá. Asegurate de haber revisado la planilla antes de confirmar.`)) return;
+
+  const btn = document.getElementById('btnGuardarBD');
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;margin:0"></div> Guardando...';
 
   try {
     // 1. Crear tanda
-    const { data: tanda } = await supabase
+    const { data: tanda, error: errTanda } = await supabase
       .from('tandas_tesoreria')
       .insert({ fecha_envio: new Date().toISOString(), enviado_por: sesion.id, total_registros: itemsPlanilla.length, estado: 'ENVIADO' })
       .select().single();
+    if (errTanda) throw new Error('Error al crear la tanda: ' + errTanda.message);
 
     // 2. Vincular comprobantes
     const ids = itemsPlanilla.map(r => r.id);
-    await supabase.from('comprobantes_pago')
+    const { error: errUpdate } = await supabase.from('comprobantes_pago')
       .update({ tanda_id: tanda.id, estado_tesoreria: 'Enviado a Tesorería' })
       .in('id', ids);
+    if (errUpdate) throw new Error('Error al vincular los comprobantes: ' + errUpdate.message);
 
-    // 3. Preparar datos para Excel (mismas columnas que Appsmith)
-    const rows = itemsPlanilla.map((r, i) => {
-      const cb = r.cuentas_bancarias;
-      const al = Array.isArray(r.alumnos) ? r.alumnos[0] : r.alumnos;
-      const obs = r.detalles_pago_comprobante?.map(d=>d.concepto_tipo).join(' y ') || '';
-      const carr = r.inscripciones_anuales?.cohortes?.carreras?.nombre || '';
-      return {
-        'id': r.id,
-        'Nº': i+1,
-        'ENTIDAD BANCARIA BENEFICIARIA': cb?.entidad||'',
-        'Nº DE CUENTA BANCARIA BENEFICIARIA': cb?.nombre||'',
-        'TITULAR DE LA CUENTA': r.titular_cuenta||'',
-        'MONTO': `Gs. ${Number(r.monto_detectado||0).toLocaleString('es-PY')}`,
-        'FECHA DE DEPOSITO': r.recibido_en ? new Date(r.recibido_en).toLocaleDateString('es-PY') : '',
-        'BANCO DE ORIGEN': r.banco_origen||'',
-        'Nº DE COMPROBANTE': r.nro_comprobante||'',
-        'OBSERVACIÓN': obs,
-        'ALUMNO/A': al ? al.nombres+' '+al.apellidos : '',
-        'NUMERO': al?.telefono||'',
-        'CEDULA': al?.ci||r.ci_remitente||'',
-        'CARRERA': carr,
-      };
-    });
-
-    // 4. Generar Excel (mismo estilo que Appsmith)
+    // 3. Descargar la planilla final, ya con el número de tanda real
+    const rows = construirFilasPlanilla(itemsPlanilla);
     generarExcelTanda(rows, tanda.id);
 
-    toast(`Tanda #${tanda.id} generada con ${itemsPlanilla.length} registros`, 'success');
+    toast(`Tanda #${tanda.id} guardada con ${itemsPlanilla.length} registros`, 'success');
     verifSeleccionados.clear();
     await cargarVerif();
 
-  } catch(err) { toast('Error: '+err.message,'error'); }
+  } catch (err) {
+    toast('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
 });
 
 function generarExcelTanda(datos, tandaId) {
@@ -1633,9 +1666,9 @@ function generarExcelTanda(datos, tandaId) {
   ws['A1'] = { v:'TRANSFERENCIAS BANCARIAS - DEPOSITOS DE ALUMNOS', t:'s', s:estTitulo };
   for(let c=1;c<totalCols;c++) ws[`${colLetra(c)}1`]={v:'',t:'s',s:estTitulo};
 
-  ws['B2']={v:'FILIAL:',t:'s',s:estSubtitulo}; ws['C2']={v:'Educación a Distancia',t:'s',s:estSubtitulo};
+  ws['B2']={v:'FILIAL: Educación a Distancia',t:'s',s:estSubtitulo}; ws['C2']={v:'',t:'s',s:estSubtitulo};
   for(let c=2;c<totalCols;c++) ws[`${colLetra(c)}2`]={v:'',t:'s',s:estSubtitulo};
-  ws['B3']={v:'FECHA:',t:'s',s:estSubtitulo}; ws['C3']={v:new Date().toLocaleDateString('es-PY'),t:'s',s:estSubtitulo};
+  ws['B3']={v:'FECHA: '+new Date().toLocaleDateString('es-PY'),t:'s',s:estSubtitulo}; ws['C3']={v:'',t:'s',s:estSubtitulo};
   for(let c=2;c<totalCols;c++) ws[`${colLetra(c)}3`]={v:'',t:'s',s:estSubtitulo};
   for(let c=0;c<totalCols;c++) ws[`${colLetra(c)}4`]={v:'',t:'s'};
 
@@ -1874,12 +1907,6 @@ document.getElementById('btnCerrarDetalle').addEventListener('click', () => {
 
 document.getElementById('btnAprobarTanda').addEventListener('click', async () => {
   if (!tandaActiva) return;
-  const pendientes = (window._tandaItems || [])
-    .filter(r => r.estado_tesoreria === 'Enviado a Tesorería').length;
-  if (pendientes > 0) {
-    toast(`Aún quedan ${pendientes} comprobante${pendientes > 1 ? 's' : ''} sin procesar en esta tanda`, 'warning');
-    return;
-  }
   if (!confirm(`¿Aprobar tanda #${tandaActiva} completa y generar recibos? Esta acción no se puede deshacer.`)) return;
 
   const btn = document.getElementById('btnAprobarTanda');

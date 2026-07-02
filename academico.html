@@ -2238,15 +2238,13 @@
           const examenFinal = parseInt(fila.querySelector('.txt-examen-final')?.textContent) || 0;
           const notaFinal = parseInt(fila.querySelector('.txt-nota-final')?.textContent) || 1;
 
-          const badgeEstado = fila.querySelector('.td-estado .badge');
-          const estadoTexto = badgeEstado ? badgeEstado.textContent.trim().toUpperCase() : 'REPROBADO';
+          const estadoCalculado = notaFinal > 1 ? 'Aprobado' : 'Reprobado';
 
           registrosCierre.push({
             id: parseInt(idHistorial),
             calif_examen_final: examenFinal,
             nota_obtenida: notaFinal,
-            // Estandarizamos para guardar en mayúsculas en Supabase (APROBADO / REPROBADO)
-            estado_materia: (estadoTexto === 'Reprobado' || estadoTexto === 'Reprobado') ? 'Reprobado' : 'Aprobado'
+            estado_materia: estadoCalculado
           });
         });
 
@@ -2727,17 +2725,39 @@
 
         // ── 3. Historial existente para esta materia/oportunidad ──
         const inscIds = inscs.map(i => i.id);
+
+        // 1. Traemos el historial de la oportunidad actual Y LAS ANTERIORES (menor o igual)
         const { data: hist } = await supabase.from('historial_examenes')
-          .select('id,inscripcion_id,estado_materia,nota_obtenida,hab_academico,hab_administrativo,calif_proceso,calif_examen_final')
+          .select('id,inscripcion_id,estado_materia,nota_obtenida,hab_academico,hab_administrativo,calif_proceso,calif_examen_final,oportunidad_nro')
           .in('inscripcion_id', inscIds)
           .eq('materia_id', Number(materiaId))
-          .eq('oportunidad_nro', opNro);
+          .lte('oportunidad_nro', opNro); // <── Cambiado de .eq() a .lte() (menor o igual)
 
+        // 2. Identificar quiénes ya aprobaron en oportunidades ANTERIORES
+        // (Asumiendo que 'Aprobado' es el estado en tu base de datos)
+        const yaAprobados = new Set(
+          (hist || [])
+            .filter(h => h.oportunidad_nro < opNro && h.estado_materia === 'Aprobado')
+            .map(h => h.inscripcion_id)
+        );
+
+        // 3. Filtrar la lista de inscripciones para EXCLUIR a los que ya aprobaron
+        const inscsFiltradas = inscs.filter(i => !yaAprobados.has(i.id));
+
+        // Si después de filtrar ya no quedan alumnos por evaluar
+        if (!inscsFiltradas.length) {
+          document.getElementById('habEmptyMsg').textContent = 'Todos los alumnos ya aprobaron esta materia en oportunidades anteriores.';
+          return;
+        }
+
+        // 4. Armar el mapa del historial, pero SOLO para la oportunidad ACTUAL (opNro)
         const histMap = {};
-        (hist || []).forEach(h => { histMap[h.inscripcion_id] = h; });
+        (hist || [])
+          .filter(h => h.oportunidad_nro === opNro) // <── Solo nos interesa el registro de la op actual para la planilla
+          .forEach(h => { histMap[h.inscripcion_id] = h; });
 
         // ── 4. Construir planilla ─────────────────────────────────
-        habPlanilla = inscs.map(i => ({
+        habPlanilla = inscsFiltradas.map(i => ({
           inscripcion_id: i.id,
           alumno_id: i.alumno_id,
           alumno: i.alumnos,
@@ -2753,6 +2773,7 @@
           _dirty: false,
           _moodle: false,  // marcador de que vino de Moodle
         }));
+
 
         // Info bar
         const matNombre = document.getElementById('filtroMateriaHab').selectedOptions[0]?.textContent || '—';
@@ -2878,6 +2899,24 @@
 
     // ── Render planilla ────────────────────────────────────────────
     function renderPlanillaHab() {
+      const opActual = habCalendario?.oportunidad_nro || 1;
+      // FILTRADO DINÁMICO
+      const alumnosFiltrados = habPlanilla.filter(r => {
+        // 1. Si estamos en la PRIMERA OPORTUNIDAD, no se filtra a nadie (pasan todos)
+        if (opActual === 1) return true;
+
+        // 2. Si estamos en Oportunidad 2, 3, 4, etc., calculamos la nota previa del alumno
+        const cp = r.calif_proceso !== '' ? Number(r.calif_proceso) : null;
+        const ce = r.calif_examen_final !== '' ? Number(r.calif_examen_final) : null;
+        const notaFinal = (cp !== null && ce !== null)
+          ? ((cp + ce) / 2).toFixed(1)
+          : (r.nota_obtenida !== null ? r.nota_obtenida : '');
+
+        // Condición: Solo pasa si tiene una nota cargada y es menor a 2 (Reprobado)
+        const esReprobado = notaFinal !== '' && Number(notaFinal) < 2;
+
+        return esReprobado;
+      });
       const habCount = habPlanilla.filter(r => r.hab_academico).length;
       document.getElementById('habCountHab').textContent = habCount;
       document.getElementById('habCountTotal').textContent = habPlanilla.length;
@@ -2890,7 +2929,7 @@
           ? ((cp + ce) / 2).toFixed(1)
           : (r.nota_obtenida !== null ? r.nota_obtenida : '');
 
-        const aprobado = notaFinal !== '' && Number(notaFinal) >= 6;
+        const aprobado = notaFinal !== '' && Number(notaFinal) > 1;
         const puedeAcad = r.hab_administrativo;
         const rowBg = r._moodle ? 'background:rgba(26,107,60,.05)' : r._dirty ? 'background:rgba(255,193,7,.06)' : '';
         const moodleBadge = r._moodle
@@ -2959,7 +2998,7 @@
     };
 
     // ── Guardar planilla (upsert historial_examenes) ──────────────
-// ── Guardar planilla (upsert historial_examenes) ──────────────
+    // ── Guardar planilla (upsert historial_examenes) ──────────────
     document.getElementById('btnGuardarHab').addEventListener('click', async () => {
       const sucios = habPlanilla.filter(r => r._dirty);
       if (!sucios.length) { toast('Sin cambios para guardar', 'info'); return; }
