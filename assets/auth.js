@@ -16,13 +16,15 @@ const PERMISOS = {
 };
 
 // ------------------------------------------------------------
-// Sesión en memoria (se carga desde sessionStorage)
+// Sesión en memoria (se carga desde localStorage)
+// localStorage persiste entre pestañas y tras cerrar el navegador,
+// hasta que se llame explícitamente a logout().
 // ------------------------------------------------------------
 let _sesion = null;
 
 export function getSesion() {
   if (_sesion) return _sesion;
-  const raw = sessionStorage.getItem('upgSesion');
+  const raw = localStorage.getItem('upgSesion');
   if (raw) {
     try { _sesion = JSON.parse(raw); } catch { _sesion = null; }
   }
@@ -31,13 +33,26 @@ export function getSesion() {
 
 function setSesion(data) {
   _sesion = data;
-  sessionStorage.setItem('upgSesion', JSON.stringify(data));
+  localStorage.setItem('upgSesion', JSON.stringify(data));
 }
 
 function clearSesion() {
   _sesion = null;
-  sessionStorage.removeItem('upgSesion');
+  localStorage.removeItem('upgSesion');
 }
+
+// ------------------------------------------------------------
+// Sincronización entre pestañas: si se hace logout en una pestaña,
+// las demás pestañas abiertas también deben cerrar sesión.
+// ------------------------------------------------------------
+window.addEventListener('storage', (e) => {
+  if (e.key === 'upgSesion' && e.newValue === null) {
+    _sesion = null;
+    if (!location.pathname.endsWith('login.html')) {
+      window.location.href = '/login.html';
+    }
+  }
+});
 
 // ------------------------------------------------------------
 // Login con tabla usuarios_sistema (hash bcrypt vía RPC)

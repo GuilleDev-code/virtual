@@ -50,18 +50,23 @@
       pointer-events: none;
     }
     .input-wrapper .form-control { padding-left: 36px; }
+    .input-wrapper .form-control.has-toggle { padding-right: 42px; }
 
     .toggle-pass {
       position: absolute;
-      right: 10px; top: 50%;
+      right: 11px; top: 50%;
       transform: translateY(-50%);
       color: var(--txt-muted);
       cursor: pointer;
-      padding: 4px;
+      padding: 6px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       transition: color var(--transition);
     }
     .toggle-pass:hover { color: var(--verde); }
-    .toggle-pass svg { width: 16px; height: 16px; display: block; }
+    .toggle-pass svg { width: 16px; height: 16px; display: block; pointer-events: none; left: 0px; }
 
     .version-tag {
       font-size: 0.68rem;
@@ -94,14 +99,15 @@
       <div class="login-error" id="loginError"></div>
 
       <div class="form-group">
-        <label class="form-label">Usuario</label>
+        <label class="form-label">CI</label>
         <div class="input-wrapper">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           <input
             type="text"
             id="inputUsuario"
             class="form-control"
-            placeholder="Tu nombre de usuario"
+            placeholder="Número de cédula"
+            inputmode="numeric"
             autocomplete="username"
             autofocus
           >
@@ -115,7 +121,7 @@
           <input
             type="password"
             id="inputPassword"
-            class="form-control"
+            class="form-control has-toggle"
             placeholder="••••••••"
             autocomplete="current-password"
           >
@@ -215,7 +221,7 @@
     const password = inputPass.value;
 
     errorBox.classList.remove('show');
-    if (!usuario || !password) { showError('Completá usuario y contraseña.'); return; }
+    if (!usuario || !password) { showError('Completá tu CI y contraseña.'); return; }
 
     btnLogin.classList.add('loading');
     btnLogin.disabled = true;
@@ -234,7 +240,7 @@
         // Guardar sesión temporalmente sin redirigir
         _sesionPendiente = sesion;
         // Limpiar la sesión del storage hasta que cambie la contraseña
-        sessionStorage.removeItem('upgSesion');
+        localStorage.removeItem('upgSesion');
         mostrarModalCambio();
         return;
       }
@@ -340,7 +346,7 @@
       if (error) throw error;
 
       // Ahora sí guardar la sesión y redirigir
-      sessionStorage.setItem('upgSesion', JSON.stringify(_sesionPendiente));
+      localStorage.setItem('upgSesion', JSON.stringify(_sesionPendiente));
       redirigir(_sesionPendiente.rol);
 
     } catch(e) {
